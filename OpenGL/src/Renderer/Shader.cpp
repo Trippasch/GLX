@@ -98,8 +98,8 @@ GLuint Shader::CompileShader(GLenum type, const std::string& source)
         glGetShaderiv(id, GL_INFO_LOG_LENGTH, &length);
         char* message = (char*)alloca(length * sizeof(char));
         glGetShaderInfoLog(id, length, &length, message);
-        RT_ERROR("Failed to compile {0} shader!", GL_VERTEX_SHADER ? "vertex" : "fragment")
-        RT_INFO(message);
+        GL_ERROR("Failed to compile {0} shader!", GL_VERTEX_SHADER ? "vertex" : "fragment")
+        GL_INFO(message);
         glDeleteShader(id);
         return 0;
     }
@@ -137,7 +137,7 @@ int Shader::GetUniformLocation(const std::string& name)
     int location = glGetUniformLocation(m_RendererID, name.c_str());
     if (location == -1)
     {
-        RT_WARN("Warning: uniform {0} doesn't exist!", name);
+        GL_WARN("Warning: uniform {0} doesn't exist!", name);
     }
 
     m_UniformLocationCache[name] = location;

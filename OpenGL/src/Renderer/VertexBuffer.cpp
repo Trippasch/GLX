@@ -1,8 +1,6 @@
 #include "Renderer/VertexBuffer.h"
 
-#include <cuda_gl_interop.h>
 // #include "helper_gl.h"
-#include "Utils/helper_cuda.h"
 
 VertexBuffer::VertexBuffer(const GLvoid* data, GLuint size, GLenum mode)
 {
@@ -28,9 +26,4 @@ void VertexBuffer::UnBind() const
 {
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     // SDK_CHECK_ERROR_GL();
-}
-
-void VertexBuffer::CudaRegisterBuffer(struct cudaGraphicsResource** vbo_res, unsigned int vbo_res_flags) const
-{
-    checkCudaErrors(cudaGraphicsGLRegisterBuffer(vbo_res, m_RendererID, vbo_res_flags));
 }

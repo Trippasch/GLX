@@ -13,6 +13,4 @@ public:
 
     void Bind() const;
     void UnBind() const;
-
-    void CudaRegisterBuffer(struct cudaGraphicsResource** vbo_res, unsigned int vbo_res_flags) const;
 };
