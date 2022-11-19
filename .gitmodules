@@ -1,9 +1,6 @@
 [submodule "vendor/GLFW"]
 	path = vendor/GLFW
 	url = git@github.com:Trippasch/glfw.git
-[submodule "vendor/ImGui"]
-	path = vendor/ImGui
-	url = git@github.com:Trippasch/imgui.git
 [submodule "vendor/glm"]
 	path = vendor/glm
 	url = git@github.com:Trippasch/glm.git
