@@ -2,8 +2,6 @@
 
 #include <string>
 
-#include <GLFW/glfw3.h>
-
 #include "Renderer/Camera.h"
 
 struct WindowProps
