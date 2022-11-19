@@ -7,3 +7,7 @@
 [submodule "vendor/spdlog"]
 	path = vendor/spdlog
 	url = git@github.com:gabime/spdlog.git
+[submodule "vendor/ImGui"]
+	path = vendor/ImGui
+	url = git@github.com:Trippasch/imgui.git
+	branch = docking
