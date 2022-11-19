@@ -1,0 +1,17 @@
+# Directories
+.vs/
+bin/
+bin-int/
+x64/
+
+# Files
+*.vcxproj
+*.vcxproj.user
+*.vcxproj.filters
+*.sln
+
+# Makefile
+Makefile
+
+# Exclude
+!vendor/bin

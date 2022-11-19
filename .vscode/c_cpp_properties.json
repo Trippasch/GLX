@@ -1,0 +1,47 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}/OpenGL/src",
+                "${workspaceFolder}/vendor/GLFW/include",
+                "${workspaceFolder}/vendor/Glad/include",
+                "${workspaceFolder}/vendor/spdlog/include",
+                "${workspaceFolder}/vendor/ImGui",
+                "${workspaceFolder}/vendor/glm",
+            ],
+            "defines": [
+                "GL_DEBUG",
+                "UNICODE",
+                "_UNICODE"
+            ],
+            "compilerPath": "/usr/bin/clang",
+            "cStandard": "c17",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "clang-x64"
+        },
+        {
+            "name": "Win32",
+            "includePath": [
+                "${workspaceFolder}/OpenGL/src",
+                "${workspaceFolder}/vendor/GLFW/include",
+                "${workspaceFolder}/vendor/Glad/include",
+                "${workspaceFolder}/vendor/spdlog/include",
+                "${workspaceFolder}/vendor/ImGui",
+                "${workspaceFolder}/vendor/glm"
+            ],
+            "defines": [
+                "GL_DEBUG",
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE"
+            ],
+            "windowsSdkVersion": "10.0.18362.0",
+            "compilerPath": "C:\\Program Files\\LLVM\\bin\\clang.exe",
+            "cStandard": "c17",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "clang-x64"
+        }
+    ],
+    "version": 4
+}
