@@ -5,15 +5,29 @@
 VertexBuffer::VertexBuffer(const GLvoid* data, GLuint size, GLenum mode)
 {
     glGenBuffers(1, &m_RendererID);
-    glBindBuffer(GL_ARRAY_BUFFER, m_RendererID);
+    Bind();
     glBufferData(GL_ARRAY_BUFFER, size, data, mode);
+    UnBind();
     // SDK_CHECK_ERROR_GL();
 }
 
-VertexBuffer::~VertexBuffer()
+void VertexBuffer::Destroy() const
 {
     glDeleteBuffers(1, &m_RendererID);
     // SDK_CHECK_ERROR_GL();
+}
+
+void VertexBuffer::LinkAttrib(GLuint index, GLint size, GLenum type, GLsizei stride, const GLvoid* offset) const
+{
+    Bind();
+    glEnableVertexAttribArray(index);
+    glVertexAttribPointer(index, size, type, GL_FALSE, stride, offset);
+    UnBind();
+}
+
+void VertexBuffer::UnlinkAttrib(GLuint layout) const
+{
+    glDisableVertexAttribArray(layout);
 }
 
 void VertexBuffer::Bind() const

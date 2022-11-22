@@ -15,6 +15,7 @@ project "OpenGL"
         "src",
         "../vendor/ImGui",
         "../vendor/spdlog/include",
+        "../vendor/stb",
         "../vendor/GLFW/include",
         "%{IncludeDir.Glad}",
         "%{IncludeDir.glm}"

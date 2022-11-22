@@ -9,6 +9,7 @@ const float SENSITIVITY = 0.1f;
 class Camera
 {
 public:
+    Camera() : m_Width(0), m_Height(0) {}
     Camera(int width, int height, glm::vec3 position);
 
     inline float GetWidth() { return this->m_Width; }

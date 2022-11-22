@@ -9,8 +9,8 @@ private:
 public:
     IndexBuffer() : m_RendererID(0) {}
     IndexBuffer(const GLvoid* data, GLuint size, GLenum mode);
-    ~IndexBuffer();
 
     void Bind() const;
     void UnBind() const;
+    void Destroy() const;
 };

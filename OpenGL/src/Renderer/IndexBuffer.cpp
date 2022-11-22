@@ -10,7 +10,7 @@ IndexBuffer::IndexBuffer(const GLvoid* data, GLuint size, GLenum mode)
     // SDK_CHECK_ERROR_GL();
 }
 
-IndexBuffer::~IndexBuffer()
+void IndexBuffer::Destroy() const
 {
     glDeleteBuffers(1, &m_RendererID);
     // SDK_CHECK_ERROR_GL();

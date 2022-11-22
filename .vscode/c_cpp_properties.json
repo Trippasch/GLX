@@ -9,6 +9,7 @@
                 "${workspaceFolder}/vendor/spdlog/include",
                 "${workspaceFolder}/vendor/ImGui",
                 "${workspaceFolder}/vendor/glm",
+                "${workspaceFolder}/vendor/stb"
             ],
             "defines": [
                 "GL_DEBUG",
@@ -28,7 +29,8 @@
                 "${workspaceFolder}/vendor/Glad/include",
                 "${workspaceFolder}/vendor/spdlog/include",
                 "${workspaceFolder}/vendor/ImGui",
-                "${workspaceFolder}/vendor/glm"
+                "${workspaceFolder}/vendor/glm",
+                "${workspaceFolder}/vendor/stb"
             ],
             "defines": [
                 "GL_DEBUG",

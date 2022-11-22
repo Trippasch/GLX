@@ -2,7 +2,7 @@
 
 #include <string>
 
-#include "Renderer/Camera.h"
+#include <GLFW/glfw3.h>
 
 struct WindowProps
 {
