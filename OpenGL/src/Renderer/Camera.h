@@ -3,7 +3,7 @@
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 
-const float SPEED = 0.1f;
+const float SPEED = 0.05f;
 const float SENSITIVITY = 0.1f;
 
 class Camera
@@ -28,9 +28,9 @@ public:
     glm::vec3 m_Orientation = glm::vec3(0.0f, 0.0f, -1.0f);
     glm::vec3 m_Up = glm::vec3(0.0f, 1.0f, 0.0f);
 
-    float m_FarPlane = 10.0f;
+    float m_FarPlane = 100.0f;
     float m_NearPlane = 0.1f;
-    float m_Fov = 4.0f;
+    float m_Fov = 45.0f;
 
     // Prevents the camera from jumping around when first clicking left click
     bool m_FirstClick = true;

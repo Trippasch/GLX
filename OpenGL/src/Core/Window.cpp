@@ -52,8 +52,7 @@ void Window::Init(const WindowProps& props)
     // These hints switch the OpenGL profile to core
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
 
     m_Window = glfwCreateWindow((int)props.Width, (int)props.Height, m_Data.Title.c_str(), nullptr, nullptr);
     GL_ASSERT(m_Window, "Could not create GLFW window");
@@ -72,7 +71,7 @@ void Window::Init(const WindowProps& props)
     printGLInfo();
 
     glfwSetWindowUserPointer(m_Window, &m_Data);
-    SetVSync(true);
+    SetVSync(false);
 
     // Set GLFW callbacks
     glfwSetKeyCallback(m_Window, [](GLFWwindow* window, int key, int scancode, int action, int mods)

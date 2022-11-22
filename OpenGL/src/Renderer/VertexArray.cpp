@@ -16,10 +16,10 @@ VertexArray::~VertexArray()
 
 void VertexArray::LinkAttrib(std::unique_ptr<VertexBuffer>& vbo, GLuint layout, GLuint numComponents, GLenum type, GLsizeiptr stride, void* offset) const
 {
-    vbo->Bind();
+    //vbo->Bind();
     glEnableVertexAttribArray(layout);
     glVertexAttribPointer(layout, numComponents, type, GL_FALSE, stride, offset);
-    vbo->UnBind();
+    //vbo->UnBind();
     // SDK_CHECK_ERROR_GL();
 }
 

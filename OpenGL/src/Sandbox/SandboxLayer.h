@@ -14,7 +14,6 @@
 #include <glad/glad.h>
 
 #include "Renderer/VertexBuffer.h"
-#include "Renderer/VertexArray.h"
 #include "Renderer/IndexBuffer.h"
 #include "Renderer/Camera.h"
 
@@ -35,8 +34,9 @@ private:
     int m_ImageHeight = static_cast<int>(m_ImageWidth / m_AspectRatio);
     // GLuint m_Texture;
 
-    // Camera camera;
-    VertexArray cubeVAO;
+    GLFWwindow* m_Window;
+    Camera m_Camera;
+
     VertexBuffer cubeVBO;
     IndexBuffer cubeEBO;
 };

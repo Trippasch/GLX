@@ -1,9 +1,13 @@
 #include "Sandbox/SandboxLayer.h"
 
+#include "Core/Application.h"
+
 SandboxLayer::SandboxLayer()
     : Layer("SandboxLayer")
 {
-    // camera = Camera(m_ImageWidth, m_ImageHeight, glm::vec3(0.0f, 0.0f, 2.0f));
+    Application &app = Application::Get();
+    m_Window = static_cast<GLFWwindow *>(app.GetWindow().GetNativeWindow());
+    m_Camera = Camera(app.GetWindow().GetWidth(), app.GetWindow().GetHeight(), glm::vec3(0.0f, 0.0f, 5.0f));
 }
 
 void SandboxLayer::OnAttach()
@@ -22,37 +26,30 @@ void SandboxLayer::OnAttach()
 
     ResourceManager::LoadShader("assets/shaders/basicVS.glsl", "assets/shaders/basicFS.glsl", nullptr, "basic");
 
-    cubeVAO = VertexArray();
-    cubeVAO.Bind();
-
     cubeVBO = VertexBuffer(&vertices, sizeof(vertices), GL_STATIC_DRAW);
     cubeEBO = IndexBuffer(&indices, sizeof(indices), GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-
-    cubeVBO.UnBind();
-    cubeVAO.UnBind();
-
-    // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 }
 
 void SandboxLayer::OnUpdate()
 {
-    ResourceManager::GetShader("basic").Use();
+    m_Camera.Inputs(m_Window);
 
-    // glm::mat4 projView = camera.Matrix(45.0f, 0.1f, 100.0f);
-    // glm::mat4 model = glm::mat4(1.0f);
-    // model = glm::translate(model, glm::vec3(-1.0f, 0.0f, -1.0f));
-    // model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
+    glm::mat4 projView = m_Camera.Matrix(m_Camera.m_Fov, m_Camera.m_NearPlane, m_Camera.m_FarPlane);
+    glm::mat4 model = glm::mat4(1.0f);
+    model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
+    model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
+
+    ResourceManager::GetShader("basic").Use().SetMatrix4("projView", projView);
+    ResourceManager::GetShader("basic").Use().SetMatrix4("model", model);
 
     // draw cubes
-    // cubeEBO.Bind();
-    // cubeVBO.LinkAttrib(0, 3, GL_FLOAT, 3 * sizeof(float), (void*)0);
-    cubeVAO.Bind();
+    cubeEBO.Bind();
+    cubeVBO.LinkAttrib(0, 3, GL_FLOAT, 3 * sizeof(float), (void*)0);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-    // cubeVBO.UnlinkAttrib(0);
-    // cubeEBO.UnBind();
+    cubeVBO.UnlinkAttrib(0);
+    cubeEBO.UnBind();
 }
 
 void SandboxLayer::OnImGuiRender()
