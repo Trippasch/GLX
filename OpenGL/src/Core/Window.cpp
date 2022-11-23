@@ -73,6 +73,9 @@ void Window::Init(const WindowProps& props)
     glfwSetWindowUserPointer(m_Window, &m_Data);
     SetVSync(false);
 
+    // Set important OpenGL states
+    glEnable(GL_DEPTH_TEST);
+
     // Set GLFW callbacks
     glfwSetKeyCallback(m_Window, [](GLFWwindow* window, int key, int scancode, int action, int mods)
     {

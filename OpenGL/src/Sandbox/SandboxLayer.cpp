@@ -12,22 +12,25 @@ SandboxLayer::SandboxLayer()
 
 void SandboxLayer::OnAttach()
 {
-    float vertices[] = {
-        0.5f, 0.5f, 0.0f,   // top right
-        0.5f, -0.5f, 0.0f,  // bottom right
-        -0.5f, -0.5f, 0.0f, // bottom left
-        -0.5f, 0.5f, 0.0f   // top left
+
+    float planeVertices[] = {
+        // positions            // normals         // texcoords
+         25.0f, -0.5f,  25.0f,  0.0f, 1.0f, 0.0f,  25.0f,  0.0f,
+        -25.0f, -0.5f,  25.0f,  0.0f, 1.0f, 0.0f,   0.0f,  0.0f,
+        -25.0f, -0.5f, -25.0f,  0.0f, 1.0f, 0.0f,   0.0f, 25.0f,
+
+         25.0f, -0.5f,  25.0f,  0.0f, 1.0f, 0.0f,  25.0f,  0.0f,
+        -25.0f, -0.5f, -25.0f,  0.0f, 1.0f, 0.0f,   0.0f, 25.0f,
+         25.0f, -0.5f, -25.0f,  0.0f, 1.0f, 0.0f,  25.0f, 25.0f
     };
 
-    unsigned int indices[] = {
-        0, 1, 3, // first Triangle
-        1, 2, 3  // second Triangle
-    };
+    ResourceManager::LoadModel("assets/objects/backpack/backpack.obj", "backpack");
+    ResourceManager::LoadTexture("assets/textures/wood.png", false, "wood");
+    ResourceManager::LoadShader("assets/shaders/modelVS.glsl", "assets/shaders/modelFS.glsl", nullptr, "model");
 
-    ResourceManager::LoadShader("assets/shaders/basicVS.glsl", "assets/shaders/basicFS.glsl", nullptr, "basic");
+    ResourceManager::GetShader("model").SetInteger("texture_diffuse1", 0);
 
-    cubeVBO = VertexBuffer(&vertices, sizeof(vertices), GL_STATIC_DRAW);
-    cubeEBO = IndexBuffer(&indices, sizeof(indices), GL_STATIC_DRAW);
+    planeVBO = VertexBuffer(&planeVertices, sizeof(planeVertices), GL_STATIC_DRAW);
 
      //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 }
@@ -37,19 +40,30 @@ void SandboxLayer::OnUpdate()
     m_Camera.Inputs(m_Window);
 
     glm::mat4 projView = m_Camera.Matrix(m_Camera.m_Fov, m_Camera.m_NearPlane, m_Camera.m_FarPlane);
+    ResourceManager::GetShader("model").Use().SetMatrix4("projView", projView);
+
+    // draw plane
+    glActiveTexture(GL_TEXTURE0);
+    ResourceManager::GetTexture("wood").Bind();
     glm::mat4 model = glm::mat4(1.0f);
     model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
     model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
+    ResourceManager::GetShader("model").Use().SetMatrix4("model", model);
+    planeVBO.LinkAttrib(0, 3, GL_FLOAT, 8 * sizeof(float), (void*)0);
+    planeVBO.LinkAttrib(1, 3, GL_FLOAT, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+    planeVBO.LinkAttrib(2, 2, GL_FLOAT, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+    planeVBO.UnlinkAttrib(0);
+    planeVBO.UnlinkAttrib(1);
+    planeVBO.UnlinkAttrib(2);
+    glBindTexture(GL_TEXTURE_2D, 0);
 
-    ResourceManager::GetShader("basic").Use().SetMatrix4("projView", projView);
-    ResourceManager::GetShader("basic").Use().SetMatrix4("model", model);
-
-    // draw cubes
-    cubeEBO.Bind();
-    cubeVBO.LinkAttrib(0, 3, GL_FLOAT, 3 * sizeof(float), (void*)0);
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-    cubeVBO.UnlinkAttrib(0);
-    cubeEBO.UnBind();
+    // draw model
+    model = glm::mat4(1.0f);
+    model = glm::translate(model, glm::vec3(0.0f, 3.0f, 0.0f));
+    model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
+    ResourceManager::GetShader("model").Use().SetMatrix4("model", model);
+    ResourceManager::GetModel("backpack").Draw(ResourceManager::GetShader("model"));
 }
 
 void SandboxLayer::OnImGuiRender()
@@ -93,6 +107,6 @@ void SandboxLayer::OnImGuiRender()
 
 void SandboxLayer::OnDetach()
 {
-    cubeVBO.Destroy();
-    cubeEBO.Destroy();
+    ResourceManager::Clear();
+    planeVBO.Destroy();
 }

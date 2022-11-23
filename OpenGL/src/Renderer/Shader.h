@@ -17,6 +17,7 @@ public:
     Shader &Use();
     // compiles the shader from given source code
     void Compile(const char *vertexSource, const char *fragmentSource, const char *geometrySource = nullptr); // note: geometry source code is optional 
+
     // utility functions
     void SetFloat(const char *name, float value, bool useShader = false);
     void SetInteger(const char *name, int value, bool useShader = false);

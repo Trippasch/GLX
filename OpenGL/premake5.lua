@@ -17,6 +17,7 @@ project "OpenGL"
         "../vendor/spdlog/include",
         "../vendor/stb",
         "../vendor/GLFW/include",
+        "../vendor/Assimp/include",
         "%{IncludeDir.Glad}",
         "%{IncludeDir.glm}"
     }
@@ -35,6 +36,7 @@ project "OpenGL"
         links {
             "ImGui",
             "GLFW",
+            "Assimp",
             "Glad",
             "opengl32.lib"
         }
@@ -45,6 +47,7 @@ project "OpenGL"
         links {
             "ImGui",
             "GLFW",
+            "Assimp",
             "Glad",
             "GL",
         }

@@ -37,6 +37,5 @@ private:
     GLFWwindow* m_Window;
     Camera m_Camera;
 
-    VertexBuffer cubeVBO;
-    IndexBuffer cubeEBO;
+    VertexBuffer planeVBO;
 };

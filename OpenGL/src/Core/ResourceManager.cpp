@@ -6,12 +6,23 @@
 #include <sstream>
 #include <fstream>
 
-#define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
 // Instantiate static variables
-std::map<std::string, Texture2D>    ResourceManager::Textures;
-std::map<std::string, Shader>       ResourceManager::Shaders;
+std::map<std::string, Texture2D> ResourceManager::Textures;
+std::map<std::string, Shader> ResourceManager::Shaders;
+std::map<std::string, Model> ResourceManager::Models;
+
+Model ResourceManager::LoadModel(const char *file, std::string name)
+{
+    Models[name] = loadModelFromFile(file);
+    return Models[name];
+}
+
+Model ResourceManager::GetModel(std::string name)
+{
+    return Models[name];
+}
 
 Shader ResourceManager::LoadShader(const char *vShaderFile, const char *fShaderFile, const char *gShaderFile, std::string name)
 {
@@ -106,4 +117,10 @@ Texture2D ResourceManager::loadTextureFromFile(const char *file, bool alpha)
     // and finally free image data
     stbi_image_free(data);
     return texture;
+}
+
+Model ResourceManager::loadModelFromFile(const char *file)
+{
+    Model model(file);
+    return model;
 }

@@ -8,6 +8,7 @@ group "Dependencies"
     include "vendor/ImGui"
     include "vendor/Glad"
     include "vendor/GLFW"
+    include "vendor/Assimp"
 group ""
 
 include "OpenGL"

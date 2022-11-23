@@ -5,6 +5,7 @@
             "includePath": [
                 "${workspaceFolder}/OpenGL/src",
                 "${workspaceFolder}/vendor/GLFW/include",
+                "${workspaceFolder}/vendor/Assimp/include",
                 "${workspaceFolder}/vendor/Glad/include",
                 "${workspaceFolder}/vendor/spdlog/include",
                 "${workspaceFolder}/vendor/ImGui",
@@ -26,6 +27,7 @@
             "includePath": [
                 "${workspaceFolder}/OpenGL/src",
                 "${workspaceFolder}/vendor/GLFW/include",
+                "${workspaceFolder}/vendor/Assimp/include",
                 "${workspaceFolder}/vendor/Glad/include",
                 "${workspaceFolder}/vendor/spdlog/include",
                 "${workspaceFolder}/vendor/ImGui",
