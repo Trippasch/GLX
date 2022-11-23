@@ -13,4 +13,4 @@
 	branch = docking
 [submodule "vendor/Assimp"]
 	path = vendor/Assimp
-	url = git@github.com:AminAliari/assimp.git
+	url = git@github.com:Trippasch/assimp.git
