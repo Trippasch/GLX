@@ -38,4 +38,6 @@ private:
     Camera m_Camera;
 
     VertexBuffer planeVBO;
+
+    void renderModels(Shader shader);
 };

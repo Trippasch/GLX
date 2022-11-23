@@ -51,7 +51,7 @@ public:
     Mesh(std::vector<Vertex> vertices, std::vector<GLuint> indices, std::vector<Texture> textures);
 
     // render the mesh
-    void Draw(Shader &shader) const;
+    void Draw(const Shader &shader) const;
     void Destroy() const;
 
 private:

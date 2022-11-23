@@ -58,12 +58,16 @@ void SandboxLayer::OnUpdate()
     planeVBO.UnlinkAttrib(2);
     glBindTexture(GL_TEXTURE_2D, 0);
 
-    // draw model
-    model = glm::mat4(1.0f);
+    renderModels(ResourceManager::GetShader("model"));
+}
+
+void SandboxLayer::renderModels(Shader shader)
+{
+    glm::mat4 model = glm::mat4(1.0f);
     model = glm::translate(model, glm::vec3(0.0f, 3.0f, 0.0f));
     model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
-    ResourceManager::GetShader("model").Use().SetMatrix4("model", model);
-    ResourceManager::GetModel("backpack").Draw(ResourceManager::GetShader("model"));
+    shader.Use().SetMatrix4("model", model);
+    ResourceManager::GetModel("backpack").Draw(shader);
 }
 
 void SandboxLayer::OnImGuiRender()

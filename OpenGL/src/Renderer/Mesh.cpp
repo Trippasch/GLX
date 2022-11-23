@@ -49,7 +49,7 @@ void Mesh::UnBind() const
 }
 
 // render the mesh
-void Mesh::Draw(Shader &shader) const
+void Mesh::Draw(const Shader &shader) const
 {
     // bind appropriate textures
     unsigned int diffuseNr = 1;
