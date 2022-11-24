@@ -12,11 +12,11 @@ public:
     Camera() : m_Width(0), m_Height(0) {}
     Camera(int width, int height, glm::vec3 position);
 
-    inline float GetWidth() { return this->m_Width; }
-    inline void SetWidth(float width) { this->m_Width = width; }
+    inline int GetWidth() { return this->m_Width; }
+    inline void SetWidth(int width) { this->m_Width = width; }
 
-    inline float GetHeight() { return this->m_Height; }
-    inline void SetHeight(float height) { this->m_Height = height; }
+    inline int GetHeight() { return this->m_Height; }
+    inline void SetHeight(int height) { this->m_Height = height; }
 
     glm::mat4 Matrix(float fovDeg, float nearPlane, float farPlane);
 
@@ -37,8 +37,8 @@ public:
 
 private:
     // Stores the width and height of the window
-    float m_Width;
-    float m_Height;
+    int m_Width;
+    int m_Height;
 
     // Adjust the speed of the camera and it's sensitivity when looking around
     float m_Speed;

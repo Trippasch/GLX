@@ -7,12 +7,11 @@ SandboxLayer::SandboxLayer()
 {
     Application &app = Application::Get();
     m_Window = static_cast<GLFWwindow *>(app.GetWindow().GetNativeWindow());
-    m_Camera = Camera(app.GetWindow().GetWidth(), app.GetWindow().GetHeight(), glm::vec3(0.0f, 0.0f, 5.0f));
+    m_Camera = Camera(app.GetWindow().GetWidth(), app.GetWindow().GetWidth(), glm::vec3(0.0f, 2.0f, 5.0f));
 }
 
 void SandboxLayer::OnAttach()
 {
-
     float planeVertices[] = {
         // positions            // normals         // texcoords
          25.0f, -0.5f,  25.0f,  0.0f, 1.0f, 0.0f,  25.0f,  0.0f,
