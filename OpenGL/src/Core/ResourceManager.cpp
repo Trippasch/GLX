@@ -19,7 +19,7 @@ Model ResourceManager::LoadModel(const char *file, std::string name)
     return Models[name];
 }
 
-Model ResourceManager::GetModel(std::string name)
+Model& ResourceManager::GetModel(std::string name)
 {
     return Models[name];
 }
@@ -30,7 +30,7 @@ Shader ResourceManager::LoadShader(const char *vShaderFile, const char *fShaderF
     return Shaders[name];
 }
 
-Shader ResourceManager::GetShader(std::string name)
+Shader& ResourceManager::GetShader(std::string name)
 {
     return Shaders[name];
 }
@@ -41,7 +41,7 @@ Texture2D ResourceManager::LoadTexture(const char *file, bool alpha, std::string
     return Textures[name];
 }
 
-Texture2D ResourceManager::GetTexture(std::string name)
+Texture2D& ResourceManager::GetTexture(std::string name)
 {
     return Textures[name];
 }

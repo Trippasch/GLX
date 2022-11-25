@@ -24,8 +24,8 @@ public:
 
     void OnUpdate();
 
-    inline uint32_t GetWidth() { return m_Data.Width; }
-    inline uint32_t GetHeight() { return m_Data.Height; }
+    inline uint32_t& GetWidth() { return m_Data.Width; }
+    inline uint32_t& GetHeight() { return m_Data.Height; }
     inline void SetWidth(uint32_t width) { m_Data.Width = width; }
     inline void SetHeight(uint32_t height) { m_Data.Height = height; }
 
