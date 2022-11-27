@@ -35,6 +35,9 @@ private:
     // GLuint m_Texture;
 
     GLFWwindow* m_Window;
+
+    float deltaTime = 0.0f;
+    float lastFrame = 0.0f;
     Camera m_Camera;
 
     VertexBuffer planeVBO;

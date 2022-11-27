@@ -36,7 +36,10 @@ void SandboxLayer::OnAttach()
 
 void SandboxLayer::OnUpdate()
 {
-    m_Camera.Inputs(m_Window);
+    float currentFrame = static_cast<float>(glfwGetTime());
+    deltaTime = currentFrame - lastFrame;
+    lastFrame = currentFrame;
+    m_Camera.Inputs(m_Window, deltaTime);
 
     glm::mat4 projView = m_Camera.Matrix(m_Camera.m_Fov, m_Camera.m_NearPlane, m_Camera.m_FarPlane);
     ResourceManager::GetShader("model").Use().SetMatrix4("projView", projView);

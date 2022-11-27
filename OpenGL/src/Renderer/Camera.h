@@ -3,7 +3,7 @@
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 
-const float SPEED = 0.05f;
+const float SPEED = 3.0f;
 const float SENSITIVITY = 0.1f;
 
 class Camera
@@ -21,7 +21,7 @@ public:
     glm::mat4 Matrix(float fovDeg, float nearPlane, float farPlane);
 
     // Handles camera inputs
-    void Inputs(GLFWwindow* window);
+    void Inputs(GLFWwindow* window, float deltaTime);
 
 public:
     glm::vec3 m_Position;

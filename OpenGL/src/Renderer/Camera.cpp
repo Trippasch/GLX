@@ -31,32 +31,34 @@ glm::mat4 Camera::Matrix(float fovDeg, float nearPlane, float farPlane)
     return (projection * view);
 }
 
-void Camera::Inputs(GLFWwindow* window)
+void Camera::Inputs(GLFWwindow* window, float deltaTime)
 {
+    float velocity = m_Speed * deltaTime;
+
     // Handles key inputs
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
     {
-        m_Position += m_Speed * m_Orientation;
+        m_Position += velocity * m_Orientation;
     }
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
     {
-        m_Position += m_Speed * -glm::normalize(glm::cross(m_Orientation, m_Up));
+        m_Position += velocity * -glm::normalize(glm::cross(m_Orientation, m_Up));
     }
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
     {
-        m_Position += m_Speed * -m_Orientation;
+        m_Position += velocity * -m_Orientation;
     }
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
     {
-        m_Position += m_Speed * glm::normalize(glm::cross(m_Orientation, m_Up));
+        m_Position += velocity * glm::normalize(glm::cross(m_Orientation, m_Up));
     }
     if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
     {
-        m_Position += m_Speed * m_Up;
+        m_Position += velocity * m_Up;
     }
     if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
     {
-        m_Position += m_Speed * -m_Up;
+        m_Position += velocity * -m_Up;
     }
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
     {
