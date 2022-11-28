@@ -49,11 +49,17 @@ Texture2D& ResourceManager::GetTexture(std::string name)
 void ResourceManager::Clear()
 {
     // (properly) delete all shaders	
-    for (auto iter : Shaders)
-        glDeleteProgram(iter.second.ID);
+    for (const auto &shader : Shaders)
+        glDeleteProgram(shader.second.ID);
     // (properly) delete all textures
-    for (auto iter : Textures)
-        glDeleteTextures(1, &iter.second.ID);
+    for (const auto &texture : Textures)
+        glDeleteTextures(1, &texture.second.ID);
+    // (properly) delete all meshes data
+    for (const auto &model : Models) {
+        auto meshes = model.second.meshes;
+        for (const auto &mesh : meshes)
+            mesh.Destroy();
+    }
 }
 
 Shader ResourceManager::loadShaderFromFile(const char *vShaderFile, const char *fShaderFile, const char *gShaderFile)
@@ -111,9 +117,9 @@ Texture2D ResourceManager::loadTextureFromFile(const char *file, bool alpha)
     }
     // load image
     int width, height, nrChannels;
-    unsigned char* data = stbi_load(file, &width, &height, &nrChannels, 0);
+    void* data = stbi_load(file, &width, &height, &nrChannels, 0);
     // now generate texture
-    texture.Generate(width, height, data);
+    texture.Generate(width, height, data, GL_TRUE);
     // and finally free image data
     stbi_image_free(data);
     return texture;

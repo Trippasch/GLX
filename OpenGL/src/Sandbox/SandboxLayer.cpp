@@ -45,8 +45,7 @@ void SandboxLayer::OnUpdate()
     ResourceManager::GetShader("model").Use().SetMatrix4("projView", projView);
 
     // draw plane
-    glActiveTexture(GL_TEXTURE0);
-    ResourceManager::GetTexture("wood").Bind();
+    ResourceManager::GetTexture("wood").Bind(0);
     glm::mat4 model = glm::mat4(1.0f);
     model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
     model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
@@ -58,7 +57,7 @@ void SandboxLayer::OnUpdate()
     planeVBO.UnlinkAttrib(0);
     planeVBO.UnlinkAttrib(1);
     planeVBO.UnlinkAttrib(2);
-    glBindTexture(GL_TEXTURE_2D, 0);
+    Texture2D::UnBind();
 
     renderModels(ResourceManager::GetShader("model"));
 }
