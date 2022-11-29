@@ -103,6 +103,62 @@ void Shader::SetMatrix4(const char *name, const glm::mat4 &matrix, bool useShade
     glUniformMatrix4fv(glGetUniformLocation(this->ID, name), 1, false, glm::value_ptr(matrix));
 }
 
+// Explicit uniform location
+void Shader::SetFloat(int location, float value, bool useShader)
+{
+    if (useShader)
+        this->Use();
+    glUniform1f(location, value);
+}
+void Shader::SetInteger(int location, int value, bool useShader)
+{
+    if (useShader)
+        this->Use();
+    glUniform1i(location, value);
+}
+void Shader::SetVector2f(int location, float x, float y, bool useShader)
+{
+    if (useShader)
+        this->Use();
+    glUniform2f(location, x, y);
+}
+void Shader::SetVector2f(int location, const glm::vec2 &value, bool useShader)
+{
+    if (useShader)
+        this->Use();
+    glUniform2f(location, value.x, value.y);
+}
+void Shader::SetVector3f(int location, float x, float y, float z, bool useShader)
+{
+    if (useShader)
+        this->Use();
+    glUniform3f(location, x, y, z);
+}
+void Shader::SetVector3f(int location, const glm::vec3 &value, bool useShader)
+{
+    if (useShader)
+        this->Use();
+    glUniform3f(location, value.x, value.y, value.z);
+}
+void Shader::SetVector4f(int location, float x, float y, float z, float w, bool useShader)
+{
+    if (useShader)
+        this->Use();
+    glUniform4f(location, x, y, z, w);
+}
+void Shader::SetVector4f(int location, const glm::vec4 &value, bool useShader)
+{
+    if (useShader)
+        this->Use();
+    glUniform4f(location, value.x, value.y, value.z, value.w);
+}
+void Shader::SetMatrix4(int location, const glm::mat4 &matrix, bool useShader)
+{
+    if (useShader)
+        this->Use();
+    glUniformMatrix4fv(location, 1, false, glm::value_ptr(matrix));
+}
+
 void Shader::checkCompileErrors(unsigned int object, std::string type)
 {
     int success;

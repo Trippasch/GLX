@@ -35,9 +35,6 @@ public:
     inline GLuint GetHeight() const { return m_Height; }
     inline void SetHeight(GLuint height) { this->m_Height = height; }
 
-    FrameBuffer multisampleFBO;
-    FrameBuffer intermediateFBO;
-
 private:
     GLFWwindow* m_Window;
     GLuint m_Width;
@@ -49,6 +46,17 @@ private:
 
     VertexBuffer planeVBO;
     VertexBuffer screenQuadVBO;
+
+    FrameBuffer multisampleFBO;
+    FrameBuffer intermediateFBO;
+    FrameBuffer imguiFBO;
+
+    bool m_UseGreyscale = false;
+    bool m_UseInversion = false;
+    bool m_UseRidge = false;
+    bool m_UseEdge = false;
+    bool m_UseSharpen = false;
+    bool m_UseBlur = false;
 
     void renderPlane(Shader shader);
     void renderModels(Shader shader);

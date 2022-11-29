@@ -29,9 +29,9 @@ void ImGuiLayer::OnAttach()
     // io.ConfigFlags |= ImGuiConfigFlags_ViewportsNoTaskBarIcons;
     // io.ConfigFlags |= ImGuiConfigFlags_ViewportsNoMerge;
 
-    // float fontSize = 16.0f; // *2.0f;
-    // io.Fonts->AddFontFromFileTTF("assets/fonts/Roboto Mono Nerd Font Complete.ttf", fontSize);
-    // io.FontDefault = io.Fonts->AddFontFromFileTTF("assets/fonts/Roboto Mono Nerd Font Complete.ttf", fontSize);
+    float fontSize = 16.0f; // *2.0f;
+    io.Fonts->AddFontFromFileTTF("assets/fonts/Roboto Mono Nerd Font Complete.ttf", fontSize);
+    io.FontDefault = io.Fonts->AddFontFromFileTTF("assets/fonts/Roboto Mono Nerd Font Complete.ttf", fontSize);
 
     // Setup Dear ImGui style
     ImGui::StyleColorsDark();
@@ -110,6 +110,7 @@ void ImGuiLayer::OnImGuiRender()
     }
 
     ImGui::ShowMetricsWindow();
+    ImGui::ShowDemoWindow();
 
     ImGui::End();
 }
