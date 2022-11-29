@@ -39,8 +39,7 @@ void SandboxLayer::OnAttach()
     screenQuadVBO = VertexBuffer(&quadVertices, sizeof(quadVertices), GL_STATIC_DRAW);
 
     ResourceManager::LoadModel("assets/objects/backpack/backpack.obj", "backpack");
-    ResourceManager::LoadTexture("assets/textures/wood.png", false, "wood");
-    ResourceManager::LoadTexture("assets/textures/metal.png", false, "metal");
+    ResourceManager::LoadTexture("assets/textures/old_floor.jpg", false, "floor");
     ResourceManager::LoadShader("assets/shaders/modelVS.glsl", "assets/shaders/modelFS.glsl", nullptr, "model");
     ResourceManager::LoadShader("assets/shaders/screenQuadVS.glsl", "assets/shaders/screenQuadFS.glsl", nullptr, "screen_quad");
 
@@ -70,7 +69,8 @@ void SandboxLayer::OnUpdate()
     lastFrame = currentFrame;
     m_Camera.Inputs(m_Window, deltaTime);
 
-    glm::mat4 projView = m_Camera.Matrix(m_Camera.m_Fov, m_Camera.m_NearPlane, m_Camera.m_FarPlane);
+    float ratio = static_cast<float>(m_Width) / static_cast<float>(m_Height);
+    glm::mat4 projView = m_Camera.Matrix(m_Camera.m_Fov, ratio, m_Camera.m_NearPlane, m_Camera.m_FarPlane);
     ResourceManager::GetShader("model").Use().SetMatrix4("projView", projView);
 
     glEnable(GL_DEPTH_TEST);
@@ -94,7 +94,7 @@ void SandboxLayer::OnUpdate()
 
 void SandboxLayer::renderPlane(Shader shader)
 {
-    ResourceManager::GetTexture("metal").Bind(0);
+    ResourceManager::GetTexture("floor").Bind(0);
 
     glm::mat4 model = glm::mat4(1.0f);
     model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));

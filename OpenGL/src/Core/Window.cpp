@@ -6,6 +6,7 @@
 
 #include "Core/Log.h"
 #include "Core/Core.h"
+#include "Core/Application.h"
 
 #include "Utils/glfw_tools.h"
 #include "Utils/gl_tools.h"
@@ -95,6 +96,22 @@ void Window::Init(const WindowProps& props)
         WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
         data.Width = width;
         data.Height = height;
+
+        SandboxLayer* sandbox = reinterpret_cast<SandboxLayer*>(glfwGetWindowUserPointer(window));
+
+        sandbox->SetWidth(width);
+        sandbox->SetHeight(height);
+
+        sandbox->multisampleFBO.Bind();
+        sandbox->multisampleFBO.ResizeTextureAttachment(GL_TEXTURE_2D_MULTISAMPLE, GL_RGBA, width, height);
+        sandbox->multisampleFBO.ResizeRenderBufferAttachment(GL_TRUE, width, height);
+        FrameBuffer::CheckStatus();
+        FrameBuffer::UnBind();
+
+        sandbox->intermediateFBO.Bind();
+        sandbox->intermediateFBO.ResizeTextureAttachment(GL_TEXTURE_2D, GL_RGBA8, width, height);
+        FrameBuffer::CheckStatus();
+        FrameBuffer::UnBind();
     });
 
     // glfwSetWindowSizeCallback(m_Window, [](GLFWwindow* window, int width, int height)

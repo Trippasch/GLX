@@ -12,13 +12,7 @@ public:
     Camera() : m_Width(0), m_Height(0) {}
     Camera(int width, int height, glm::vec3 position);
 
-    inline int GetWidth() { return this->m_Width; }
-    inline void SetWidth(int width) { this->m_Width = width; }
-
-    inline int GetHeight() { return this->m_Height; }
-    inline void SetHeight(int height) { this->m_Height = height; }
-
-    glm::mat4 Matrix(float fovDeg, float nearPlane, float farPlane);
+    glm::mat4 Matrix(float fovDeg, float ratio, float nearPlane, float farPlane);
 
     // Handles camera inputs
     void Inputs(GLFWwindow* window, float deltaTime);

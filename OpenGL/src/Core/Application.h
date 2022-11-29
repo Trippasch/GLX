@@ -16,7 +16,8 @@ public:
     void PushLayer(Layer *layer);
     void PushOverlay(Layer *layer);
 
-    ImGuiLayer *GetImGuiLayer() { return m_ImGuiLayer; }
+    inline ImGuiLayer *GetImGuiLayer() { return m_ImGuiLayer; }
+    inline SandboxLayer* GetSandboxLayer() { return m_SandboxLayer; }
 
     void Run();
 

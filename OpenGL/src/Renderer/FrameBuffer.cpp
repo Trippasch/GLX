@@ -1,7 +1,5 @@
 #include "Renderer/FrameBuffer.h"
 
-#include <iostream>
-
 FrameBuffer::FrameBuffer()
 {
     glGenFramebuffers(1, &m_RendererID);
@@ -63,6 +61,24 @@ void FrameBuffer::TextureAttachment(GLuint n, GLenum mode, GLint inFormat, GLuin
     delete [] tex;
 }
 
+void FrameBuffer::ResizeTextureAttachment(GLenum mode, GLint inFormat, GLuint width, GLuint height)
+{
+    for (size_t i = 0; i < textures.size(); i++) {
+        glBindTexture(mode, textures[i]);
+
+        if (mode == GL_TEXTURE_2D) {
+            glTexImage2D(mode, 0, inFormat, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+            glTexParameteri(mode, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(mode, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        }
+        else
+            glTexImage2DMultisample(mode, 4, inFormat, width, height, GL_TRUE);
+
+        glBindTexture(mode, 0);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, mode, textures[i], 0);
+    }
+}
+
 void FrameBuffer::Blit(FrameBuffer fbo, GLuint width, GLuint height) const
 {
     glBindFramebuffer(GL_READ_FRAMEBUFFER, m_RendererID);
@@ -73,6 +89,19 @@ void FrameBuffer::Blit(FrameBuffer fbo, GLuint width, GLuint height) const
 void FrameBuffer::RenderBufferAttachment(GLboolean multisample, GLuint width, GLuint height)
 {
     glGenRenderbuffers(1, &m_RenderBufferID);
+    glBindRenderbuffer(GL_RENDERBUFFER, m_RenderBufferID);
+
+    if (multisample)
+        glRenderbufferStorageMultisample(GL_RENDERBUFFER, 4, GL_DEPTH24_STENCIL8, width, height);
+    else
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
+
+    glBindRenderbuffer(GL_RENDERBUFFER, 0);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, m_RenderBufferID);
+}
+
+void FrameBuffer::ResizeRenderBufferAttachment(GLboolean multisample, GLuint width, GLuint height)
+{
     glBindRenderbuffer(GL_RENDERBUFFER, m_RenderBufferID);
 
     if (multisample)

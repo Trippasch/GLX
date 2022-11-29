@@ -4,8 +4,6 @@
 #include <glm/gtx/rotate_vector.hpp>
 #include <glm/gtx/vector_angle.hpp>
 
-#include "Core/Application.h"
-
 Camera::Camera(int width, int height, glm::vec3 position)
     : m_Width(width), m_Height(height), m_Position(position), m_Speed(SPEED), m_Sensitivity(SENSITIVITY)
 {
@@ -13,7 +11,7 @@ Camera::Camera(int width, int height, glm::vec3 position)
     m_LastY = static_cast<float>(height) / 2.0f;
 }
 
-glm::mat4 Camera::Matrix(float fovDeg, float nearPlane, float farPlane)
+glm::mat4 Camera::Matrix(float fovDeg, float ratio, float nearPlane, float farPlane)
 {
     // Initializes matrices since otherwise they will be the null matrix
     glm::mat4 view = glm::mat4(1.0f);
@@ -22,11 +20,7 @@ glm::mat4 Camera::Matrix(float fovDeg, float nearPlane, float farPlane)
     // Makes camera look in the right direction from the right position
     view = glm::lookAt(m_Position, m_Position + m_Orientation, m_Up);
     // Adds perspective to the scene
-    Application &app = Application::Get();
-    projection = glm::perspective(glm::radians(fovDeg),
-        static_cast<float>(app.GetWindow().GetWidth())
-        / static_cast<float>(app.GetWindow().GetHeight()),
-        nearPlane, farPlane);
+    projection = glm::perspective(glm::radians(fovDeg), ratio, nearPlane, farPlane);
 
     return (projection * view);
 }

@@ -29,6 +29,14 @@ public:
     virtual void OnImGuiRender() override;
     virtual void OnDetach() override;
 
+    inline GLuint GetWidth() const { return m_Width; }
+    inline void SetWidth(GLuint width) { this->m_Width = width; }
+    inline GLuint GetHeight() const { return m_Height; }
+    inline void SetHeight(GLuint height) { this->m_Height = height; }
+
+    FrameBuffer multisampleFBO;
+    FrameBuffer intermediateFBO;
+
 private:
     const float m_AspectRatio = 4.0f / 3.0f;
     int m_ImageWidth = 800;
@@ -45,9 +53,6 @@ private:
 
     VertexBuffer planeVBO;
     VertexBuffer screenQuadVBO;
-
-    FrameBuffer multisampleFBO;
-    FrameBuffer intermediateFBO;
 
     void renderPlane(Shader shader);
     void renderModels(Shader shader);

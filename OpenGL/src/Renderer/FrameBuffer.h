@@ -25,6 +25,8 @@ public:
     void BindTexture(GLuint index);
 
     void TextureAttachment(GLuint n, GLenum mode, GLint inFormat, GLuint width, GLuint height);
+    void ResizeTextureAttachment(GLenum mode, GLint inFormat, GLuint width, GLuint height);
     void Blit(FrameBuffer fbo, GLuint width, GLuint height) const;
     void RenderBufferAttachment(GLboolean multisample, GLuint width, GLuint height);
+    void ResizeRenderBufferAttachment(GLboolean multisample, GLuint width, GLuint height);
 };

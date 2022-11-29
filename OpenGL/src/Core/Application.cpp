@@ -23,6 +23,8 @@ Application::Application()
 
     m_SandboxLayer = new SandboxLayer();
     PushOverlay(m_SandboxLayer);
+
+    glfwSetWindowUserPointer(m_Window->GetNativeWindow(), m_SandboxLayer);
 }
 
 Application::~Application()
