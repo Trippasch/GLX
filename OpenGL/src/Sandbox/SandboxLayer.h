@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Core/Layer.h"
+#include "Core/Log.h"
 #include "Core/ResourceManager.h"
 
 #include <imgui.h>
@@ -38,11 +39,6 @@ public:
     FrameBuffer intermediateFBO;
 
 private:
-    const float m_AspectRatio = 4.0f / 3.0f;
-    int m_ImageWidth = 800;
-    int m_ImageHeight = static_cast<int>(m_ImageWidth / m_AspectRatio);
-    // GLuint m_Texture;
-
     GLFWwindow* m_Window;
     GLuint m_Width;
     GLuint m_Height;
@@ -57,4 +53,6 @@ private:
     void renderPlane(Shader shader);
     void renderModels(Shader shader);
     void renderQuad(Shader shader);
+
+    bool imGuiResize();
 };

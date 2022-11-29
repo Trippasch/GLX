@@ -29,4 +29,6 @@ public:
     void Blit(FrameBuffer fbo, GLuint width, GLuint height) const;
     void RenderBufferAttachment(GLboolean multisample, GLuint width, GLuint height);
     void ResizeRenderBufferAttachment(GLboolean multisample, GLuint width, GLuint height);
+
+    inline std::vector<GLuint> GetTextureAttachments() const { return textures; }
 };

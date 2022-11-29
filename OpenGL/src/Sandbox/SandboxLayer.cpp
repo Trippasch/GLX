@@ -64,13 +64,7 @@ void SandboxLayer::OnAttach()
 
 void SandboxLayer::OnUpdate()
 {
-    float currentFrame = static_cast<float>(glfwGetTime());
-    deltaTime = currentFrame - lastFrame;
-    lastFrame = currentFrame;
-    m_Camera.Inputs(m_Window, deltaTime);
-
-    float ratio = static_cast<float>(m_Width) / static_cast<float>(m_Height);
-    glm::mat4 projView = m_Camera.Matrix(m_Camera.m_Fov, ratio, m_Camera.m_NearPlane, m_Camera.m_FarPlane);
+    glm::mat4 projView = m_Camera.Matrix(m_Camera.m_Fov, static_cast<float>(m_Width) / m_Height, m_Camera.m_NearPlane, m_Camera.m_FarPlane);
     ResourceManager::GetShader("model").Use().SetMatrix4("projView", projView);
 
     glEnable(GL_DEPTH_TEST);
@@ -133,41 +127,62 @@ void SandboxLayer::renderQuad(Shader shader)
 
 void SandboxLayer::OnImGuiRender()
 {
-    // ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-    // ImGui::Begin("Generated Image");
+    float currentFrame = static_cast<float>(glfwGetTime());
+    deltaTime = currentFrame - lastFrame;
+    lastFrame = currentFrame;
 
-    // float viewport_width = ImGui::GetContentRegionAvail().x;
-    // float viewport_height = ImGui::GetContentRegionAvail().y;
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+    ImGui::Begin("Generated Image");
 
-    // ImGui::Image((void*)(intptr_t)m_Texture, ImVec2(viewport_width, viewport_height), ImVec2(0, 1), ImVec2(1, 0));
-    // ImGui::PopStyleVar();
+    if (imGuiResize() == false) {
+        ImGui::End();
+        ImGui::PopStyleVar();
+        return;
+    }
 
-    // IsWindowFocused() has a minor bug -- it centers the mouse when losing focus
-    // if (ImGui::IsWindowFocused()) {
+    ImGui::Image((void*)(intptr_t)intermediateFBO.GetTextureAttachments().at(0), ImVec2(m_Width, m_Height), ImVec2(0, 1), ImVec2(1, 0));
+    ImGui::PopStyleVar();
 
-    //     m_Camera->Inputs((GLFWwindow *)ImGui::GetMainViewport()->PlatformHandle);
+    if (ImGui::IsWindowFocused()) {
+        m_Camera.Inputs((GLFWwindow *)ImGui::GetMainViewport()->PlatformHandle, deltaTime);
+    }
+    else {
+        glfwSetInputMode((GLFWwindow *)ImGui::GetMainViewport()->PlatformHandle, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        m_Camera.m_FirstClick = true;
+    }
 
-    //     glm::vec3 rightV = glm::normalize(glm::cross(m_Camera->m_Orientation, m_Camera->m_Up));
-    //     glm::vec3 upV = glm::normalize(glm::cross(m_Camera->m_Orientation, rightV));
+    ImGui::End();
+}
 
-    //     m_Inputs.origin_x = m_Camera->m_Position.x;
-    //     m_Inputs.origin_y = m_Camera->m_Position.y;
-    //     m_Inputs.origin_z = m_Camera->m_Position.z;
+bool SandboxLayer::imGuiResize()
+{
+    ImVec2 view = ImGui::GetContentRegionAvail();
 
-    //     m_Inputs.orientation_x = m_Camera->m_Orientation.x;
-    //     m_Inputs.orientation_y = m_Camera->m_Orientation.y;
-    //     m_Inputs.orientation_z = m_Camera->m_Orientation.z;
+    if (view.x != m_Width || view.y != m_Height) {
+        if (view.x == 0 || view.y == 0) {
+            return false;
+        }
 
-    //     m_Inputs.up_x = upV.x;
-    //     m_Inputs.up_y = upV.y;
-    //     m_Inputs.up_z = upV.z;
-    // }
-    // else {
-    //     glfwSetInputMode((GLFWwindow *)ImGui::GetMainViewport()->PlatformHandle, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-    //     m_Camera->m_FirstClick = true;
-    // }
+        m_Width = view.x;
+        m_Height = view.y;
 
-    // ImGui::End();
+        GL_TRACE("Resizing window to {0}x{1}", m_Width, m_Height);
+        glViewport(0, 0, m_Width, m_Height);
+
+        multisampleFBO.Bind();
+        multisampleFBO.ResizeTextureAttachment(GL_TEXTURE_2D_MULTISAMPLE, GL_RGBA, m_Width, m_Height);
+        multisampleFBO.ResizeRenderBufferAttachment(GL_TRUE, m_Width, m_Height);
+        FrameBuffer::CheckStatus();
+        FrameBuffer::UnBind();
+
+        intermediateFBO.Bind();
+        intermediateFBO.ResizeTextureAttachment(GL_TEXTURE_2D, GL_RGBA8, m_Width, m_Height);
+        FrameBuffer::CheckStatus();
+        FrameBuffer::UnBind();
+
+        return true;
+    }
+    return true;
 }
 
 void SandboxLayer::OnDetach()

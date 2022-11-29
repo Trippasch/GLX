@@ -23,8 +23,6 @@ Application::Application()
 
     m_SandboxLayer = new SandboxLayer();
     PushOverlay(m_SandboxLayer);
-
-    glfwSetWindowUserPointer(m_Window->GetNativeWindow(), m_SandboxLayer);
 }
 
 Application::~Application()
@@ -54,10 +52,10 @@ void Application::Run()
         for (Layer* layer : m_LayerStack)
             layer->OnUpdate();
 
-        // m_ImGuiLayer->Begin();
-        // for (Layer* layer : m_LayerStack)
-        //     layer->OnImGuiRender();
-        // m_ImGuiLayer->End();
+        m_ImGuiLayer->Begin();
+        for (Layer* layer : m_LayerStack)
+            layer->OnImGuiRender();
+        m_ImGuiLayer->End();
 
         m_Window->OnUpdate();
     }
