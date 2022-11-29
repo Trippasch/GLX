@@ -15,6 +15,7 @@
 
 #include "Renderer/VertexBuffer.h"
 #include "Renderer/IndexBuffer.h"
+#include "Renderer/FrameBuffer.h"
 #include "Renderer/Camera.h"
 
 class SandboxLayer : public Layer
@@ -35,12 +36,20 @@ private:
     // GLuint m_Texture;
 
     GLFWwindow* m_Window;
+    GLuint m_Width;
+    GLuint m_Height;
 
     float deltaTime = 0.0f;
     float lastFrame = 0.0f;
     Camera m_Camera;
 
     VertexBuffer planeVBO;
+    VertexBuffer screenQuadVBO;
 
+    FrameBuffer multisampleFBO;
+    FrameBuffer intermediateFBO;
+
+    void renderPlane(Shader shader);
     void renderModels(Shader shader);
+    void renderQuad(Shader shader);
 };
