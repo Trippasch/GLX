@@ -1,5 +1,7 @@
 #include "Renderer/FrameBuffer.h"
 
+#include <iostream>
+
 FrameBuffer::FrameBuffer()
 {
     glGenFramebuffers(1, &m_RendererID);
@@ -36,7 +38,7 @@ void FrameBuffer::BindTexture(GLuint index)
 
 void FrameBuffer::TextureAttachment(GLuint n, GLenum mode, GLint inFormat, GLuint width, GLuint height)
 {
-    GLuint tex[n];
+    GLuint *tex = new GLuint[n];
     glGenTextures(n, tex);
 
     for (size_t i = 0; i < n; i++) {
@@ -58,6 +60,7 @@ void FrameBuffer::TextureAttachment(GLuint n, GLenum mode, GLint inFormat, GLuin
     for (GLuint i = 0; i < n; i++)
         textures.push_back(tex[i]);
 
+    delete [] tex;
 }
 
 void FrameBuffer::Blit(FrameBuffer fbo, GLuint width, GLuint height) const
