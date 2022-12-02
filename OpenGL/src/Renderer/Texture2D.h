@@ -2,6 +2,8 @@
 
 #include <glad/glad.h>
 
+#include <string>
+
 // Texture2D is able to store and configure a texture in OpenGL.
 // It also hosts utility functions for easy management.
 class Texture2D
@@ -20,6 +22,10 @@ public:
     GLuint Filter_Min; // filtering mode if texture pixels < screen pixels
     GLuint Filter_Max; // filtering mode if texture pixels > screen pixels
     GLuint Data_Type;
+
+    std::string Type;
+    std::string Path;
+
     // constructor (sets default texture modes)
     Texture2D();
     // generates texture from image data

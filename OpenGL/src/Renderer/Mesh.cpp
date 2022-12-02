@@ -1,6 +1,6 @@
 #include "Renderer/Mesh.h"
 
-Mesh::Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, std::vector<Texture> textures)
+Mesh::Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, std::vector<Texture2D> textures)
 {
     this->vertices = vertices;
     this->indices = indices;
@@ -61,7 +61,7 @@ void Mesh::Draw(const Shader &shader) const
         glActiveTexture(GL_TEXTURE0 + i); // active proper texture unit before binding
         // retrieve texture number (the N in diffuse_textureN)
         std::string number;
-        std::string name = textures[i].type;
+        std::string name = textures[i].Type;
         if (name == "texture_diffuse")
             number = std::to_string(diffuseNr++);
         else if (name == "texture_specular")
@@ -74,7 +74,7 @@ void Mesh::Draw(const Shader &shader) const
         // now set the sampler to the correct texture unit
         glUniform1i(glGetUniformLocation(shader.ID, (name + number).c_str()), i);
         // and finally bind the texture
-        glBindTexture(GL_TEXTURE_2D, textures[i].id);
+        glBindTexture(GL_TEXTURE_2D, textures[i].ID);
     }
 
     // draw mesh

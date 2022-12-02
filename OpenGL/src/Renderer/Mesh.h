@@ -6,6 +6,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "Renderer/Shader.h"
+#include "Renderer/Texture2D.h"
 #include "Renderer/VertexBuffer.h"
 #include "Renderer/IndexBuffer.h"
 
@@ -32,12 +33,12 @@ struct Vertex
     // float m_Weights[MAX_BONE_INFLUENCE];
 };
 
-struct Texture
-{
-    GLuint id;
-    std::string type;
-    std::string path;
-};
+// struct Texture
+// {
+//     GLuint id;
+//     std::string type;
+//     std::string path;
+// };
 
 class Mesh
 {
@@ -45,10 +46,10 @@ public:
     // mesh Data
     std::vector<Vertex> vertices;
     std::vector<GLuint> indices;
-    std::vector<Texture> textures;
+    std::vector<Texture2D> textures;
 
     // constructor
-    Mesh(std::vector<Vertex> vertices, std::vector<GLuint> indices, std::vector<Texture> textures);
+    Mesh(std::vector<Vertex> vertices, std::vector<GLuint> indices, std::vector<Texture2D> textures);
 
     // render the mesh
     void Draw(const Shader &shader) const;

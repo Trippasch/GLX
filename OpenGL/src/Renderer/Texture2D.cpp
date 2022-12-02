@@ -19,6 +19,7 @@ void Texture2D::Generate(GLuint width, GLuint height, const void *data, GLboolea
     if (mipmap) {
         glGenerateMipmap(GL_TEXTURE_2D);
         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY, 16.0f);
+        this->Filter_Min = GL_LINEAR_MIPMAP_LINEAR;
     }
 
     // set Texture wrap and filter modes

@@ -23,7 +23,7 @@ class Model
 {
 public:
     // model data 
-    std::vector<Texture> textures_loaded;	// stores all the textures loaded so far, optimization to make sure textures aren't loaded more than once.
+    std::vector<Texture2D> textures_loaded;	// stores all the textures loaded so far, optimization to make sure textures aren't loaded more than once.
     std::vector<Mesh> meshes;
     std::string directory;
     bool gammaCorrection;
@@ -46,7 +46,7 @@ private:
 
     // checks all material textures of a given type and loads the textures if they're not loaded yet.
     // the required info is returned as a Texture struct.
-    std::vector<Texture> loadMaterialTextures(aiMaterial *mat, aiTextureType type, std::string typeName);
+    std::vector<Texture2D> loadMaterialTextures(aiMaterial *mat, aiTextureType type, std::string typeName);
 
-    unsigned int textureFromFile(const char *path, const std::string &directory, bool gamma = false);
+    Texture2D textureFromFile(const char *path, const std::string &directory, bool gamma = false);
 };

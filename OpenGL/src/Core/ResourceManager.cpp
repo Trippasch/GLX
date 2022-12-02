@@ -59,6 +59,8 @@ void ResourceManager::Clear()
         auto meshes = model.second.meshes;
         for (const auto &mesh : meshes)
             mesh.Destroy();
+        for (const auto &tex : model.second.textures_loaded)
+            tex.Destroy();
     }
 }
 
@@ -112,8 +114,11 @@ Texture2D ResourceManager::loadTextureFromFile(const char *file, bool alpha)
     Texture2D texture;
     if (alpha)
     {
-        texture.Internal_Format = GL_RGBA;
+        texture.Internal_Format = GL_SRGB_ALPHA;
         texture.Image_Format = GL_RGBA;
+    }
+    else {
+        texture.Internal_Format = GL_SRGB;
     }
     // load image
     int width, height, nrChannels;
