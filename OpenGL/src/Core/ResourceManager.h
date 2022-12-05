@@ -1,6 +1,6 @@
 #pragma once
 
-#include <map>
+#include <unordered_map>
 #include <string>
 
 #include <glad/glad.h>
@@ -18,9 +18,9 @@ class ResourceManager
 {
 public:
     // resource storage
-    static std::map<std::string, Shader> Shaders;
-    static std::map<std::string, Texture2D> Textures;
-    static std::map<std::string, Model> Models;
+    static std::unordered_map<std::string, Shader> Shaders;
+    static std::unordered_map<std::string, Texture2D> Textures;
+    static std::unordered_map<std::string, Model> Models;
 
     // loads (and generates) a model from file
     static Model LoadModel(const char *file, std::string name);

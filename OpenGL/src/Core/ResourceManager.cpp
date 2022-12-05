@@ -9,9 +9,9 @@
 #include <stb_image.h>
 
 // Instantiate static variables
-std::map<std::string, Texture2D> ResourceManager::Textures;
-std::map<std::string, Shader> ResourceManager::Shaders;
-std::map<std::string, Model> ResourceManager::Models;
+std::unordered_map<std::string, Texture2D> ResourceManager::Textures;
+std::unordered_map<std::string, Shader> ResourceManager::Shaders;
+std::unordered_map<std::string, Model> ResourceManager::Models;
 
 Model ResourceManager::LoadModel(const char *file, std::string name)
 {
