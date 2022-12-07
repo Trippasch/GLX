@@ -14,6 +14,9 @@ public:
 
     glm::mat4 Matrix(float fovDeg, float ratio, float nearPlane, float farPlane);
 
+    // processes input received from a mouse scroll-wheel event. Only requires input on the vertical wheel-axis
+    void ProcessMouseScroll(float yoffset);
+
     // Handles camera inputs
     void Inputs(GLFWwindow* window, float deltaTime);
 

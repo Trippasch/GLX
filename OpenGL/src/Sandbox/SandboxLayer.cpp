@@ -161,6 +161,12 @@ void SandboxLayer::OnImGuiRender()
 
     if (ImGui::IsWindowFocused()) {
         m_Camera.Inputs((GLFWwindow *)ImGui::GetMainViewport()->PlatformHandle, deltaTime);
+
+        ImGuiIO& io = ImGui::GetIO();
+        if (io.MouseWheel) {
+            m_Camera.ProcessMouseScroll(io.MouseWheel);
+            GL_TRACE("FoV is {0} degrees", m_Camera.m_Fov);
+        }
     }
     else {
         glfwSetInputMode((GLFWwindow *)ImGui::GetMainViewport()->PlatformHandle, GLFW_CURSOR, GLFW_CURSOR_NORMAL);

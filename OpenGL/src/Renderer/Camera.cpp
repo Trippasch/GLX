@@ -25,6 +25,15 @@ glm::mat4 Camera::Matrix(float fovDeg, float ratio, float nearPlane, float farPl
     return (projection * view);
 }
 
+void Camera::ProcessMouseScroll(float yoffset)
+{
+    m_Fov -= static_cast<float>(yoffset);
+    if (m_Fov < 1.0f)
+        m_Fov = 1.0f;
+    if (m_Fov > 45.0f)
+        m_Fov = 45.0f;
+}
+
 void Camera::Inputs(GLFWwindow* window, float deltaTime)
 {
     float velocity = m_Speed * deltaTime;
