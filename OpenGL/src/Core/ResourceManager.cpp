@@ -35,9 +35,9 @@ Shader& ResourceManager::GetShader(std::string name)
     return Shaders[name];
 }
 
-Texture2D ResourceManager::LoadTexture(const char *file, bool alpha, std::string name)
+Texture2D ResourceManager::LoadTexture(const char *file, std::string name)
 {
-    Textures[name] = loadTextureFromFile(file, alpha);
+    Textures[name] = loadTextureFromFile(file);
     return Textures[name];
 }
 
@@ -108,25 +108,34 @@ Shader ResourceManager::loadShaderFromFile(const char *vShaderFile, const char *
     return shader;
 }
 
-Texture2D ResourceManager::loadTextureFromFile(const char *file, bool alpha)
+Texture2D ResourceManager::loadTextureFromFile(const char *file)
 {
     // create texture object
     Texture2D texture;
-    if (alpha)
-    {
-        texture.Internal_Format = GL_SRGB_ALPHA;
-        texture.Image_Format = GL_RGBA;
-    }
-    else {
-        texture.Internal_Format = GL_SRGB;
-    }
+
     // load image
     int width, height, nrChannels;
     void* data = stbi_load(file, &width, &height, &nrChannels, 0);
-    // now generate texture
-    texture.Generate(width, height, data, GL_TRUE);
-    // and finally free image data
-    stbi_image_free(data);
+    if (data) {
+        GLenum format;
+        if (nrChannels == 1)
+            format = GL_RED;
+        else if (nrChannels == 3)
+            format = GL_RGB;
+        else if (nrChannels == 4)
+            format = GL_RGBA;
+
+        texture.Internal_Format = format;
+        texture.Image_Format = format;
+        // now generate texture
+        texture.Generate(width, height, data, GL_TRUE);
+        // and finally free image data
+        stbi_image_free(data);
+    }
+    else {
+        GL_ERROR("Texture failed to load at path: {0} ", file);
+        stbi_image_free(data);
+    }
     return texture;
 }
 

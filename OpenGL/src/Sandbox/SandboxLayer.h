@@ -45,11 +45,15 @@ private:
     Camera m_Camera;
 
     VertexBuffer planeVBO;
+    VertexBuffer cubeVBO;
     VertexBuffer screenQuadVBO;
 
     FrameBuffer multisampleFBO;
     FrameBuffer intermediateFBO;
     FrameBuffer imguiFBO;
+
+    std::vector<glm::vec3> lightPositions;
+    std::vector<glm::vec3> lightColors;
 
     bool m_UseGreyscale = false;
     bool m_UseInversion = false;
@@ -59,6 +63,7 @@ private:
     bool m_UseBlur = false;
 
     void renderPlane(Shader shader);
+    void renderCube(Shader shader);
     void renderModels(Shader shader);
     void renderQuad(Shader shader);
 

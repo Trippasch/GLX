@@ -14,6 +14,52 @@ SandboxLayer::SandboxLayer()
 
 void SandboxLayer::OnAttach()
 {
+    float cubeVertices[] = {
+        // back face
+        -1.0f, -1.0f, -1.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, // bottom-left
+        1.0f, 1.0f, -1.0f, 0.0f, 0.0f, -1.0f, 1.0f, 1.0f,   // top-right
+        1.0f, -1.0f, -1.0f, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f,  // bottom-right
+        1.0f, 1.0f, -1.0f, 0.0f, 0.0f, -1.0f, 1.0f, 1.0f,   // top-right
+        -1.0f, -1.0f, -1.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, // bottom-left
+        -1.0f, 1.0f, -1.0f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f,  // top-left
+        // front face
+        -1.0f, -1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, // bottom-left
+        1.0f, -1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f,  // bottom-right
+        1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f,   // top-right
+        1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f,   // top-right
+        -1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f,  // top-left
+        -1.0f, -1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, // bottom-left
+        // left face
+        -1.0f, 1.0f, 1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 0.0f,   // top-right
+        -1.0f, 1.0f, -1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f,  // top-left
+        -1.0f, -1.0f, -1.0f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f, // bottom-left
+        -1.0f, -1.0f, -1.0f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f, // bottom-left
+        -1.0f, -1.0f, 1.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f,  // bottom-right
+        -1.0f, 1.0f, 1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 0.0f,   // top-right
+                                                            // right face
+        1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f,     // top-left
+        1.0f, -1.0f, -1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f,   // bottom-right
+        1.0f, 1.0f, -1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f,    // top-right
+        1.0f, -1.0f, -1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f,   // bottom-right
+        1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f,     // top-left
+        1.0f, -1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f,    // bottom-left
+        // bottom face
+        -1.0f, -1.0f, -1.0f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f, // top-right
+        1.0f, -1.0f, -1.0f, 0.0f, -1.0f, 0.0f, 1.0f, 1.0f,  // top-left
+        1.0f, -1.0f, 1.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f,   // bottom-left
+        1.0f, -1.0f, 1.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f,   // bottom-left
+        -1.0f, -1.0f, 1.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f,  // bottom-right
+        -1.0f, -1.0f, -1.0f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f, // top-right
+        // top face
+        -1.0f, 1.0f, -1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, // top-left
+        1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f,   // bottom-right
+        1.0f, 1.0f, -1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f,  // top-right
+        1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f,   // bottom-right
+        -1.0f, 1.0f, -1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, // top-left
+        -1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f   // bottom-left
+    };
+    cubeVBO = VertexBuffer(&cubeVertices, sizeof(cubeVertices), GL_STATIC_DRAW);
+
     float planeVertices[] = {
         // positions            // normals         // texcoords
          25.0f, -0.5f,  25.0f,  0.0f, 1.0f, 0.0f,  25.0f,  0.0f,
@@ -39,10 +85,25 @@ void SandboxLayer::OnAttach()
     screenQuadVBO = VertexBuffer(&quadVertices, sizeof(quadVertices), GL_STATIC_DRAW);
 
     // Load Resources
+    // Load Models
     ResourceManager::LoadModel("assets/objects/backpack/backpack.obj", "backpack");
-    ResourceManager::LoadTexture("assets/textures/old_floor.jpg", false, "floor");
+    // Load Textures
+    // Rusted Iron
+    ResourceManager::LoadTexture("assets/textures/pbr/rusted_iron/albedo.png", "rusted_albedo");
+    ResourceManager::LoadTexture("assets/textures/pbr/rusted_iron/normal.png", "rusted_normal");
+    ResourceManager::LoadTexture("assets/textures/pbr/rusted_iron/metallic.png", "rusted_metallic");
+    ResourceManager::LoadTexture("assets/textures/pbr/rusted_iron/roughness.png", "rusted_roughness");
+    ResourceManager::LoadTexture("assets/textures/pbr/rusted_iron/ao.png", "rusted_ao");
+    // Grass
+    ResourceManager::LoadTexture("assets/textures/pbr/grass/albedo.png", "grass_albedo");
+    ResourceManager::LoadTexture("assets/textures/pbr/grass/normal.png", "grass_normal");
+    ResourceManager::LoadTexture("assets/textures/pbr/grass/metallic.png", "grass_metallic");
+    ResourceManager::LoadTexture("assets/textures/pbr/grass/roughness.png", "grass_roughness");
+    ResourceManager::LoadTexture("assets/textures/pbr/grass/ao.png", "grass_ao");
+    // Load Shaders
     ResourceManager::LoadShader("assets/shaders/lightingVS.glsl", "assets/shaders/lightingFS.glsl", nullptr, "lighting");
     ResourceManager::LoadShader("assets/shaders/postProcessingVS.glsl", "assets/shaders/postProcessingFS.glsl", nullptr, "post_proc");
+    ResourceManager::LoadShader("assets/shaders/pbrVS.glsl", "assets/shaders/pbrFS.glsl", nullptr, "pbr_lighting");
 
     // Post Processing - Activate only one per group
     // Kernel effects
@@ -53,6 +114,15 @@ void SandboxLayer::OnAttach()
     // General Post Processing
     ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.greyscale", m_UseGreyscale);
     ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.inversion", m_UseInversion);
+
+    // Generate lights
+    lightPositions.push_back(glm::vec3(0.0f, 2.0f, 10.0f));
+    lightColors.push_back(glm::vec3(150.0f, 150.0f, 150.0f));
+    for (size_t i = 0; i < lightPositions.size(); i++) {
+        ResourceManager::GetShader("pbr_lighting").Use().SetVector3f(("lightPositions[" + std::to_string(i) + "]").c_str(), lightPositions[i]);
+        ResourceManager::GetShader("pbr_lighting").Use().SetVector3f(("lightColors[" + std::to_string(i) + "]").c_str(), lightColors[i]);
+    }
+
 
     multisampleFBO = FrameBuffer();
     multisampleFBO.Bind();
@@ -80,13 +150,16 @@ void SandboxLayer::OnUpdate()
 {
     glm::mat4 projView = m_Camera.Matrix(m_Camera.m_Fov, static_cast<float>(m_Width) / m_Height, m_Camera.m_NearPlane, m_Camera.m_FarPlane);
     ResourceManager::GetShader("lighting").Use().SetMatrix4(0, projView);
+    ResourceManager::GetShader("pbr_lighting").Use().SetMatrix4(0, projView);
+    ResourceManager::GetShader("pbr_lighting").Use().SetVector3f("camPos", m_Camera.m_Position);
 
     glEnable(GL_DEPTH_TEST);
 
     multisampleFBO.Bind();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    renderPlane(ResourceManager::GetShader("lighting"));
+    renderPlane(ResourceManager::GetShader("pbr_lighting"));
+    renderCube(ResourceManager::GetShader("pbr_lighting"));
     renderModels(ResourceManager::GetShader("lighting"));
 
     multisampleFBO.Blit(intermediateFBO, m_Width, m_Height);
@@ -104,10 +177,14 @@ void SandboxLayer::OnUpdate()
 
 void SandboxLayer::renderPlane(Shader shader)
 {
-    ResourceManager::GetTexture("floor").Bind(0);
+    ResourceManager::GetTexture("grass_albedo").Bind(0);
+    ResourceManager::GetTexture("grass_normal").Bind(1);
+    ResourceManager::GetTexture("grass_metallic").Bind(2);
+    ResourceManager::GetTexture("grass_roughness").Bind(3);
+    ResourceManager::GetTexture("grass_ao").Bind(4);
 
     glm::mat4 model = glm::mat4(1.0f);
-    model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
+    model = glm::translate(model, glm::vec3(0.0f, -0.01f, 0.0f));
     model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
     shader.Use().SetMatrix4(1, model);
 
@@ -118,6 +195,30 @@ void SandboxLayer::renderPlane(Shader shader)
     planeVBO.UnlinkAttrib(0);
     planeVBO.UnlinkAttrib(1);
     planeVBO.UnlinkAttrib(2);
+
+    Texture2D::UnBind();
+}
+
+void SandboxLayer::renderCube(Shader shader)
+{
+    ResourceManager::GetTexture("rusted_albedo").Bind(0);
+    ResourceManager::GetTexture("rusted_normal").Bind(1);
+    ResourceManager::GetTexture("rusted_metallic").Bind(2);
+    ResourceManager::GetTexture("rusted_roughness").Bind(3);
+    ResourceManager::GetTexture("rusted_ao").Bind(4);
+
+    glm::mat4 model = glm::mat4(1.0f);
+    model = glm::translate(model, glm::vec3(2.0f, 0.5f, 5.0f));
+    model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
+    shader.Use().SetMatrix4(1, model);
+
+    cubeVBO.LinkAttrib(0, 3, GL_FLOAT, 8 * sizeof(float), (void*)0);
+    cubeVBO.LinkAttrib(1, 3, GL_FLOAT, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+    cubeVBO.LinkAttrib(2, 2, GL_FLOAT, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+    glDrawArrays(GL_TRIANGLES, 0, 36);
+    cubeVBO.UnlinkAttrib(0);
+    cubeVBO.UnlinkAttrib(1);
+    cubeVBO.UnlinkAttrib(2);
 
     Texture2D::UnBind();
 }
@@ -281,6 +382,7 @@ void SandboxLayer::OnDetach()
     ResourceManager::Clear();
 
     planeVBO.Destroy();
+    cubeVBO.Destroy();
     screenQuadVBO.Destroy();
 
     multisampleFBO.Destroy();
