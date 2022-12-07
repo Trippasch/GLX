@@ -159,14 +159,16 @@ void SandboxLayer::OnImGuiRender()
     ImGui::Image((void*)(intptr_t)imguiFBO.GetTextureAttachments().at(0), ImVec2(m_Width, m_Height), ImVec2(0, 1), ImVec2(1, 0));
     ImGui::PopStyleVar();
 
-    if (ImGui::IsWindowFocused()) {
-        m_Camera.Inputs((GLFWwindow *)ImGui::GetMainViewport()->PlatformHandle, deltaTime);
-
+    if (ImGui::IsWindowHovered()) {
         ImGuiIO& io = ImGui::GetIO();
         if (io.MouseWheel) {
             m_Camera.ProcessMouseScroll(io.MouseWheel);
             GL_TRACE("FoV is {0} degrees", m_Camera.m_Fov);
         }
+    }
+
+    if (ImGui::IsWindowFocused()) {
+        m_Camera.Inputs((GLFWwindow *)ImGui::GetMainViewport()->PlatformHandle, deltaTime);
     }
     else {
         glfwSetInputMode((GLFWwindow *)ImGui::GetMainViewport()->PlatformHandle, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
