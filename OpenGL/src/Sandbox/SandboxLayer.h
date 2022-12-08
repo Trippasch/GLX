@@ -46,7 +46,11 @@ private:
 
     VertexBuffer planeVBO;
     VertexBuffer cubeVBO;
+    VertexBuffer sphereVBO;
     VertexBuffer screenQuadVBO;
+
+    IndexBuffer sphereEBO;
+    GLuint indexCount;
 
     FrameBuffer multisampleFBO;
     FrameBuffer intermediateFBO;
@@ -62,10 +66,11 @@ private:
     bool m_UseSharpen = false;
     bool m_UseBlur = false;
 
-    void renderPlane(Shader shader);
-    void renderCube(Shader shader);
-    void renderModels(Shader shader);
-    void renderQuad(Shader shader);
+    void renderPlane();
+    void renderCube();
+    void renderSphere();
+    void renderQuad();
+    void renderModel(Shader shader);
 
     bool imGuiResize();
 };

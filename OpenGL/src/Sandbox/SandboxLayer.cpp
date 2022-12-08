@@ -60,6 +60,75 @@ void SandboxLayer::OnAttach()
     };
     cubeVBO = VertexBuffer(&cubeVertices, sizeof(cubeVertices), GL_STATIC_DRAW);
 
+    // sphere
+    std::vector<glm::vec3> positions;
+    std::vector<glm::vec2> uv;
+    std::vector<glm::vec3> normals;
+    std::vector<GLuint> indices;
+
+    const GLuint X_SEGMENTS = 64;
+    const GLuint Y_SEGMENTS = 64;
+    const float PI = 3.14159265359f;
+    for (GLuint x = 0; x <= X_SEGMENTS; ++x)
+    {
+        for (GLuint y = 0; y <= Y_SEGMENTS; ++y)
+        {
+            float xSegment = (float)x / (float)X_SEGMENTS;
+            float ySegment = (float)y / (float)Y_SEGMENTS;
+            float xPos = std::cos(xSegment * 2.0f * PI) * std::sin(ySegment * PI);
+            float yPos = std::cos(ySegment * PI);
+            float zPos = std::sin(xSegment * 2.0f * PI) * std::sin(ySegment * PI);
+
+            positions.push_back(glm::vec3(xPos, yPos, zPos));
+            uv.push_back(glm::vec2(xSegment, ySegment));
+            normals.push_back(glm::vec3(xPos, yPos, zPos));
+        }
+    }
+
+    bool oddRow = false;
+    for (GLuint y = 0; y < Y_SEGMENTS; ++y)
+    {
+        if (!oddRow) // even rows: y == 0, y == 2; and so on
+        {
+            for (GLuint x = 0; x <= X_SEGMENTS; ++x)
+            {
+                indices.push_back(y * (X_SEGMENTS + 1) + x);
+                indices.push_back((y + 1) * (X_SEGMENTS + 1) + x);
+            }
+        }
+        else
+        {
+            for (int x = X_SEGMENTS; x >= 0; --x)
+            {
+                indices.push_back((y + 1) * (X_SEGMENTS + 1) + x);
+                indices.push_back(y * (X_SEGMENTS + 1) + x);
+            }
+        }
+        oddRow = !oddRow;
+    }
+    indexCount = static_cast<GLuint>(indices.size());
+
+    std::vector<float> data;
+    for (size_t i = 0; i < positions.size(); ++i)
+    {
+        data.push_back(positions[i].x);
+        data.push_back(positions[i].y);
+        data.push_back(positions[i].z);
+        if (normals.size() > 0)
+        {
+            data.push_back(normals[i].x);
+            data.push_back(normals[i].y);
+            data.push_back(normals[i].z);
+        }
+        if (uv.size() > 0)
+        {
+            data.push_back(uv[i].x);
+            data.push_back(uv[i].y);
+        }
+    }
+    sphereVBO = VertexBuffer(&data[0], data.size() * sizeof(float), GL_STATIC_DRAW);
+    sphereEBO = IndexBuffer(&indices[0], indices.size() * sizeof(GLuint), GL_STATIC_DRAW);
+
     float planeVertices[] = {
         // positions            // normals         // texcoords
          25.0f, -0.5f,  25.0f,  0.0f, 1.0f, 0.0f,  25.0f,  0.0f,
@@ -89,19 +158,20 @@ void SandboxLayer::OnAttach()
     ResourceManager::LoadModel("assets/objects/backpack/backpack.obj", "backpack");
     // Load Textures
     // Rusted Iron
-    ResourceManager::LoadTexture("assets/textures/pbr/rusted_iron/albedo.png", "rusted_albedo");
+    ResourceManager::LoadTexture("assets/textures/pbr/rusted_iron/albedo.png", "rusted_albedo", true);
     ResourceManager::LoadTexture("assets/textures/pbr/rusted_iron/normal.png", "rusted_normal");
     ResourceManager::LoadTexture("assets/textures/pbr/rusted_iron/metallic.png", "rusted_metallic");
     ResourceManager::LoadTexture("assets/textures/pbr/rusted_iron/roughness.png", "rusted_roughness");
     ResourceManager::LoadTexture("assets/textures/pbr/rusted_iron/ao.png", "rusted_ao");
     // Grass
-    ResourceManager::LoadTexture("assets/textures/pbr/grass/albedo.png", "grass_albedo");
+    ResourceManager::LoadTexture("assets/textures/pbr/grass/albedo.png", "grass_albedo", true);
     ResourceManager::LoadTexture("assets/textures/pbr/grass/normal.png", "grass_normal");
     ResourceManager::LoadTexture("assets/textures/pbr/grass/metallic.png", "grass_metallic");
     ResourceManager::LoadTexture("assets/textures/pbr/grass/roughness.png", "grass_roughness");
     ResourceManager::LoadTexture("assets/textures/pbr/grass/ao.png", "grass_ao");
     // Load Shaders
-    ResourceManager::LoadShader("assets/shaders/lightingVS.glsl", "assets/shaders/lightingFS.glsl", nullptr, "lighting");
+    ResourceManager::LoadShader("assets/shaders/lightingVS.glsl", "assets/shaders/lightingFS.glsl", nullptr, "basic_lighting");
+    ResourceManager::LoadShader("assets/shaders/lightSourceVS.glsl", "assets/shaders/lightSourceFS.glsl", nullptr, "light_source");
     ResourceManager::LoadShader("assets/shaders/postProcessingVS.glsl", "assets/shaders/postProcessingFS.glsl", nullptr, "post_proc");
     ResourceManager::LoadShader("assets/shaders/pbrVS.glsl", "assets/shaders/pbrFS.glsl", nullptr, "pbr_lighting");
 
@@ -116,13 +186,14 @@ void SandboxLayer::OnAttach()
     ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.inversion", m_UseInversion);
 
     // Generate lights
-    lightPositions.push_back(glm::vec3(0.0f, 2.0f, 10.0f));
+    lightPositions.push_back(glm::vec3(-5.0f, 2.0f, 10.0f));
+    lightPositions.push_back(glm::vec3(5.0f, 2.0f, 10.0f));
+    lightColors.push_back(glm::vec3(150.0f, 150.0f, 150.0f));
     lightColors.push_back(glm::vec3(150.0f, 150.0f, 150.0f));
     for (size_t i = 0; i < lightPositions.size(); i++) {
         ResourceManager::GetShader("pbr_lighting").Use().SetVector3f(("lightPositions[" + std::to_string(i) + "]").c_str(), lightPositions[i]);
         ResourceManager::GetShader("pbr_lighting").Use().SetVector3f(("lightColors[" + std::to_string(i) + "]").c_str(), lightColors[i]);
     }
-
 
     multisampleFBO = FrameBuffer();
     multisampleFBO.Bind();
@@ -149,7 +220,8 @@ void SandboxLayer::OnAttach()
 void SandboxLayer::OnUpdate()
 {
     glm::mat4 projView = m_Camera.Matrix(m_Camera.m_Fov, static_cast<float>(m_Width) / m_Height, m_Camera.m_NearPlane, m_Camera.m_FarPlane);
-    ResourceManager::GetShader("lighting").Use().SetMatrix4(0, projView);
+    ResourceManager::GetShader("basic_lighting").Use().SetMatrix4(0, projView);
+    ResourceManager::GetShader("light_source").Use().SetMatrix4(0, projView);
     ResourceManager::GetShader("pbr_lighting").Use().SetMatrix4(0, projView);
     ResourceManager::GetShader("pbr_lighting").Use().SetVector3f("camPos", m_Camera.m_Position);
 
@@ -158,9 +230,48 @@ void SandboxLayer::OnUpdate()
     multisampleFBO.Bind();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    renderPlane(ResourceManager::GetShader("pbr_lighting"));
-    renderCube(ResourceManager::GetShader("pbr_lighting"));
-    renderModels(ResourceManager::GetShader("lighting"));
+    // Render Plane
+    ResourceManager::GetTexture("grass_albedo").Bind(0);
+    ResourceManager::GetTexture("grass_normal").Bind(1);
+    ResourceManager::GetTexture("grass_metallic").Bind(2);
+    ResourceManager::GetTexture("grass_roughness").Bind(3);
+    ResourceManager::GetTexture("grass_ao").Bind(4);
+    glm::mat4 model = glm::mat4(1.0f);
+    model = glm::translate(model, glm::vec3(0.0f, -0.01f, 0.0f));
+    model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
+    ResourceManager::GetShader("pbr_lighting").Use().SetMatrix4(1, model);
+    renderPlane();
+    Texture2D::UnBind();
+
+    // Render Light Cubes
+    for (size_t i = 0; i < lightPositions.size(); i++) {
+        glm::mat4 model = glm::mat4(1.0f);
+        model = glm::translate(model, lightPositions[i]);
+        model = glm::scale(model, glm::vec3(0.3f, 0.3f, 0.3f));
+        ResourceManager::GetShader("light_source").Use().SetMatrix4(1, model);
+        ResourceManager::GetShader("light_source").Use().SetVector3f("color", lightColors[i]);
+        renderCube();
+    }
+
+    // Render Models
+    // renderModel(ResourceManager::GetShader("basic_lighting"));
+
+    // Render Spheres
+    ResourceManager::GetTexture("rusted_albedo").Bind(0);
+    ResourceManager::GetTexture("rusted_normal").Bind(1);
+    ResourceManager::GetTexture("rusted_metallic").Bind(2);
+    ResourceManager::GetTexture("rusted_roughness").Bind(3);
+    ResourceManager::GetTexture("rusted_ao").Bind(4);
+    for (unsigned int i = 0; i < 5; i++) {
+        for (unsigned int j = 0; j < 5; j++) {
+            glm::mat4 model = glm::mat4(1.0f);
+            model = glm::translate(model, glm::vec3(-6.0f + (i*3), 0.5f + (j*3), 0.0f));
+            model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
+            ResourceManager::GetShader("pbr_lighting").Use().SetMatrix4(1, model);
+            renderSphere();
+        }
+    }
+    Texture2D::UnBind();
 
     multisampleFBO.Blit(intermediateFBO, m_Width, m_Height);
     multisampleFBO.UnBind();
@@ -170,24 +281,14 @@ void SandboxLayer::OnUpdate()
     imguiFBO.Bind();
     glActiveTexture(GL_TEXTURE0);
     intermediateFBO.BindTexture(0);
-    renderQuad(ResourceManager::GetShader("post_proc"));
+    ResourceManager::GetShader("post_proc").Use();
+    renderQuad();
     Texture2D::UnBind();
     imguiFBO.UnBind();
 }
 
-void SandboxLayer::renderPlane(Shader shader)
+void SandboxLayer::renderPlane()
 {
-    ResourceManager::GetTexture("grass_albedo").Bind(0);
-    ResourceManager::GetTexture("grass_normal").Bind(1);
-    ResourceManager::GetTexture("grass_metallic").Bind(2);
-    ResourceManager::GetTexture("grass_roughness").Bind(3);
-    ResourceManager::GetTexture("grass_ao").Bind(4);
-
-    glm::mat4 model = glm::mat4(1.0f);
-    model = glm::translate(model, glm::vec3(0.0f, -0.01f, 0.0f));
-    model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
-    shader.Use().SetMatrix4(1, model);
-
     planeVBO.LinkAttrib(0, 3, GL_FLOAT, 8 * sizeof(float), (void*)0);
     planeVBO.LinkAttrib(1, 3, GL_FLOAT, 8 * sizeof(float), (void*)(3 * sizeof(float)));
     planeVBO.LinkAttrib(2, 2, GL_FLOAT, 8 * sizeof(float), (void*)(6 * sizeof(float)));
@@ -195,23 +296,10 @@ void SandboxLayer::renderPlane(Shader shader)
     planeVBO.UnlinkAttrib(0);
     planeVBO.UnlinkAttrib(1);
     planeVBO.UnlinkAttrib(2);
-
-    Texture2D::UnBind();
 }
 
-void SandboxLayer::renderCube(Shader shader)
+void SandboxLayer::renderCube()
 {
-    ResourceManager::GetTexture("rusted_albedo").Bind(0);
-    ResourceManager::GetTexture("rusted_normal").Bind(1);
-    ResourceManager::GetTexture("rusted_metallic").Bind(2);
-    ResourceManager::GetTexture("rusted_roughness").Bind(3);
-    ResourceManager::GetTexture("rusted_ao").Bind(4);
-
-    glm::mat4 model = glm::mat4(1.0f);
-    model = glm::translate(model, glm::vec3(2.0f, 0.5f, 5.0f));
-    model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
-    shader.Use().SetMatrix4(1, model);
-
     cubeVBO.LinkAttrib(0, 3, GL_FLOAT, 8 * sizeof(float), (void*)0);
     cubeVBO.LinkAttrib(1, 3, GL_FLOAT, 8 * sizeof(float), (void*)(3 * sizeof(float)));
     cubeVBO.LinkAttrib(2, 2, GL_FLOAT, 8 * sizeof(float), (void*)(6 * sizeof(float)));
@@ -219,27 +307,37 @@ void SandboxLayer::renderCube(Shader shader)
     cubeVBO.UnlinkAttrib(0);
     cubeVBO.UnlinkAttrib(1);
     cubeVBO.UnlinkAttrib(2);
-
-    Texture2D::UnBind();
 }
 
-void SandboxLayer::renderModels(Shader shader)
+void SandboxLayer::renderSphere()
 {
-    glm::mat4 model = glm::mat4(1.0f);
-    model = glm::translate(model, glm::vec3(0.0f, 3.0f, 0.0f));
-    model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
-    shader.Use().SetMatrix4(1, model);
-    ResourceManager::GetModel("backpack").Draw(shader);
+    sphereEBO.Bind();
+    sphereVBO.LinkAttrib(0, 3, GL_FLOAT, 8 * sizeof(float), (void*)0);
+    sphereVBO.LinkAttrib(1, 3, GL_FLOAT, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+    sphereVBO.LinkAttrib(2, 2, GL_FLOAT, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+    glDrawElements(GL_TRIANGLE_STRIP, indexCount, GL_UNSIGNED_INT, 0);
+    sphereVBO.UnlinkAttrib(0);
+    sphereVBO.UnlinkAttrib(1);
+    sphereVBO.UnlinkAttrib(2);
+    sphereEBO.UnBind();
 }
 
-void SandboxLayer::renderQuad(Shader shader)
+void SandboxLayer::renderQuad()
 {
-    shader.Use();
     screenQuadVBO.LinkAttrib(0, 2, GL_FLOAT, 4 * sizeof(float), (void*)0);
     screenQuadVBO.LinkAttrib(1, 2, GL_FLOAT, 4 * sizeof(float), (void*)(2 * sizeof(float)));
     glDrawArrays(GL_TRIANGLES, 0, 6);
     screenQuadVBO.UnlinkAttrib(0);
     screenQuadVBO.UnlinkAttrib(1);
+}
+
+void SandboxLayer::renderModel(Shader shader)
+{
+    glm::mat4 model = glm::mat4(1.0f);
+    model = glm::translate(model, glm::vec3(0.0f, 3.0f, 2.0f));
+    model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
+    shader.Use().SetMatrix4(1, model);
+    ResourceManager::GetModel("backpack").Draw(shader);
 }
 
 void SandboxLayer::OnImGuiRender()

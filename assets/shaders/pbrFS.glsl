@@ -20,16 +20,14 @@ layout (binding = 2) uniform sampler2D metallicMap;
 layout (binding = 3) uniform sampler2D roughnessMap;
 layout (binding = 4) uniform sampler2D aoMap;
 
-// uniform vec3 albedo;
-// uniform float metallic;
-// uniform float roughtness;
-// uniform float ao;
-
 // lights
-uniform vec3 lightPositions[1];
-uniform vec3 lightColors[1];
+#define NR_LIGHTS 2
+uniform vec3 lightPositions[NR_LIGHTS];
+uniform vec3 lightColors[NR_LIGHTS];
 
 uniform vec3 camPos;
+
+const float gamma = 2.2;
 
 vec3 getNormalFromMap()
 {
@@ -90,7 +88,7 @@ vec3 FresnelSchlick(float cosTheta, vec3 F0)
 
 void main()
 {
-    vec3 albedo = pow(texture(albedoMap, fs_in.TexCoords).rgb, vec3(2.2));
+    vec3 albedo = pow(texture(albedoMap, fs_in.TexCoords).rgb, vec3(gamma));
     float metallic = texture(metallicMap, fs_in.TexCoords).r;
     float roughtness = texture(roughnessMap, fs_in.TexCoords).r;
     float ao = texture(aoMap, fs_in.TexCoords).r;
@@ -105,7 +103,7 @@ void main()
 
     // reflectance equation
     vec3 Lo = vec3(0.0);
-    for (int i = 0; i < 1; i++) {
+    for (int i = 0; i < NR_LIGHTS; i++) {
         // calculate per-light radiance
         vec3 L = normalize(lightPositions[i] - fs_in.WorldPos);
         vec3 H = normalize(V + L);
@@ -116,7 +114,7 @@ void main()
         // Cook-Torrance BRDF
         float NDF = DistributionGGX(N, H, roughtness);
         float G = GeometrySmith(N, V, L, roughtness);
-        vec3 F = FresnelSchlick(clamp(dot(H, V), 0.0, 1.0), F0);
+        vec3 F = FresnelSchlick(max(dot(H, V), 0.0), F0);
 
         vec3 numerator = NDF * G * F;
         // we add + 0.0001 to prevent division by zero
@@ -138,7 +136,7 @@ void main()
         float NdotL = max(dot(N, L), 0.0);
 
         // add to outgoing radiance Lo
-        Lo += (kD * albedo / M_PI * specular) * radiance * NdotL;
+        Lo += (kD * albedo / M_PI + specular) * radiance * NdotL;
         // note that we already multiplied the BRDF by the Fresnel (kS) so we won't multiply by kS again
     }
 
@@ -148,7 +146,7 @@ void main()
     // HDR tonemapping
     color = color / (color + vec3(1.0));
     // gamma correct
-    color = pow(color, vec3(1.0 / 2.2));
+    color = pow(color, vec3(1.0 / gamma));
 
     FragColor = vec4(color, 1.0);
 }

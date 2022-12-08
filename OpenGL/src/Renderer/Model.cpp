@@ -176,16 +176,21 @@ Texture2D Model::textureFromFile(const char *path, const std::string &directory,
     unsigned char *data = stbi_load(filename.c_str(), &width, &height, &nrComponents, 0);
     if (data)
     {
-        GLenum format;
+        GLenum internalFormat;
+        GLenum dataFormat;
         if (nrComponents == 1)
-            format = GL_RED;
-        else if (nrComponents == 3)
-            format = GL_RGB;
-        else if (nrComponents == 4)
-            format = GL_RGBA;
+            internalFormat = dataFormat = GL_RED;
+        else if (nrComponents == 3) {
+            internalFormat = gamma ? GL_SRGB : GL_RGB;
+            dataFormat = GL_RGB;
+        }
+        else if (nrComponents == 4) {
+            internalFormat = gamma ? GL_SRGB_ALPHA : GL_RGBA;
+            dataFormat = GL_RGBA;
+        }
 
-        texture.Internal_Format = format;
-        texture.Image_Format = format;
+        texture.Internal_Format = internalFormat;
+        texture.Image_Format = dataFormat;
         texture.Generate(width, height, data, GL_TRUE);
 
         stbi_image_free(data);

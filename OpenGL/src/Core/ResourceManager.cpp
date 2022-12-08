@@ -35,9 +35,9 @@ Shader& ResourceManager::GetShader(std::string name)
     return Shaders[name];
 }
 
-Texture2D ResourceManager::LoadTexture(const char *file, std::string name)
+Texture2D ResourceManager::LoadTexture(const char *file, std::string name, bool gamma)
 {
-    Textures[name] = loadTextureFromFile(file);
+    Textures[name] = loadTextureFromFile(file, gamma);
     return Textures[name];
 }
 
@@ -108,7 +108,7 @@ Shader ResourceManager::loadShaderFromFile(const char *vShaderFile, const char *
     return shader;
 }
 
-Texture2D ResourceManager::loadTextureFromFile(const char *file)
+Texture2D ResourceManager::loadTextureFromFile(const char *file, bool gamma)
 {
     // create texture object
     Texture2D texture;
@@ -117,16 +117,21 @@ Texture2D ResourceManager::loadTextureFromFile(const char *file)
     int width, height, nrChannels;
     void* data = stbi_load(file, &width, &height, &nrChannels, 0);
     if (data) {
-        GLenum format;
+        GLenum internalFormat;
+        GLenum dataFormat;
         if (nrChannels == 1)
-            format = GL_RED;
-        else if (nrChannels == 3)
-            format = GL_RGB;
-        else if (nrChannels == 4)
-            format = GL_RGBA;
+            internalFormat = dataFormat = GL_RED;
+        else if (nrChannels == 3) {
+            internalFormat = gamma ? GL_SRGB : GL_RGB;
+            dataFormat = GL_RGB;
+        }
+        else if (nrChannels == 4) {
+            internalFormat = gamma ? GL_SRGB_ALPHA : GL_RGBA;
+            dataFormat = GL_RGBA;
+        }
 
-        texture.Internal_Format = format;
-        texture.Image_Format = format;
+        texture.Internal_Format = internalFormat;
+        texture.Image_Format = dataFormat;
         // now generate texture
         texture.Generate(width, height, data, GL_TRUE);
         // and finally free image data
