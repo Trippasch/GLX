@@ -481,6 +481,8 @@ void SandboxLayer::OnDetach()
 
     planeVBO.Destroy();
     cubeVBO.Destroy();
+    sphereVBO.Destroy();
+    sphereEBO.Destroy();
     screenQuadVBO.Destroy();
 
     multisampleFBO.Destroy();
