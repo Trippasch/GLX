@@ -14,15 +14,15 @@ Camera::Camera(int width, int height, glm::vec3 position)
 glm::mat4 Camera::Matrix(float fovDeg, float ratio, float nearPlane, float farPlane)
 {
     // Initializes matrices since otherwise they will be the null matrix
-    glm::mat4 view = glm::mat4(1.0f);
-    glm::mat4 projection = glm::mat4(1.0f);
+    m_View = glm::mat4(1.0f);
+    m_Projection = glm::mat4(1.0f);
 
     // Makes camera look in the right direction from the right position
-    view = glm::lookAt(m_Position, m_Position + m_Orientation, m_Up);
+    m_View = glm::lookAt(m_Position, m_Position + m_Orientation, m_Up);
     // Adds perspective to the scene
-    projection = glm::perspective(glm::radians(fovDeg), ratio, nearPlane, farPlane);
+    m_Projection = glm::perspective(glm::radians(fovDeg), ratio, nearPlane, farPlane);
 
-    return (projection * view);
+    return (m_Projection * m_View);
 }
 
 void Camera::ProcessMouseScroll(float yoffset)

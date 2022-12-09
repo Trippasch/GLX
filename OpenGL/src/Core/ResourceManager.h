@@ -34,6 +34,10 @@ public:
     static Texture2D LoadTexture(const char *file, std::string name, bool gamma = false);
     // retrieves a stored texture
     static Texture2D& GetTexture(std::string name);
+    // loads (and generates) an HDR texture from file
+    static Texture2D LoadHDRTexture(const char *file, std::string name);
+    // retrieves a stored HDR texture
+    static Texture2D& GetHDRTexture(std::string name);
     // properly de-allocates all loaded resources
     static void Clear();
 private:
@@ -45,4 +49,6 @@ private:
     static Shader loadShaderFromFile(const char *vShaderFile, const char *fShaderFile, const char *gShaderFile = nullptr);
     // loads a single texture from file
     static Texture2D loadTextureFromFile(const char *file, bool gamma);
+    // loads a single HDR texture from file
+    static Texture2D loadHDRTextureFromFile(const char *file);
 };

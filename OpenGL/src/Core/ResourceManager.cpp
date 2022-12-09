@@ -46,6 +46,17 @@ Texture2D& ResourceManager::GetTexture(std::string name)
     return Textures[name];
 }
 
+Texture2D ResourceManager::LoadHDRTexture(const char *file, std::string name)
+{
+    Textures[name] = loadHDRTextureFromFile(file);
+    return Textures[name];
+}
+
+Texture2D& ResourceManager::GetHDRTexture(std::string name)
+{
+    return Textures[name];
+}
+
 void ResourceManager::Clear()
 {
     // (properly) delete all shaders	
@@ -139,6 +150,33 @@ Texture2D ResourceManager::loadTextureFromFile(const char *file, bool gamma)
     }
     else {
         GL_ERROR("Texture failed to load at path: {0} ", file);
+        stbi_image_free(data);
+    }
+    return texture;
+}
+
+Texture2D ResourceManager::loadHDRTextureFromFile(const char *file)
+{
+    // create texture object
+    Texture2D texture;
+
+    // load image
+    stbi_set_flip_vertically_on_load(1);
+    int width, height, nrChannels;
+    float* data = stbi_loadf(file, &width, &height, &nrChannels, 0);
+    if (data) {
+        texture.Internal_Format = GL_RGB16F;
+        texture.Image_Format = GL_RGB;
+        texture.Wrap_S = GL_CLAMP_TO_EDGE;
+        texture.Wrap_T = GL_CLAMP_TO_EDGE;
+        texture.Data_Type = GL_FLOAT;
+        // now generate texture
+        texture.Generate(width, height, data, GL_FALSE);
+        // and finally free image data
+        stbi_image_free(data);
+    }
+    else {
+        GL_ERROR("HDR Texture failed to load at path: {0} ", file);
         stbi_image_free(data);
     }
     return texture;

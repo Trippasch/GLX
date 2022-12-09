@@ -55,6 +55,7 @@ private:
     FrameBuffer multisampleFBO;
     FrameBuffer intermediateFBO;
     FrameBuffer imguiFBO;
+    FrameBuffer captureFBO;
 
     std::vector<glm::vec3> lightPositions;
     std::vector<glm::vec3> lightColors;

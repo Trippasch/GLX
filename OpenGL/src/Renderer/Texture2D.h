@@ -34,4 +34,5 @@ public:
     void Bind(GLuint index) const;
     void Destroy() const;
     static void UnBind();
+    static void UnBindCubemap();
 };

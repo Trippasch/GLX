@@ -169,11 +169,15 @@ void SandboxLayer::OnAttach()
     ResourceManager::LoadTexture("assets/textures/pbr/grass/metallic.png", "grass_metallic");
     ResourceManager::LoadTexture("assets/textures/pbr/grass/roughness.png", "grass_roughness");
     ResourceManager::LoadTexture("assets/textures/pbr/grass/ao.png", "grass_ao");
+    // Load HDR Textures
+    ResourceManager::LoadHDRTexture("assets/textures/hdr/newport_loft.hdr", "hdr_loft");
     // Load Shaders
     ResourceManager::LoadShader("assets/shaders/lightingVS.glsl", "assets/shaders/lightingFS.glsl", nullptr, "basic_lighting");
     ResourceManager::LoadShader("assets/shaders/lightSourceVS.glsl", "assets/shaders/lightSourceFS.glsl", nullptr, "light_source");
     ResourceManager::LoadShader("assets/shaders/postProcessingVS.glsl", "assets/shaders/postProcessingFS.glsl", nullptr, "post_proc");
     ResourceManager::LoadShader("assets/shaders/pbrVS.glsl", "assets/shaders/pbrFS.glsl", nullptr, "pbr_lighting");
+    ResourceManager::LoadShader("assets/shaders/cubemapVS.glsl", "assets/shaders/equirectangularToCubemapFS.glsl", nullptr, "equirectangular_to_cubemap");
+    ResourceManager::LoadShader("assets/shaders/hdrSkyboxVS.glsl", "assets/shaders/hdrSkyboxFS.glsl", nullptr, "hdr_skybox");
 
     // Post Processing - Activate only one per group
     // Kernel effects
@@ -214,6 +218,40 @@ void SandboxLayer::OnAttach()
     FrameBuffer::CheckStatus();
     FrameBuffer::UnBind();
 
+    captureFBO = FrameBuffer();
+    captureFBO.Bind();
+    captureFBO.CubemapAttachment(512, 512);
+    captureFBO.RenderBufferAttachment(GL_FALSE, 512, 512);
+    FrameBuffer::CheckStatus();
+    FrameBuffer::UnBind();
+
+    // projView matrices form capturing data onto the 6 cubemap face directions
+    glm::mat4 captureProjection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
+    glm::mat4 captureViews[] =
+    {
+        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(-1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f,  1.0f,  0.0f), glm::vec3(0.0f,  0.0f,  1.0f)),
+        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f, -1.0f,  0.0f), glm::vec3(0.0f,  0.0f, -1.0f)),
+        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f,  0.0f,  1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f))
+    };
+
+    // convert HDR equirectangular environment map to cubemap equivalent
+    ResourceManager::GetTexture("hdr_loft").Bind(0);
+    ResourceManager::GetShader("equirectangular_to_cubemap").Use().SetMatrix4(0, captureProjection);
+    glViewport(0, 0, 512, 512); // don't forget to configure the viewport to the capture dimensions
+    captureFBO.Bind();
+    for (GLuint i = 0; i < 6; i++) {
+        ResourceManager::GetShader("equirectangular_to_cubemap").Use().SetMatrix4(1, captureViews[i]);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, captureFBO.GetEnvCubemap(), 0);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        renderCube();
+    }
+    FrameBuffer::UnBind();
+    Texture2D::UnBind();
+    glViewport(0, 0, m_Width, m_Height);
+
     // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 }
 
@@ -224,6 +262,8 @@ void SandboxLayer::OnUpdate()
     ResourceManager::GetShader("light_source").Use().SetMatrix4(0, projView);
     ResourceManager::GetShader("pbr_lighting").Use().SetMatrix4(0, projView);
     ResourceManager::GetShader("pbr_lighting").Use().SetVector3f("camPos", m_Camera.m_Position);
+    ResourceManager::GetShader("hdr_skybox").Use().SetMatrix4(0, m_Camera.GetProjectionMatrix());
+    ResourceManager::GetShader("hdr_skybox").Use().SetMatrix4(1, m_Camera.GetViewMatrix());
 
     glEnable(GL_DEPTH_TEST);
 
@@ -272,6 +312,11 @@ void SandboxLayer::OnUpdate()
         }
     }
     Texture2D::UnBind();
+
+    // Render Skybox
+    captureFBO.BindCubemap();
+    ResourceManager::GetShader("hdr_skybox").Use();
+    renderCube();
 
     multisampleFBO.Blit(intermediateFBO, m_Width, m_Height);
     multisampleFBO.UnBind();
@@ -488,4 +533,5 @@ void SandboxLayer::OnDetach()
     multisampleFBO.Destroy();
     intermediateFBO.Destroy();
     imguiFBO.Destroy();
+    captureFBO.Destroy();
 }

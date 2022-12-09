@@ -47,3 +47,9 @@ void Texture2D::UnBind()
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, 0);
 }
+
+void Texture2D::UnBindCubemap()
+{
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+}
