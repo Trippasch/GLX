@@ -57,6 +57,9 @@ private:
     FrameBuffer imguiFBO;
     FrameBuffer captureFBO;
 
+    Texture2D m_EnvCubemap;
+    Texture2D m_Irradiancemap;
+
     GLuint m_SkyboxWidth = 2048;
     GLuint m_SkyboxHeight = 2048;
 

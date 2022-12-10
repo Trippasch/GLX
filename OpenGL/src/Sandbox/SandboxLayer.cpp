@@ -175,6 +175,7 @@ void SandboxLayer::OnAttach()
     ResourceManager::LoadShader("assets/shaders/postProcessingVS.glsl", "assets/shaders/postProcessingFS.glsl", nullptr, "post_proc");
     ResourceManager::LoadShader("assets/shaders/pbrVS.glsl", "assets/shaders/pbrFS.glsl", nullptr, "pbr_lighting");
     ResourceManager::LoadShader("assets/shaders/cubemapVS.glsl", "assets/shaders/equirectangularToCubemapFS.glsl", nullptr, "equirectangular_to_cubemap");
+    ResourceManager::LoadShader("assets/shaders/cubemapVS.glsl", "assets/shaders/irradianceConvolutionFS.glsl", nullptr, "irradiance");
     ResourceManager::LoadShader("assets/shaders/hdrSkyboxVS.glsl", "assets/shaders/hdrSkyboxFS.glsl", nullptr, "hdr_skybox");
 
     // Post Processing - Activate only one per group
@@ -218,10 +219,17 @@ void SandboxLayer::OnAttach()
 
     captureFBO = FrameBuffer();
     captureFBO.Bind();
-    captureFBO.CubemapAttachment(m_SkyboxWidth, m_SkyboxHeight);
     captureFBO.RenderBufferAttachment(GL_FALSE, m_SkyboxWidth, m_SkyboxHeight);
     FrameBuffer::CheckStatus();
     FrameBuffer::UnBind();
+
+    // create environment cubemap
+    m_EnvCubemap.Internal_Format = GL_RGB16F;
+    m_EnvCubemap.Data_Type = GL_FLOAT;
+    m_EnvCubemap.Wrap_S = GL_CLAMP_TO_EDGE;
+    m_EnvCubemap.Wrap_T = GL_CLAMP_TO_EDGE;
+    m_EnvCubemap.Wrap_R = GL_CLAMP_TO_EDGE;
+    m_EnvCubemap.GenerateCubemap(m_SkyboxWidth, m_SkyboxHeight);
 
     // projView matrices form capturing data onto the 6 cubemap face directions
     glm::mat4 captureProjection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
@@ -238,16 +246,40 @@ void SandboxLayer::OnAttach()
     // convert HDR equirectangular environment map to cubemap equivalent
     ResourceManager::GetTexture("skybox_hdr").Bind(0);
     ResourceManager::GetShader("equirectangular_to_cubemap").Use().SetMatrix4(0, captureProjection);
-    glViewport(0, 0, m_SkyboxWidth, m_SkyboxHeight); // don't forget to configure the viewport to the capture dimensions
+    glViewport(0, 0, m_SkyboxWidth, m_SkyboxHeight);
     captureFBO.Bind();
     for (GLuint i = 0; i < 6; i++) {
         ResourceManager::GetShader("equirectangular_to_cubemap").Use().SetMatrix4(1, captureViews[i]);
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, captureFBO.GetEnvCubemap(), 0);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, m_EnvCubemap.ID, 0);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         renderCube();
     }
     FrameBuffer::UnBind();
     Texture2D::UnBind();
+
+    // create an irradiance cubemap, and re-scale captureFBO to irradiance scale
+    m_Irradiancemap.Internal_Format = GL_RGB16F;
+    m_Irradiancemap.Data_Type = GL_FLOAT;
+    m_Irradiancemap.Wrap_S = GL_CLAMP_TO_EDGE;
+    m_Irradiancemap.Wrap_T = GL_CLAMP_TO_EDGE;
+    m_Irradiancemap.Wrap_R = GL_CLAMP_TO_EDGE;
+    m_Irradiancemap.GenerateCubemap(32, 32);
+
+    captureFBO.Bind();
+    captureFBO.ResizeRenderBuffer(32, 32);
+
+    m_EnvCubemap.BindCubemap();
+    ResourceManager::GetShader("irradiance").Use().SetMatrix4(0, captureProjection);
+    glViewport(0, 0, 32, 32);
+    for (GLuint i = 0; i < 6; i++) {
+        ResourceManager::GetShader("irradiance").Use().SetMatrix4(1, captureViews[i]);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, m_Irradiancemap.ID, 0);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        renderCube();
+    }
+    FrameBuffer::UnBind();
+    Texture2D::UnBindCubemap();
+
     glViewport(0, 0, m_Width, m_Height);
 
     // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -312,9 +344,11 @@ void SandboxLayer::OnUpdate()
     Texture2D::UnBind();
 
     // Render Skybox
-    captureFBO.BindCubemap();
+    // m_EnvCubemap.BindCubemap();
+    m_Irradiancemap.BindCubemap();
     ResourceManager::GetShader("hdr_skybox").Use();
     renderCube();
+    Texture2D::UnBindCubemap();
 
     multisampleFBO.Blit(intermediateFBO, m_Width, m_Height);
     multisampleFBO.UnBind();

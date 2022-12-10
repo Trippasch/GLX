@@ -21,7 +21,6 @@ void FrameBuffer::Destroy() const
     glDeleteFramebuffers(1, &m_RendererID);
     for (size_t i = 0; i < textures.size(); i++)
         glDeleteTextures(1, &textures[i]);
-    glDeleteTextures(1, &envCubemap);
 }
 
 void FrameBuffer::CheckStatus()
@@ -33,12 +32,6 @@ void FrameBuffer::CheckStatus()
 void FrameBuffer::BindTexture(GLuint index) const
 {
     glBindTexture(GL_TEXTURE_2D, textures[index]);
-}
-
-void FrameBuffer::BindCubemap() const
-{
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, envCubemap);
 }
 
 void FrameBuffer::TextureAttachment(GLuint n, GLenum mode, GLint inFormat, GLuint width, GLuint height)
@@ -66,22 +59,6 @@ void FrameBuffer::TextureAttachment(GLuint n, GLenum mode, GLint inFormat, GLuin
         textures.push_back(tex[i]);
 
     delete [] tex;
-}
-
-void FrameBuffer::CubemapAttachment(GLuint width, GLuint height)
-{
-    glGenTextures(1, &envCubemap);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, envCubemap);
-    for (GLuint i = 0; i < 6; i++) {
-        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_FLOAT, nullptr);
-    }
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-    glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 }
 
 void FrameBuffer::ResizeTextureAttachment(GLenum mode, GLint inFormat, GLuint width, GLuint height)
@@ -121,6 +98,13 @@ void FrameBuffer::RenderBufferAttachment(GLboolean multisample, GLuint width, GL
 
     glBindRenderbuffer(GL_RENDERBUFFER, 0);
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, m_RenderBufferID);
+}
+
+void FrameBuffer::ResizeRenderBuffer(GLuint width, GLuint height) const
+{
+    glBindRenderbuffer(GL_RENDERBUFFER, m_RenderBufferID);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
+    glBindRenderbuffer(GL_RENDERBUFFER, 0);
 }
 
 void FrameBuffer::ResizeRenderBufferAttachment(GLboolean multisample, GLuint width, GLuint height)

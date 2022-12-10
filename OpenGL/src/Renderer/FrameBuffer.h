@@ -12,8 +12,6 @@ private:
     GLuint m_RendererID;
     GLuint m_RenderBufferID;
 
-    GLuint envCubemap;
-
     std::vector<GLuint> textures;
 
 public:
@@ -25,15 +23,13 @@ public:
     static void CheckStatus();
 
     void BindTexture(GLuint index) const;
-    void BindCubemap() const;
 
     void TextureAttachment(GLuint n, GLenum mode, GLint inFormat, GLuint width, GLuint height);
-    void CubemapAttachment(GLuint width, GLuint height);
     void ResizeTextureAttachment(GLenum mode, GLint inFormat, GLuint width, GLuint height);
     void Blit(FrameBuffer fbo, GLuint width, GLuint height) const;
     void RenderBufferAttachment(GLboolean multisample, GLuint width, GLuint height);
+    void ResizeRenderBuffer(GLuint width, GLuint height) const;
     void ResizeRenderBufferAttachment(GLboolean multisample, GLuint width, GLuint height);
 
-    inline std::vector<GLuint> GetTextureAttachments() const { return textures; }
-    inline GLuint GetEnvCubemap() const { return envCubemap; }
+    inline std::vector<GLuint> &GetTextureAttachments() { return textures; }
 };

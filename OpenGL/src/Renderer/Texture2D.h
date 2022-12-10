@@ -19,6 +19,7 @@ public:
     // texture configuration
     GLuint Wrap_S;     // wrapping mode on S axis
     GLuint Wrap_T;     // wrapping mode on T axis
+    GLuint Wrap_R;     // wrapping mode on R axis
     GLuint Filter_Min; // filtering mode if texture pixels < screen pixels
     GLuint Filter_Max; // filtering mode if texture pixels > screen pixels
     GLuint Data_Type;
@@ -30,9 +31,13 @@ public:
     Texture2D();
     // generates texture from image data
     void Generate(GLuint width, GLuint height, const void *data, GLboolean mipmap);
+    // generates cubemap texture from image data
+    void GenerateCubemap(GLuint width, GLuint height);
     // binds the texture as the current active GL_TEXTURE_2D texture object
     void Bind(GLuint index) const;
+    void BindCubemap() const;
     void Destroy() const;
+
     static void UnBind();
     static void UnBindCubemap();
 };
