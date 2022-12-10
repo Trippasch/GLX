@@ -168,7 +168,7 @@ void SandboxLayer::OnAttach()
     ResourceManager::LoadTexture("assets/textures/pbr/grass/roughness.png", "grass_roughness");
     ResourceManager::LoadTexture("assets/textures/pbr/grass/ao.png", "grass_ao");
     // Load HDR Textures
-    ResourceManager::LoadHDRTexture("assets/textures/hdr/PaperMill_A_3k.hdr", "hdr_loft");
+    ResourceManager::LoadHDRTexture("assets/textures/hdr/Nature_8K_hdri.jpg", "skybox_hdr");
     // Load Shaders
     ResourceManager::LoadShader("assets/shaders/lightingVS.glsl", "assets/shaders/lightingFS.glsl", nullptr, "basic_lighting");
     ResourceManager::LoadShader("assets/shaders/lightSourceVS.glsl", "assets/shaders/lightSourceFS.glsl", nullptr, "light_source");
@@ -236,7 +236,7 @@ void SandboxLayer::OnAttach()
     };
 
     // convert HDR equirectangular environment map to cubemap equivalent
-    ResourceManager::GetTexture("hdr_loft").Bind(0);
+    ResourceManager::GetTexture("skybox_hdr").Bind(0);
     ResourceManager::GetShader("equirectangular_to_cubemap").Use().SetMatrix4(0, captureProjection);
     glViewport(0, 0, m_SkyboxWidth, m_SkyboxHeight); // don't forget to configure the viewport to the capture dimensions
     captureFBO.Bind();
