@@ -14,8 +14,8 @@ public:
 
     glm::mat4 Matrix(float fovDeg, float ratio, float nearPlane, float farPlane);
 
-    inline glm::mat4 GetViewMatrix() const { return m_View; }
-    inline glm::mat4 GetProjectionMatrix() const { return m_Projection; }
+    inline glm::mat4 &GetViewMatrix() { return m_View; }
+    inline glm::mat4 &GetProjectionMatrix() { return m_Projection; }
 
     // processes input received from a mouse scroll-wheel event. Only requires input on the vertical wheel-axis
     void ProcessMouseScroll(float yoffset);
