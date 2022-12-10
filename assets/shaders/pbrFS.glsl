@@ -13,12 +13,15 @@ in VS_OUT
     vec3 Normal;
 } fs_in;
 
+// IBL
+layout (binding = 0) uniform samplerCube irradianceMap;
+
 // material parameters
-layout (binding = 0) uniform sampler2D albedoMap;
-layout (binding = 1) uniform sampler2D normalMap;
-layout (binding = 2) uniform sampler2D metallicMap;
-layout (binding = 3) uniform sampler2D roughnessMap;
-layout (binding = 4) uniform sampler2D aoMap;
+layout (binding = 1) uniform sampler2D albedoMap;
+layout (binding = 2) uniform sampler2D normalMap;
+layout (binding = 3) uniform sampler2D metallicMap;
+layout (binding = 4) uniform sampler2D roughnessMap;
+layout (binding = 5) uniform sampler2D aoMap;
 
 // lights
 #define NR_LIGHTS 2
@@ -96,6 +99,7 @@ void main()
     vec3 N = getNormalFromMap();
     // vec3 N = normalize(fs_in.Normal);
     vec3 V = normalize(camPos - fs_in.WorldPos);
+    vec3 R = reflect(-V, N);
 
     // calculate reflectance at normal incidence; if dia-electric (like plastic) use F0 of 0.04 and if it's a metal, use the albedo color as F0 (metallic workflow)
     vec3 F0 = vec3(0.04);
@@ -140,7 +144,13 @@ void main()
         // note that we already multiplied the BRDF by the Fresnel (kS) so we won't multiply by kS again
     }
 
-    vec3 ambient = vec3(0.03) * albedo * ao;
+    vec3 kS = FresnelSchlick(max(dot(N, V), 0.0), F0);
+    vec3 kD = 1.0 - kS;
+    kD *= 1.0 - metallic;
+    vec3 irradiance = texture(irradianceMap, N).rgb;
+    vec3 diffuse = irradiance * albedo;
+    vec3 ambient = (kD * diffuse) * ao;
+
     vec3 color = ambient + Lo;
 
     // HDR tonemapping

@@ -301,17 +301,19 @@ void SandboxLayer::OnUpdate()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // Render Plane
-    ResourceManager::GetTexture("grass_albedo").Bind(0);
-    ResourceManager::GetTexture("grass_normal").Bind(1);
-    ResourceManager::GetTexture("grass_metallic").Bind(2);
-    ResourceManager::GetTexture("grass_roughness").Bind(3);
-    ResourceManager::GetTexture("grass_ao").Bind(4);
+    m_Irradiancemap.BindCubemap();
+    ResourceManager::GetTexture("grass_albedo").Bind(1);
+    ResourceManager::GetTexture("grass_normal").Bind(2);
+    ResourceManager::GetTexture("grass_metallic").Bind(3);
+    ResourceManager::GetTexture("grass_roughness").Bind(4);
+    ResourceManager::GetTexture("grass_ao").Bind(5);
     glm::mat4 model = glm::mat4(1.0f);
     model = glm::translate(model, glm::vec3(0.0f, -0.01f, 0.0f));
     model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
     ResourceManager::GetShader("pbr_lighting").Use().SetMatrix4(1, model);
     renderPlane();
     Texture2D::UnBind();
+    Texture2D::UnBindCubemap();
 
     // Render Light Cubes
     for (size_t i = 0; i < lightPositions.size(); i++) {
@@ -327,11 +329,12 @@ void SandboxLayer::OnUpdate()
     // renderModel(ResourceManager::GetShader("basic_lighting"));
 
     // Render Spheres
-    ResourceManager::GetTexture("rusted_albedo").Bind(0);
-    ResourceManager::GetTexture("rusted_normal").Bind(1);
-    ResourceManager::GetTexture("rusted_metallic").Bind(2);
-    ResourceManager::GetTexture("rusted_roughness").Bind(3);
-    ResourceManager::GetTexture("rusted_ao").Bind(4);
+    m_Irradiancemap.BindCubemap();
+    ResourceManager::GetTexture("rusted_albedo").Bind(1);
+    ResourceManager::GetTexture("rusted_normal").Bind(2);
+    ResourceManager::GetTexture("rusted_metallic").Bind(3);
+    ResourceManager::GetTexture("rusted_roughness").Bind(4);
+    ResourceManager::GetTexture("rusted_ao").Bind(5);
     for (unsigned int i = 0; i < 5; i++) {
         for (unsigned int j = 0; j < 5; j++) {
             glm::mat4 model = glm::mat4(1.0f);
@@ -342,10 +345,11 @@ void SandboxLayer::OnUpdate()
         }
     }
     Texture2D::UnBind();
+    Texture2D::UnBindCubemap();
 
     // Render Skybox
-    // m_EnvCubemap.BindCubemap();
-    m_Irradiancemap.BindCubemap();
+    m_EnvCubemap.BindCubemap();
+    // m_Irradiancemap.BindCubemap();
     ResourceManager::GetShader("hdr_skybox").Use();
     renderCube();
     Texture2D::UnBindCubemap();
