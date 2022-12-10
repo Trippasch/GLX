@@ -37,8 +37,8 @@ public:
 
 private:
     GLFWwindow* m_Window;
-    GLuint m_Width;
-    GLuint m_Height;
+    GLuint m_Width = 800;
+    GLuint m_Height = 600;
 
     float deltaTime = 0.0f;
     float lastFrame = 0.0f;
@@ -56,6 +56,9 @@ private:
     FrameBuffer intermediateFBO;
     FrameBuffer imguiFBO;
     FrameBuffer captureFBO;
+
+    GLuint m_SkyboxWidth = 2048;
+    GLuint m_SkyboxHeight = 2048;
 
     std::vector<glm::vec3> lightPositions;
     std::vector<glm::vec3> lightColors;

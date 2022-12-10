@@ -7,8 +7,6 @@ SandboxLayer::SandboxLayer()
 {
     Application &app = Application::Get();
     m_Window = static_cast<GLFWwindow *>(app.GetWindow().GetNativeWindow());
-    m_Width = app.GetWindow().GetWidth();
-    m_Height = app.GetWindow().GetHeight();
     m_Camera = Camera(m_Width, m_Height, glm::vec3(0.0f, 2.0f, 5.0f));
 }
 
@@ -170,7 +168,7 @@ void SandboxLayer::OnAttach()
     ResourceManager::LoadTexture("assets/textures/pbr/grass/roughness.png", "grass_roughness");
     ResourceManager::LoadTexture("assets/textures/pbr/grass/ao.png", "grass_ao");
     // Load HDR Textures
-    ResourceManager::LoadHDRTexture("assets/textures/hdr/newport_loft.hdr", "hdr_loft");
+    ResourceManager::LoadHDRTexture("assets/textures/hdr/PaperMill_A_3k.hdr", "hdr_loft");
     // Load Shaders
     ResourceManager::LoadShader("assets/shaders/lightingVS.glsl", "assets/shaders/lightingFS.glsl", nullptr, "basic_lighting");
     ResourceManager::LoadShader("assets/shaders/lightSourceVS.glsl", "assets/shaders/lightSourceFS.glsl", nullptr, "light_source");
@@ -220,8 +218,8 @@ void SandboxLayer::OnAttach()
 
     captureFBO = FrameBuffer();
     captureFBO.Bind();
-    captureFBO.CubemapAttachment(512, 512);
-    captureFBO.RenderBufferAttachment(GL_FALSE, 512, 512);
+    captureFBO.CubemapAttachment(m_SkyboxWidth, m_SkyboxHeight);
+    captureFBO.RenderBufferAttachment(GL_FALSE, m_SkyboxWidth, m_SkyboxHeight);
     FrameBuffer::CheckStatus();
     FrameBuffer::UnBind();
 
@@ -240,7 +238,7 @@ void SandboxLayer::OnAttach()
     // convert HDR equirectangular environment map to cubemap equivalent
     ResourceManager::GetTexture("hdr_loft").Bind(0);
     ResourceManager::GetShader("equirectangular_to_cubemap").Use().SetMatrix4(0, captureProjection);
-    glViewport(0, 0, 512, 512); // don't forget to configure the viewport to the capture dimensions
+    glViewport(0, 0, m_SkyboxWidth, m_SkyboxHeight); // don't forget to configure the viewport to the capture dimensions
     captureFBO.Bind();
     for (GLuint i = 0; i < 6; i++) {
         ResourceManager::GetShader("equirectangular_to_cubemap").Use().SetMatrix4(1, captureViews[i]);
@@ -421,6 +419,14 @@ void SandboxLayer::OnImGuiRender()
 
     ImGui::End();
 
+    ImGui::Begin("Metrics");
+    ImGuiIO& io = ImGui::GetIO();
+
+    ImGui::Text("Dear ImGui %s", ImGui::GetVersion());
+    ImGui::Text("Application average\n %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+
+    ImGui::End();
+
     ImGui::Begin("Opions");
 
     if (ImGui::CollapsingHeader("Post Processing")) {
@@ -496,7 +502,6 @@ bool SandboxLayer::imGuiResize()
         m_Width = view.x;
         m_Height = view.y;
 
-        GL_TRACE("Resizing window to {0}x{1}", m_Width, m_Height);
         glViewport(0, 0, m_Width, m_Height);
 
         multisampleFBO.Bind();

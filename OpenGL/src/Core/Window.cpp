@@ -84,6 +84,11 @@ void Window::Init(const WindowProps& props)
             glfwSetWindowShouldClose(window, true);
         }
     });
+
+    glfwSetFramebufferSizeCallback(m_Window, [](GLFWwindow* window, int width, int height)
+    {
+        GL_TRACE("Resizing window to {0}x{1}", width, height);
+    });
 }
 
 void Window::Shutdown()
