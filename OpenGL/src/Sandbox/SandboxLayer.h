@@ -60,8 +60,11 @@ private:
     Texture2D m_EnvCubemap;
     Texture2D m_Irradiancemap;
 
-    GLuint m_SkyboxWidth = 2048;
-    GLuint m_SkyboxHeight = 2048;
+    GLuint m_EnvCubemapWidth = 2048;
+    GLuint m_EnvCubemapHeight = 2048;
+
+    GLuint m_IrradiancemapWidth = 32;
+    GLuint m_IrradiancemapHeight = 32;
 
     std::vector<glm::vec3> lightPositions;
     std::vector<glm::vec3> lightColors;

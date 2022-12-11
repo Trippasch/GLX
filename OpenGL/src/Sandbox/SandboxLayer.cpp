@@ -219,7 +219,7 @@ void SandboxLayer::OnAttach()
 
     captureFBO = FrameBuffer();
     captureFBO.Bind();
-    captureFBO.RenderBufferAttachment(GL_FALSE, m_SkyboxWidth, m_SkyboxHeight);
+    captureFBO.RenderBufferAttachment(GL_FALSE, m_EnvCubemapWidth, m_EnvCubemapHeight);
     FrameBuffer::CheckStatus();
     FrameBuffer::UnBind();
 
@@ -229,7 +229,7 @@ void SandboxLayer::OnAttach()
     m_EnvCubemap.Wrap_S = GL_CLAMP_TO_EDGE;
     m_EnvCubemap.Wrap_T = GL_CLAMP_TO_EDGE;
     m_EnvCubemap.Wrap_R = GL_CLAMP_TO_EDGE;
-    m_EnvCubemap.GenerateCubemap(m_SkyboxWidth, m_SkyboxHeight);
+    m_EnvCubemap.GenerateCubemap(m_EnvCubemapWidth, m_EnvCubemapHeight);
 
     // projView matrices form capturing data onto the 6 cubemap face directions
     glm::mat4 captureProjection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
@@ -246,7 +246,7 @@ void SandboxLayer::OnAttach()
     // convert HDR equirectangular environment map to cubemap equivalent
     ResourceManager::GetTexture("skybox_hdr").Bind(0);
     ResourceManager::GetShader("equirectangular_to_cubemap").Use().SetMatrix4(0, captureProjection);
-    glViewport(0, 0, m_SkyboxWidth, m_SkyboxHeight);
+    glViewport(0, 0, m_EnvCubemapWidth, m_EnvCubemapHeight);
     captureFBO.Bind();
     for (GLuint i = 0; i < 6; i++) {
         ResourceManager::GetShader("equirectangular_to_cubemap").Use().SetMatrix4(1, captureViews[i]);
@@ -263,14 +263,14 @@ void SandboxLayer::OnAttach()
     m_Irradiancemap.Wrap_S = GL_CLAMP_TO_EDGE;
     m_Irradiancemap.Wrap_T = GL_CLAMP_TO_EDGE;
     m_Irradiancemap.Wrap_R = GL_CLAMP_TO_EDGE;
-    m_Irradiancemap.GenerateCubemap(32, 32);
+    m_Irradiancemap.GenerateCubemap(m_IrradiancemapWidth, m_IrradiancemapHeight);
 
     captureFBO.Bind();
-    captureFBO.ResizeRenderBuffer(32, 32);
+    captureFBO.ResizeRenderBuffer(m_IrradiancemapWidth, m_IrradiancemapHeight);
 
     m_EnvCubemap.BindCubemap();
     ResourceManager::GetShader("irradiance").Use().SetMatrix4(0, captureProjection);
-    glViewport(0, 0, 32, 32);
+    glViewport(0, 0, m_IrradiancemapWidth, m_IrradiancemapHeight);
     for (GLuint i = 0; i < 6; i++) {
         ResourceManager::GetShader("irradiance").Use().SetMatrix4(1, captureViews[i]);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, m_Irradiancemap.ID, 0);
