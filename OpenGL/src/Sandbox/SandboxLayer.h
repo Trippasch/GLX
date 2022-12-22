@@ -58,13 +58,20 @@ private:
     FrameBuffer captureFBO;
 
     Texture2D m_EnvCubemap;
-    Texture2D m_Irradiancemap;
-
     GLuint m_EnvCubemapWidth = 2048;
     GLuint m_EnvCubemapHeight = 2048;
 
+    Texture2D m_Irradiancemap;
     GLuint m_IrradiancemapWidth = 32;
     GLuint m_IrradiancemapHeight = 32;
+
+    Texture2D m_Prefiltermap;
+    GLuint m_PrefiltermapWidth = 128;
+    GLuint m_PrefiltermapHeight = 128;
+
+    Texture2D m_BRDFLUTTexture;
+    GLuint m_BRDFLUTTextureWidth = 512;
+    GLuint m_BRDFLUTTextureHeight = 512;
 
     std::vector<glm::vec3> lightPositions;
     std::vector<glm::vec3> lightColors;

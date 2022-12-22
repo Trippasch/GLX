@@ -31,7 +31,7 @@ void Texture2D::Generate(GLuint width, GLuint height, const void *data, GLboolea
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-void Texture2D::GenerateCubemap(GLuint width, GLuint height)
+void Texture2D::GenerateCubemap(GLuint width, GLuint height, GLboolean mipmap)
 {
     this->Width = width;
     this->Height = height;
@@ -47,6 +47,10 @@ void Texture2D::GenerateCubemap(GLuint width, GLuint height)
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, this->Wrap_R);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, this->Filter_Min);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, this->Filter_Max);
+
+    if (mipmap)
+        glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
+
     // unbind texture
     glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 }
@@ -57,9 +61,9 @@ void Texture2D::Bind(GLuint index) const
     glBindTexture(GL_TEXTURE_2D, this->ID);
 }
 
-void Texture2D::BindCubemap() const
+void Texture2D::BindCubemap(GLuint index) const
 {
-    glActiveTexture(GL_TEXTURE0);
+    glActiveTexture(GL_TEXTURE0 + index);
     glBindTexture(GL_TEXTURE_CUBE_MAP, this->ID);
 }
 

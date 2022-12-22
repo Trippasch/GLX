@@ -15,13 +15,15 @@ in VS_OUT
 
 // IBL
 layout (binding = 0) uniform samplerCube irradianceMap;
+layout (binding = 1) uniform samplerCube prefilterMap;
+layout (binding = 2) uniform sampler2D brdfLUT;
 
 // material parameters
-layout (binding = 1) uniform sampler2D albedoMap;
-layout (binding = 2) uniform sampler2D normalMap;
-layout (binding = 3) uniform sampler2D metallicMap;
-layout (binding = 4) uniform sampler2D roughnessMap;
-layout (binding = 5) uniform sampler2D aoMap;
+layout (binding = 3) uniform sampler2D albedoMap;
+layout (binding = 4) uniform sampler2D normalMap;
+layout (binding = 5) uniform sampler2D metallicMap;
+layout (binding = 6) uniform sampler2D roughnessMap;
+layout (binding = 7) uniform sampler2D aoMap;
 
 // lights
 #define NR_LIGHTS 2
@@ -89,11 +91,16 @@ vec3 FresnelSchlick(float cosTheta, vec3 F0)
     return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }
 
+vec3 FresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness)
+{
+    return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+}
+
 void main()
 {
     vec3 albedo = pow(texture(albedoMap, fs_in.TexCoords).rgb, vec3(gamma));
     float metallic = texture(metallicMap, fs_in.TexCoords).r;
-    float roughtness = texture(roughnessMap, fs_in.TexCoords).r;
+    float roughness = texture(roughnessMap, fs_in.TexCoords).r;
     float ao = texture(aoMap, fs_in.TexCoords).r;
 
     vec3 N = getNormalFromMap();
@@ -116,8 +123,8 @@ void main()
         vec3 radiance = lightColors[i] * attenuation;
 
         // Cook-Torrance BRDF
-        float NDF = DistributionGGX(N, H, roughtness);
-        float G = GeometrySmith(N, V, L, roughtness);
+        float NDF = DistributionGGX(N, H, roughness);
+        float G = GeometrySmith(N, V, L, roughness);
         vec3 F = FresnelSchlick(max(dot(H, V), 0.0), F0);
 
         vec3 numerator = NDF * G * F;
@@ -144,12 +151,24 @@ void main()
         // note that we already multiplied the BRDF by the Fresnel (kS) so we won't multiply by kS again
     }
 
-    vec3 kS = FresnelSchlick(max(dot(N, V), 0.0), F0);
+    // ambien lighting (we now use IBL as the ambient term)
+    vec3 F = FresnelSchlickRoughness(max(dot(N, V), 0.0), F0, roughness);
+
+    vec3 kS = F;
     vec3 kD = 1.0 - kS;
     kD *= 1.0 - metallic;
+
     vec3 irradiance = texture(irradianceMap, N).rgb;
     vec3 diffuse = irradiance * albedo;
-    vec3 ambient = (kD * diffuse) * ao;
+
+    // sample both the pre-filter map and the BRDF lut and combine them together
+    // as per the split-sum approximation to get the IBL specular part.
+    const float MAX_REFLECTION_LOD = 4.0;
+    vec3 prefilteredColor = textureLod(prefilterMap, R, roughness * MAX_REFLECTION_LOD).rgb;
+    vec2 envBRDF = texture(brdfLUT, vec2(max(dot(N, V), 0.0), roughness)).rg;
+    vec3 specular = prefilteredColor * (F * envBRDF.x + envBRDF.y);
+
+    vec3 ambient = (kD * diffuse + specular) * ao;
 
     vec3 color = ambient + Lo;
 

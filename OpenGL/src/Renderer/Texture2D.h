@@ -30,12 +30,12 @@ public:
     // constructor (sets default texture modes)
     Texture2D();
     // generates texture from image data
-    void Generate(GLuint width, GLuint height, const void *data, GLboolean mipmap);
+    void Generate(GLuint width, GLuint height, const void *data, GLboolean mipmap = false);
     // generates cubemap texture from image data
-    void GenerateCubemap(GLuint width, GLuint height);
+    void GenerateCubemap(GLuint width, GLuint height, GLboolean mipmap = false);
     // binds the texture as the current active GL_TEXTURE_2D texture object
     void Bind(GLuint index) const;
-    void BindCubemap() const;
+    void BindCubemap(GLuint index) const;
     void Destroy() const;
 
     static void UnBind();

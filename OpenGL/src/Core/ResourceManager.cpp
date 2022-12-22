@@ -171,7 +171,7 @@ Texture2D ResourceManager::loadHDRTextureFromFile(const char *file)
         texture.Wrap_T = GL_CLAMP_TO_EDGE;
         texture.Data_Type = GL_FLOAT;
         // now generate texture
-        texture.Generate(width, height, data, GL_FALSE);
+        texture.Generate(width, height, data);
         // and finally free image data
         stbi_image_free(data);
     }

@@ -156,13 +156,13 @@ void SandboxLayer::OnAttach()
     ResourceManager::LoadModel("assets/objects/backpack/backpack.obj", "backpack");
     // Load Textures
     // Rusted Iron
-    ResourceManager::LoadTexture("assets/textures/pbr/rusted_iron/albedo.png", "rusted_albedo", true);
+    ResourceManager::LoadTexture("assets/textures/pbr/rusted_iron/albedo.png", "rusted_albedo");
     ResourceManager::LoadTexture("assets/textures/pbr/rusted_iron/normal.png", "rusted_normal");
     ResourceManager::LoadTexture("assets/textures/pbr/rusted_iron/metallic.png", "rusted_metallic");
     ResourceManager::LoadTexture("assets/textures/pbr/rusted_iron/roughness.png", "rusted_roughness");
     ResourceManager::LoadTexture("assets/textures/pbr/rusted_iron/ao.png", "rusted_ao");
     // Grass
-    ResourceManager::LoadTexture("assets/textures/pbr/grass/albedo.png", "grass_albedo", true);
+    ResourceManager::LoadTexture("assets/textures/pbr/grass/albedo.png", "grass_albedo");
     ResourceManager::LoadTexture("assets/textures/pbr/grass/normal.png", "grass_normal");
     ResourceManager::LoadTexture("assets/textures/pbr/grass/metallic.png", "grass_metallic");
     ResourceManager::LoadTexture("assets/textures/pbr/grass/roughness.png", "grass_roughness");
@@ -176,7 +176,9 @@ void SandboxLayer::OnAttach()
     ResourceManager::LoadShader("assets/shaders/pbrVS.glsl", "assets/shaders/pbrFS.glsl", nullptr, "pbr_lighting");
     ResourceManager::LoadShader("assets/shaders/cubemapVS.glsl", "assets/shaders/equirectangularToCubemapFS.glsl", nullptr, "equirectangular_to_cubemap");
     ResourceManager::LoadShader("assets/shaders/cubemapVS.glsl", "assets/shaders/irradianceConvolutionFS.glsl", nullptr, "irradiance");
+    ResourceManager::LoadShader("assets/shaders/cubemapVS.glsl", "assets/shaders/prefiltermapFS.glsl", nullptr, "prefilter");
     ResourceManager::LoadShader("assets/shaders/hdrSkyboxVS.glsl", "assets/shaders/hdrSkyboxFS.glsl", nullptr, "hdr_skybox");
+    ResourceManager::LoadShader("assets/shaders/brdfVS.glsl", "assets/shaders/brdfFS.glsl", nullptr, "brdf");
 
     // Post Processing - Activate only one per group
     // Kernel effects
@@ -268,7 +270,7 @@ void SandboxLayer::OnAttach()
     captureFBO.Bind();
     captureFBO.ResizeRenderBuffer(m_IrradiancemapWidth, m_IrradiancemapHeight);
 
-    m_EnvCubemap.BindCubemap();
+    m_EnvCubemap.BindCubemap(0);
     ResourceManager::GetShader("irradiance").Use().SetMatrix4(0, captureProjection);
     glViewport(0, 0, m_IrradiancemapWidth, m_IrradiancemapHeight);
     for (GLuint i = 0; i < 6; i++) {
@@ -279,6 +281,62 @@ void SandboxLayer::OnAttach()
     }
     FrameBuffer::UnBind();
     Texture2D::UnBindCubemap();
+
+    // prefilter HDR environment map
+    m_Prefiltermap.Internal_Format = GL_RGB16F;
+    m_Prefiltermap.Data_Type = GL_FLOAT;
+    m_Prefiltermap.Wrap_S = GL_CLAMP_TO_EDGE;
+    m_Prefiltermap.Wrap_T = GL_CLAMP_TO_EDGE;
+    m_Prefiltermap.Wrap_R = GL_CLAMP_TO_EDGE;
+    m_Prefiltermap.Filter_Min = GL_LINEAR_MIPMAP_LINEAR;
+    m_Prefiltermap.GenerateCubemap(m_PrefiltermapWidth, m_PrefiltermapHeight, GL_TRUE);
+
+    // run a quasi monte-carlo simulation on the environment lighting to create a prefilter (cube)map.
+    ResourceManager::GetShader("prefilter").Use().SetMatrix4(0, captureProjection);
+    m_EnvCubemap.BindCubemap(0);
+    captureFBO.Bind();
+    GLuint maxMipLevels = 5;
+    for (GLuint mip = 0; mip < maxMipLevels; ++mip)
+    {
+        // reisze framebuffer according to mip-level size.
+        GLuint mipWidth = m_PrefiltermapWidth * std::pow(0.5, mip);
+        GLuint mipHeight = m_PrefiltermapHeight * std::pow(0.5, mip);
+        captureFBO.ResizeRenderBuffer(mipWidth, mipHeight);
+        glViewport(0, 0, mipWidth, mipHeight);
+
+        float roughness = (float)mip / (float)(maxMipLevels - 1);
+
+        ResourceManager::GetShader("prefilter").Use().SetFloat("roughness", roughness);
+        for (GLuint i = 0; i < 6; ++i)
+        {
+            ResourceManager::GetShader("prefilter").Use().SetMatrix4(1, captureViews[i]);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                                   GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, m_Prefiltermap.ID, mip);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            renderCube();
+        }
+    }
+    FrameBuffer::UnBind();
+    Texture2D::UnBindCubemap();
+
+    // generate a 2D LUT from the BRDF equations used.
+    m_BRDFLUTTexture.Internal_Format = GL_RG16F;
+    m_BRDFLUTTexture.Image_Format = GL_RG;
+    m_BRDFLUTTexture.Data_Type = GL_FLOAT;
+    m_BRDFLUTTexture.Wrap_S = GL_CLAMP_TO_EDGE;
+    m_BRDFLUTTexture.Wrap_T = GL_CLAMP_TO_EDGE;
+    m_BRDFLUTTexture.Generate(m_BRDFLUTTextureWidth, m_BRDFLUTTextureHeight, 0);
+
+    // then re-configure capture framebuffer object and render screen-space quad with BRDF shader
+    captureFBO.Bind();
+    captureFBO.ResizeRenderBuffer(m_BRDFLUTTextureWidth, m_BRDFLUTTextureHeight);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_BRDFLUTTexture.ID, 0);
+
+    glViewport(0, 0, m_BRDFLUTTextureWidth, m_BRDFLUTTextureHeight);
+    ResourceManager::GetShader("brdf").Use();
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    renderQuad();
+    FrameBuffer::UnBind();
 
     glViewport(0, 0, m_Width, m_Height);
 
@@ -301,12 +359,14 @@ void SandboxLayer::OnUpdate()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // Render Plane
-    m_Irradiancemap.BindCubemap();
-    ResourceManager::GetTexture("grass_albedo").Bind(1);
-    ResourceManager::GetTexture("grass_normal").Bind(2);
-    ResourceManager::GetTexture("grass_metallic").Bind(3);
-    ResourceManager::GetTexture("grass_roughness").Bind(4);
-    ResourceManager::GetTexture("grass_ao").Bind(5);
+    m_Irradiancemap.BindCubemap(0);
+    m_Prefiltermap.BindCubemap(1);
+    m_BRDFLUTTexture.Bind(2);
+    ResourceManager::GetTexture("grass_albedo").Bind(3);
+    ResourceManager::GetTexture("grass_normal").Bind(4);
+    ResourceManager::GetTexture("grass_metallic").Bind(5);
+    ResourceManager::GetTexture("grass_roughness").Bind(6);
+    ResourceManager::GetTexture("grass_ao").Bind(7);
     glm::mat4 model = glm::mat4(1.0f);
     model = glm::translate(model, glm::vec3(0.0f, -0.01f, 0.0f));
     model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
@@ -329,12 +389,14 @@ void SandboxLayer::OnUpdate()
     // renderModel(ResourceManager::GetShader("basic_lighting"));
 
     // Render Spheres
-    m_Irradiancemap.BindCubemap();
-    ResourceManager::GetTexture("rusted_albedo").Bind(1);
-    ResourceManager::GetTexture("rusted_normal").Bind(2);
-    ResourceManager::GetTexture("rusted_metallic").Bind(3);
-    ResourceManager::GetTexture("rusted_roughness").Bind(4);
-    ResourceManager::GetTexture("rusted_ao").Bind(5);
+    m_Irradiancemap.BindCubemap(0);
+    m_Prefiltermap.BindCubemap(1);
+    m_BRDFLUTTexture.Bind(2);
+    ResourceManager::GetTexture("rusted_albedo").Bind(3);
+    ResourceManager::GetTexture("rusted_normal").Bind(4);
+    ResourceManager::GetTexture("rusted_metallic").Bind(5);
+    ResourceManager::GetTexture("rusted_roughness").Bind(6);
+    ResourceManager::GetTexture("rusted_ao").Bind(7);
     for (unsigned int i = 0; i < 5; i++) {
         for (unsigned int j = 0; j < 5; j++) {
             glm::mat4 model = glm::mat4(1.0f);
@@ -348,8 +410,9 @@ void SandboxLayer::OnUpdate()
     Texture2D::UnBindCubemap();
 
     // Render Skybox
-    m_EnvCubemap.BindCubemap();
-    // m_Irradiancemap.BindCubemap();
+    m_EnvCubemap.BindCubemap(0);
+    // m_Irradiancemap.BindCubemap(0);
+    // m_Prefiltermap.BindCubemap(0);
     ResourceManager::GetShader("hdr_skybox").Use();
     renderCube();
     Texture2D::UnBindCubemap();

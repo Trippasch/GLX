@@ -75,6 +75,7 @@ void Window::Init(const WindowProps& props)
     // Set important OpenGL states
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LEQUAL);
+    glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
     // Set GLFW callbacks
     glfwSetKeyCallback(m_Window, [](GLFWwindow* window, int key, int scancode, int action, int mods)
