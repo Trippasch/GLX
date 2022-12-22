@@ -174,6 +174,7 @@ void SandboxLayer::OnAttach()
     ResourceManager::LoadShader("assets/shaders/lightSourceVS.glsl", "assets/shaders/lightSourceFS.glsl", nullptr, "light_source");
     ResourceManager::LoadShader("assets/shaders/postProcessingVS.glsl", "assets/shaders/postProcessingFS.glsl", nullptr, "post_proc");
     ResourceManager::LoadShader("assets/shaders/pbrVS.glsl", "assets/shaders/pbrFS.glsl", nullptr, "pbr_lighting");
+    ResourceManager::LoadShader("assets/shaders/pbrVS.glsl", "assets/shaders/pbrTexturedFS.glsl", nullptr, "pbr_lighting_textured");
     ResourceManager::LoadShader("assets/shaders/cubemapVS.glsl", "assets/shaders/equirectangularToCubemapFS.glsl", nullptr, "equirectangular_to_cubemap");
     ResourceManager::LoadShader("assets/shaders/cubemapVS.glsl", "assets/shaders/irradianceConvolutionFS.glsl", nullptr, "irradiance");
     ResourceManager::LoadShader("assets/shaders/cubemapVS.glsl", "assets/shaders/prefiltermapFS.glsl", nullptr, "prefilter");
@@ -198,6 +199,8 @@ void SandboxLayer::OnAttach()
     for (size_t i = 0; i < lightPositions.size(); i++) {
         ResourceManager::GetShader("pbr_lighting").Use().SetVector3f(("lightPositions[" + std::to_string(i) + "]").c_str(), lightPositions[i]);
         ResourceManager::GetShader("pbr_lighting").Use().SetVector3f(("lightColors[" + std::to_string(i) + "]").c_str(), lightColors[i]);
+        ResourceManager::GetShader("pbr_lighting_textured").Use().SetVector3f(("lightPositions[" + std::to_string(i) + "]").c_str(), lightPositions[i]);
+        ResourceManager::GetShader("pbr_lighting_textured").Use().SetVector3f(("lightColors[" + std::to_string(i) + "]").c_str(), lightColors[i]);
     }
 
     multisampleFBO = FrameBuffer();
@@ -350,6 +353,8 @@ void SandboxLayer::OnUpdate()
     ResourceManager::GetShader("light_source").Use().SetMatrix4(0, projView);
     ResourceManager::GetShader("pbr_lighting").Use().SetMatrix4(0, projView);
     ResourceManager::GetShader("pbr_lighting").Use().SetVector3f("camPos", m_Camera.m_Position);
+    ResourceManager::GetShader("pbr_lighting_textured").Use().SetMatrix4(0, projView);
+    ResourceManager::GetShader("pbr_lighting_textured").Use().SetVector3f("camPos", m_Camera.m_Position);
     ResourceManager::GetShader("hdr_skybox").Use().SetMatrix4(0, m_Camera.GetProjectionMatrix());
     ResourceManager::GetShader("hdr_skybox").Use().SetMatrix4(1, m_Camera.GetViewMatrix());
 
@@ -370,7 +375,7 @@ void SandboxLayer::OnUpdate()
     glm::mat4 model = glm::mat4(1.0f);
     model = glm::translate(model, glm::vec3(0.0f, -0.01f, 0.0f));
     model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
-    ResourceManager::GetShader("pbr_lighting").Use().SetMatrix4(1, model);
+    ResourceManager::GetShader("pbr_lighting_textured").Use().SetMatrix4(1, model);
     renderPlane();
     Texture2D::UnBind();
     Texture2D::UnBindCubemap();
@@ -392,11 +397,7 @@ void SandboxLayer::OnUpdate()
     m_Irradiancemap.BindCubemap(0);
     m_Prefiltermap.BindCubemap(1);
     m_BRDFLUTTexture.Bind(2);
-    ResourceManager::GetTexture("rusted_albedo").Bind(3);
-    ResourceManager::GetTexture("rusted_normal").Bind(4);
-    ResourceManager::GetTexture("rusted_metallic").Bind(5);
-    ResourceManager::GetTexture("rusted_roughness").Bind(6);
-    ResourceManager::GetTexture("rusted_ao").Bind(7);
+    ResourceManager::GetShader("pbr_lighting").Use().SetVector3f("material.albedo", m_Albedo);
     for (unsigned int i = 0; i < 5; i++) {
         for (unsigned int j = 0; j < 5; j++) {
             glm::mat4 model = glm::mat4(1.0f);
@@ -585,6 +586,18 @@ void SandboxLayer::OnImGuiRender()
             }
 
             ImGui::TreePop();
+        }
+    }
+
+    if (ImGui::CollapsingHeader("PBR Settings")) {
+        if (ImGui::DragFloat("Metallic", &m_Metallic, 0.01f, 0.0f, 1.0f, "%.2f")) {
+            ResourceManager::GetShader("pbr_lighting").Use().SetFloat("material.metallic", m_Metallic);
+        }
+        if (ImGui::DragFloat("Roughness", &m_Roughness, 0.01f, 0.0f, 1.0f, "%.2f")) {
+            ResourceManager::GetShader("pbr_lighting").Use().SetFloat("material.roughness", m_Roughness);
+        }
+        if (ImGui::DragFloat("AO", &m_AO, 0.01f, 0.0f, 1.0f, "%.2f")) {
+            ResourceManager::GetShader("pbr_lighting").Use().SetFloat("material.ao", m_AO);
         }
     }
 
