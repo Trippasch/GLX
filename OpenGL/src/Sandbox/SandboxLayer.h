@@ -84,8 +84,8 @@ private:
     bool m_UseBlur = false;
 
     glm::vec3 m_Albedo = glm::vec3(0.5f, 0.0f, 0.0f);
-    float m_Metallic = 0.0f;
-    float m_Roughness = 0.0f;
+    float m_Metallic = 0.2f;
+    float m_Roughness = 0.3f;
     float m_AO = 1.0f;
 
     void renderPlane();

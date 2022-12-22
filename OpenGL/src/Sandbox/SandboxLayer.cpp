@@ -191,6 +191,12 @@ void SandboxLayer::OnAttach()
     ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.greyscale", m_UseGreyscale);
     ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.inversion", m_UseInversion);
 
+    // PBR Settings
+    ResourceManager::GetShader("pbr_lighting").Use().SetVector3f("material.albedo", m_Albedo);
+    ResourceManager::GetShader("pbr_lighting").Use().SetFloat("material.metallic", m_Metallic);
+    ResourceManager::GetShader("pbr_lighting").Use().SetFloat("material.roughness", m_Roughness);
+    ResourceManager::GetShader("pbr_lighting").Use().SetFloat("material.ao", m_AO);
+
     // Generate lights
     lightPositions.push_back(glm::vec3(-5.0f, 2.0f, 10.0f));
     lightPositions.push_back(glm::vec3(5.0f, 2.0f, 10.0f));
@@ -397,7 +403,6 @@ void SandboxLayer::OnUpdate()
     m_Irradiancemap.BindCubemap(0);
     m_Prefiltermap.BindCubemap(1);
     m_BRDFLUTTexture.Bind(2);
-    ResourceManager::GetShader("pbr_lighting").Use().SetVector3f("material.albedo", m_Albedo);
     for (unsigned int i = 0; i < 5; i++) {
         for (unsigned int j = 0; j < 5; j++) {
             glm::mat4 model = glm::mat4(1.0f);
@@ -590,14 +595,14 @@ void SandboxLayer::OnImGuiRender()
     }
 
     if (ImGui::CollapsingHeader("PBR Settings")) {
-        if (ImGui::DragFloat("Metallic", &m_Metallic, 0.01f, 0.0f, 1.0f, "%.2f")) {
+        if (ImGui::ColorEdit3("Albedo", (float*)&m_Albedo)) {
+            ResourceManager::GetShader("pbr_lighting").Use().SetVector3f("material.albedo", m_Albedo);
+        }
+        else if (ImGui::DragFloat("Metallic", &m_Metallic, 0.01f, 0.0f, 1.0f, "%.2f")) {
             ResourceManager::GetShader("pbr_lighting").Use().SetFloat("material.metallic", m_Metallic);
         }
-        if (ImGui::DragFloat("Roughness", &m_Roughness, 0.01f, 0.0f, 1.0f, "%.2f")) {
+        else if (ImGui::DragFloat("Roughness", &m_Roughness, 0.01f, 0.0f, 1.0f, "%.2f")) {
             ResourceManager::GetShader("pbr_lighting").Use().SetFloat("material.roughness", m_Roughness);
-        }
-        if (ImGui::DragFloat("AO", &m_AO, 0.01f, 0.0f, 1.0f, "%.2f")) {
-            ResourceManager::GetShader("pbr_lighting").Use().SetFloat("material.ao", m_AO);
         }
     }
 
