@@ -200,7 +200,7 @@ void SandboxLayer::OnAttach()
     // Generate lights
     lightPositions.push_back(glm::vec3(-5.0f, 2.0f, 10.0f));
     lightPositions.push_back(glm::vec3(5.0f, 2.0f, 10.0f));
-    lightColors.push_back(glm::vec3(150.0f, 150.0f, 150.0f));
+    lightColors.push_back(glm::vec3(300.0f, 150.0f, 1.0f));
     lightColors.push_back(glm::vec3(150.0f, 150.0f, 150.0f));
     for (size_t i = 0; i < lightPositions.size(); i++) {
         ResourceManager::GetShader("pbr_lighting").Use().SetVector3f(("lightPositions[" + std::to_string(i) + "]").c_str(), lightPositions[i]);
@@ -397,7 +397,7 @@ void SandboxLayer::OnUpdate()
     }
 
     // Render Models
-    // renderModel(ResourceManager::GetShader("basic_lighting"));
+    renderModel(ResourceManager::GetShader("pbr_lighting_textured"));
 
     // Render Spheres
     m_Irradiancemap.BindCubemap(0);
@@ -484,7 +484,7 @@ void SandboxLayer::renderQuad()
 void SandboxLayer::renderModel(Shader shader)
 {
     glm::mat4 model = glm::mat4(1.0f);
-    model = glm::translate(model, glm::vec3(0.0f, 3.0f, 2.0f));
+    model = glm::translate(model, glm::vec3(0.0f, 3.0f, 4.0f));
     model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
     shader.Use().SetMatrix4(1, model);
     ResourceManager::GetModel("backpack").Draw(shader);

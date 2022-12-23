@@ -1,4 +1,5 @@
 #include "Renderer/Mesh.h"
+#include <iostream>
 
 Mesh::Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, std::vector<Texture2D> textures)
 {
@@ -52,7 +53,7 @@ void Mesh::UnBind() const
 void Mesh::Draw(const Shader &shader) const
 {
     for (unsigned int i = 0; i < textures.size(); i++)
-        textures[i].Bind(i);
+        textures[i].Bind(i+3);
 
     // draw mesh
     Bind();
