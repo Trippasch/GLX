@@ -15,6 +15,7 @@ struct PostProcessing {
     bool blur;
     bool edge;
     bool ridge;
+    bool bloom;
     float exposure;
 };
 uniform PostProcessing postProcessing;
@@ -82,23 +83,20 @@ void main()
         col += sampleTex[i] * kernel[i];
     }
 
+    vec3 color = col;
+
+    if (postProcessing.bloom) {
+        vec3 bloomColor = texture(bloomBlur, TexCoords).rgb;
+        color += bloomColor;
+    }
+
     if (postProcessing.inversion) {
-        FragColor = vec4(col, 1.0);
-        FragColor = vec4(vec3(1.0 - FragColor), 1.0);
+        color = vec3(1.0 - color);
     }
     else if (postProcessing.greyscale) {
-        FragColor = vec4(col, 1.0);
-        float average = 0.2126 * FragColor.r + 0.7152 * FragColor.g + 0.0722 * FragColor.b;
-        FragColor = vec4(average, average, average, 1.0);
+        float average = 0.2126 * color.r + 0.7152 * color.g + 0.0722 * color.b;
+        color = vec3(average, average, average);
     }
-    else {
-        FragColor = vec4(col, 1.0);
-    }
-
-    vec3 color = FragColor.rgb;
-
-    vec3 bloomColor = texture(bloomBlur, TexCoords).rgb;
-    color += bloomColor;
 
     // exposure - tone mapping
     color = vec3(1.0) - exp(-color * postProcessing.exposure);

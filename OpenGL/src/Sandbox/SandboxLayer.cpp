@@ -7,7 +7,7 @@ SandboxLayer::SandboxLayer()
 {
     Application &app = Application::Get();
     m_Window = static_cast<GLFWwindow *>(app.GetWindow().GetNativeWindow());
-    m_Camera = Camera(m_Width, m_Height, glm::vec3(0.0f, 2.0f, 5.0f));
+    m_Camera = Camera(m_Width, m_Height, glm::vec3(0.0f, 2.0f, 20.0f));
 }
 
 void SandboxLayer::OnAttach()
@@ -191,6 +191,7 @@ void SandboxLayer::OnAttach()
     // General Post Processing
     ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.greyscale", m_UseGreyscale);
     ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.inversion", m_UseInversion);
+    ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.bloom", m_UseBloom);
     ResourceManager::GetShader("post_proc").Use().SetFloat("postProcessing.exposure", m_Exposure);
 
     // PBR Settings
@@ -202,8 +203,8 @@ void SandboxLayer::OnAttach()
     // Generate lights
     lightPositions.push_back(glm::vec3(-5.0f, 2.0f, 10.0f));
     lightPositions.push_back(glm::vec3(5.0f, 2.0f, 10.0f));
-    lightColors.push_back(glm::vec3(300.0f, 0.0f, 0.0f));
-    lightColors.push_back(glm::vec3(0.0f, 0.0f, 300.0f));
+    lightColors.push_back(glm::vec3(100.0f, 0.0f, 0.0f));
+    lightColors.push_back(glm::vec3(100.0f, 100.0f, 100.0f));
     for (size_t i = 0; i < lightPositions.size(); i++) {
         ResourceManager::GetShader("pbr_lighting").Use().SetVector3f(("lightPositions[" + std::to_string(i) + "]").c_str(), lightPositions[i]);
         ResourceManager::GetShader("pbr_lighting").Use().SetVector3f(("lightColors[" + std::to_string(i) + "]").c_str(), lightColors[i]);
@@ -438,23 +439,26 @@ void SandboxLayer::OnUpdate()
 
     FrameBuffer::UnBind();
 
-    // blur bright fragments with two-pass Gaussian blur
-    bool horizontal = true, first_iteration = true;
-    GLuint amount = 10;
-    for (GLuint i = 0; i < amount; i++) {
-        pingpongFBO[horizontal].Bind();
-        ResourceManager::GetShader("blur").Use().SetInteger("horizontal", horizontal);
-        glActiveTexture(GL_TEXTURE0);
-        if (first_iteration)
-            hdrFBO.BindTexture(1);
-        else
-            pingpongFBO[!horizontal].BindTexture(0);
-        renderQuad();
-        horizontal = !horizontal;
-        if (first_iteration)
-            first_iteration = false;
+    // Bloom
+    if (m_UseBloom) {
+        // blur bright fragments with two-pass Gaussian blur
+        bool horizontal = true, first_iteration = true;
+        GLuint amount = 10;
+        for (GLuint i = 0; i < amount; i++) {
+            pingpongFBO[horizontal].Bind();
+            ResourceManager::GetShader("blur").Use().SetInteger("horizontal", horizontal);
+            glActiveTexture(GL_TEXTURE0);
+            if (first_iteration)
+                hdrFBO.BindTexture(1);
+            else
+                pingpongFBO[!horizontal].BindTexture(0);
+            renderQuad();
+            horizontal = !horizontal;
+            if (first_iteration)
+                first_iteration = false;
+        }
+        FrameBuffer::UnBind();
     }
-    FrameBuffer::UnBind();
 
     multisampleFBO.Blit(hdrFBO, m_Width, m_Height);
     FrameBuffer::UnBind();
@@ -464,8 +468,10 @@ void SandboxLayer::OnUpdate()
     imguiFBO.Bind();
     glActiveTexture(GL_TEXTURE0);
     hdrFBO.BindTexture(0);
-    glActiveTexture(GL_TEXTURE1);
-    pingpongFBO[!horizontal].BindTexture(0);
+    if (m_UseBloom) {
+        glActiveTexture(GL_TEXTURE1);
+        pingpongFBO[0].BindTexture(0);
+    }
     ResourceManager::GetShader("post_proc").Use();
     renderQuad();
     Texture2D::UnBind();
@@ -547,7 +553,6 @@ void SandboxLayer::OnImGuiRender()
         ImGuiIO& io = ImGui::GetIO();
         if (io.MouseWheel) {
             m_Camera.ProcessMouseScroll(io.MouseWheel);
-            GL_TRACE("FoV is {0} degrees", m_Camera.m_Fov);
         }
     }
 
@@ -571,8 +576,16 @@ void SandboxLayer::OnImGuiRender()
 
     ImGui::Begin("Opions");
 
-    if (ImGui::CollapsingHeader("Post Processing")) {
-        if (ImGui::TreeNode("Kernel Effects")) {
+    static ImGuiTreeNodeFlags base_flags = ImGuiTreeNodeFlags_DefaultOpen;
+
+    if (ImGui::CollapsingHeader("Camera", base_flags)) {
+        ImGui::DragFloat3("Position", (float*)&m_Camera.m_Position, 0.01f, -FLT_MAX, FLT_MAX, "%.2f");
+        ImGui::DragFloat3("Orientation", (float*)&m_Camera.m_Orientation, 0.01f, -FLT_MAX, FLT_MAX, "%.2f");
+        ImGui::DragFloat("Field of view", &m_Camera.m_Fov, 0.1f, 1.0f, 90.0f, "%.2f");
+    }
+
+    if (ImGui::CollapsingHeader("Post Processing", base_flags)) {
+        if (ImGui::TreeNodeEx("Kernel Effects", base_flags)) {
             if (ImGui::Checkbox("Blur", &m_UseBlur)) {
                 m_UseEdge = false;
                 m_UseRidge = false;
@@ -613,7 +626,7 @@ void SandboxLayer::OnImGuiRender()
             ImGui::TreePop();
         }
 
-        if (ImGui::TreeNode("General Post Processing Effects")) {
+        if (ImGui::TreeNodeEx("General Post Processing Effects", base_flags)) {
             if (ImGui::Checkbox("Greyscale", &m_UseGreyscale)) {
                 m_UseInversion = false;
                 ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.greyscale", m_UseGreyscale);
@@ -625,10 +638,14 @@ void SandboxLayer::OnImGuiRender()
                 ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.inversion", m_UseInversion);
             }
 
+            if (ImGui::Checkbox("Bloom", &m_UseBloom)) {
+                ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.bloom", m_UseBloom);
+            }
+
             ImGui::TreePop();
         }
 
-        if (ImGui::TreeNode("HDR Settings")) {
+        if (ImGui::TreeNodeEx("HDR Settings", base_flags)) {
             if (ImGui::DragFloat("Exposure", &m_Exposure, 0.01f, 0.0f, FLT_MAX, "%.2f")) {
                 ResourceManager::GetShader("post_proc").Use().SetFloat("postProcessing.exposure", m_Exposure);
             }
@@ -637,7 +654,7 @@ void SandboxLayer::OnImGuiRender()
         }
     }
 
-    if (ImGui::CollapsingHeader("PBR Settings")) {
+    if (ImGui::CollapsingHeader("PBR Settings", base_flags)) {
         if (ImGui::ColorEdit3("Albedo", (float*)&m_Albedo)) {
             ResourceManager::GetShader("pbr_lighting").Use().SetVector3f("material.albedo", m_Albedo);
         }

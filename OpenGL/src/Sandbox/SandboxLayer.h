@@ -84,6 +84,7 @@ private:
     bool m_UseEdge = false;
     bool m_UseSharpen = false;
     bool m_UseBlur = false;
+    bool m_UseBloom = true;
     float m_Exposure = 0.5f;
 
     // PBR Material Properties

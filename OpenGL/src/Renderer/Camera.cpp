@@ -30,8 +30,8 @@ void Camera::ProcessMouseScroll(float yoffset)
     m_Fov -= static_cast<float>(yoffset);
     if (m_Fov < 1.0f)
         m_Fov = 1.0f;
-    if (m_Fov > 45.0f)
-        m_Fov = 45.0f;
+    if (m_Fov > 90.0f)
+        m_Fov = 90.0f;
 }
 
 void Camera::Inputs(GLFWwindow* window, float deltaTime)
