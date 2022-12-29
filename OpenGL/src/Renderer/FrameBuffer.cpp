@@ -43,9 +43,11 @@ void FrameBuffer::TextureAttachment(GLuint n, GLenum mode, GLint inFormat, GLuin
         glBindTexture(mode, tex[i]);
 
         if (mode == GL_TEXTURE_2D) {
-            glTexImage2D(mode, 0, inFormat, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+            glTexImage2D(mode, 0, inFormat, width, height, 0, GL_RGB, GL_FLOAT, NULL);
             glTexParameteri(mode, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
             glTexParameteri(mode, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glTexParameteri(mode, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            glTexParameteri(mode, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         }
         else
             glTexImage2DMultisample(mode, 4, inFormat, width, height, GL_TRUE);
@@ -67,9 +69,11 @@ void FrameBuffer::ResizeTextureAttachment(GLenum mode, GLint inFormat, GLuint wi
         glBindTexture(mode, textures[i]);
 
         if (mode == GL_TEXTURE_2D) {
-            glTexImage2D(mode, 0, inFormat, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+            glTexImage2D(mode, 0, inFormat, width, height, 0, GL_RGB, GL_FLOAT, NULL);
             glTexParameteri(mode, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
             glTexParameteri(mode, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glTexParameteri(mode, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            glTexParameteri(mode, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         }
         else
             glTexImage2DMultisample(mode, 4, inFormat, width, height, GL_TRUE);
@@ -83,39 +87,54 @@ void FrameBuffer::Blit(FrameBuffer fbo, GLuint width, GLuint height) const
 {
     glBindFramebuffer(GL_READ_FRAMEBUFFER, m_RendererID);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo.m_RendererID);
+    glReadBuffer(GL_COLOR_ATTACHMENT0);
+    glDrawBuffer(GL_COLOR_ATTACHMENT0);
+    glBlitFramebuffer(0, 0, width, height, 0, 0, width, height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+    glReadBuffer(GL_COLOR_ATTACHMENT1);
+    glDrawBuffer(GL_COLOR_ATTACHMENT1);
     glBlitFramebuffer(0, 0, width, height, 0, 0, width, height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 }
 
-void FrameBuffer::RenderBufferAttachment(GLboolean multisample, GLuint width, GLuint height)
+void FrameBuffer::RenderBufferAttachment(GLboolean multisample, GLenum inFormat, GLuint width, GLuint height)
 {
     glGenRenderbuffers(1, &m_RenderBufferID);
     glBindRenderbuffer(GL_RENDERBUFFER, m_RenderBufferID);
 
     if (multisample)
-        glRenderbufferStorageMultisample(GL_RENDERBUFFER, 4, GL_DEPTH24_STENCIL8, width, height);
+        glRenderbufferStorageMultisample(GL_RENDERBUFFER, 4, inFormat, width, height);
     else
-        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
+        glRenderbufferStorage(GL_RENDERBUFFER, inFormat, width, height);
 
     glBindRenderbuffer(GL_RENDERBUFFER, 0);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, m_RenderBufferID);
+    if (inFormat == GL_RGB16F)
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, m_RenderBufferID);
+    else if (inFormat == GL_DEPTH24_STENCIL8)
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, m_RenderBufferID);
+    else if (inFormat == GL_DEPTH_COMPONENT)
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, m_RenderBufferID);
 }
 
-void FrameBuffer::ResizeRenderBuffer(GLuint width, GLuint height) const
+void FrameBuffer::ResizeRenderBuffer(GLenum inFormat, GLuint width, GLuint height) const
 {
     glBindRenderbuffer(GL_RENDERBUFFER, m_RenderBufferID);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
+    glRenderbufferStorage(GL_RENDERBUFFER, inFormat, width, height);
     glBindRenderbuffer(GL_RENDERBUFFER, 0);
 }
 
-void FrameBuffer::ResizeRenderBufferAttachment(GLboolean multisample, GLuint width, GLuint height)
+void FrameBuffer::ResizeRenderBufferAttachment(GLboolean multisample, GLenum inFormat, GLuint width, GLuint height)
 {
     glBindRenderbuffer(GL_RENDERBUFFER, m_RenderBufferID);
 
     if (multisample)
-        glRenderbufferStorageMultisample(GL_RENDERBUFFER, 4, GL_DEPTH24_STENCIL8, width, height);
+        glRenderbufferStorageMultisample(GL_RENDERBUFFER, 4, inFormat, width, height);
     else
-        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
+        glRenderbufferStorage(GL_RENDERBUFFER, inFormat, width, height);
 
     glBindRenderbuffer(GL_RENDERBUFFER, 0);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, m_RenderBufferID);
+    if (inFormat == GL_RGB16F)
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, m_RenderBufferID);
+    else if (inFormat == GL_DEPTH24_STENCIL8)
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, m_RenderBufferID);
+    else if (inFormat == GL_DEPTH_COMPONENT)
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, m_RenderBufferID);
 }

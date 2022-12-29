@@ -53,7 +53,8 @@ private:
     GLuint indexCount;
 
     FrameBuffer multisampleFBO;
-    FrameBuffer intermediateFBO;
+    FrameBuffer hdrFBO;
+    FrameBuffer pingpongFBO[2];
     FrameBuffer imguiFBO;
     FrameBuffer captureFBO;
 
@@ -76,13 +77,16 @@ private:
     std::vector<glm::vec3> lightPositions;
     std::vector<glm::vec3> lightColors;
 
+    // Post Processing
     bool m_UseGreyscale = false;
     bool m_UseInversion = false;
     bool m_UseRidge = false;
     bool m_UseEdge = false;
     bool m_UseSharpen = false;
     bool m_UseBlur = false;
+    float m_Exposure = 0.5f;
 
+    // PBR Material Properties
     glm::vec3 m_Albedo = glm::vec3(0.5f, 0.0f, 0.0f);
     float m_Metallic = 0.2f;
     float m_Roughness = 0.3f;

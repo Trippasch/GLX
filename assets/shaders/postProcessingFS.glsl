@@ -6,6 +6,7 @@ out vec4 FragColor;
 in vec2 TexCoords;
 
 layout (binding = 0) uniform sampler2D screenTexture;
+layout (binding = 1) uniform sampler2D bloomBlur;
 
 struct PostProcessing {
     bool inversion;
@@ -14,6 +15,7 @@ struct PostProcessing {
     bool blur;
     bool edge;
     bool ridge;
+    float exposure;
 };
 uniform PostProcessing postProcessing;
 
@@ -94,8 +96,14 @@ void main()
     }
 
     vec3 color = FragColor.rgb;
+
+    vec3 bloomColor = texture(bloomBlur, TexCoords).rgb;
+    color += bloomColor;
+
+    // exposure - tone mapping
+    color = vec3(1.0) - exp(-color * postProcessing.exposure);
     // gamma correct
-    // color = pow(color, vec3(1.0 / gamma));
+    color = pow(color, vec3(1.0 / gamma));
 
     FragColor = vec4(color, 1.0);
 }

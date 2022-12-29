@@ -156,13 +156,13 @@ void SandboxLayer::OnAttach()
     ResourceManager::LoadModel("assets/objects/backpack/backpack.obj", "backpack");
     // Load Textures
     // Rusted Iron
-    ResourceManager::LoadTexture("assets/textures/pbr/rusted_iron/albedo.png", "rusted_albedo");
+    ResourceManager::LoadTexture("assets/textures/pbr/rusted_iron/albedo.png", "rusted_albedo", true);
     ResourceManager::LoadTexture("assets/textures/pbr/rusted_iron/normal.png", "rusted_normal");
     ResourceManager::LoadTexture("assets/textures/pbr/rusted_iron/metallic.png", "rusted_metallic");
     ResourceManager::LoadTexture("assets/textures/pbr/rusted_iron/roughness.png", "rusted_roughness");
     ResourceManager::LoadTexture("assets/textures/pbr/rusted_iron/ao.png", "rusted_ao");
     // Grass
-    ResourceManager::LoadTexture("assets/textures/pbr/grass/albedo.png", "grass_albedo");
+    ResourceManager::LoadTexture("assets/textures/pbr/grass/albedo.png", "grass_albedo", true);
     ResourceManager::LoadTexture("assets/textures/pbr/grass/normal.png", "grass_normal");
     ResourceManager::LoadTexture("assets/textures/pbr/grass/metallic.png", "grass_metallic");
     ResourceManager::LoadTexture("assets/textures/pbr/grass/roughness.png", "grass_roughness");
@@ -180,6 +180,7 @@ void SandboxLayer::OnAttach()
     ResourceManager::LoadShader("assets/shaders/cubemapVS.glsl", "assets/shaders/prefiltermapFS.glsl", nullptr, "prefilter");
     ResourceManager::LoadShader("assets/shaders/hdrSkyboxVS.glsl", "assets/shaders/hdrSkyboxFS.glsl", nullptr, "hdr_skybox");
     ResourceManager::LoadShader("assets/shaders/brdfVS.glsl", "assets/shaders/brdfFS.glsl", nullptr, "brdf");
+    ResourceManager::LoadShader("assets/shaders/blurVS.glsl", "assets/shaders/blurFS.glsl", nullptr, "blur");
 
     // Post Processing - Activate only one per group
     // Kernel effects
@@ -190,6 +191,7 @@ void SandboxLayer::OnAttach()
     // General Post Processing
     ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.greyscale", m_UseGreyscale);
     ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.inversion", m_UseInversion);
+    ResourceManager::GetShader("post_proc").Use().SetFloat("postProcessing.exposure", m_Exposure);
 
     // PBR Settings
     ResourceManager::GetShader("pbr_lighting").Use().SetVector3f("material.albedo", m_Albedo);
@@ -200,8 +202,8 @@ void SandboxLayer::OnAttach()
     // Generate lights
     lightPositions.push_back(glm::vec3(-5.0f, 2.0f, 10.0f));
     lightPositions.push_back(glm::vec3(5.0f, 2.0f, 10.0f));
-    lightColors.push_back(glm::vec3(300.0f, 150.0f, 1.0f));
-    lightColors.push_back(glm::vec3(150.0f, 150.0f, 150.0f));
+    lightColors.push_back(glm::vec3(300.0f, 0.0f, 0.0f));
+    lightColors.push_back(glm::vec3(0.0f, 0.0f, 300.0f));
     for (size_t i = 0; i < lightPositions.size(); i++) {
         ResourceManager::GetShader("pbr_lighting").Use().SetVector3f(("lightPositions[" + std::to_string(i) + "]").c_str(), lightPositions[i]);
         ResourceManager::GetShader("pbr_lighting").Use().SetVector3f(("lightColors[" + std::to_string(i) + "]").c_str(), lightColors[i]);
@@ -211,16 +213,27 @@ void SandboxLayer::OnAttach()
 
     multisampleFBO = FrameBuffer();
     multisampleFBO.Bind();
-    multisampleFBO.TextureAttachment(1, GL_TEXTURE_2D_MULTISAMPLE, GL_RGBA, m_Width, m_Height);
-    multisampleFBO.RenderBufferAttachment(GL_TRUE, m_Width, m_Height);
+    multisampleFBO.TextureAttachment(2, GL_TEXTURE_2D_MULTISAMPLE, GL_RGB16F, m_Width, m_Height);
+    multisampleFBO.RenderBufferAttachment(GL_TRUE, GL_DEPTH24_STENCIL8, m_Width, m_Height);
+    // tell OpenGL which color attachments we'll use (of this framebuffer) for rendering
+    GLenum attachments[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+    glDrawBuffers(2, attachments);
     FrameBuffer::CheckStatus();
     FrameBuffer::UnBind();
 
-    intermediateFBO = FrameBuffer();
-    intermediateFBO.Bind();
-    intermediateFBO.TextureAttachment(1, GL_TEXTURE_2D, GL_RGBA8, m_Width, m_Height);
+    hdrFBO = FrameBuffer();
+    hdrFBO.Bind();
+    hdrFBO.TextureAttachment(2, GL_TEXTURE_2D, GL_RGB16F, m_Width, m_Height);
     FrameBuffer::CheckStatus();
     FrameBuffer::UnBind();
+
+    for (GLuint i = 0; i < 2; i++) {
+        pingpongFBO[i] = FrameBuffer();
+        pingpongFBO[i].Bind();
+        pingpongFBO[i].TextureAttachment(1, GL_TEXTURE_2D, GL_RGB16F, m_Width, m_Height);
+        FrameBuffer::CheckStatus();
+        FrameBuffer::UnBind();
+    }
 
     imguiFBO = FrameBuffer();
     imguiFBO.Bind();
@@ -230,7 +243,7 @@ void SandboxLayer::OnAttach()
 
     captureFBO = FrameBuffer();
     captureFBO.Bind();
-    captureFBO.RenderBufferAttachment(GL_FALSE, m_EnvCubemapWidth, m_EnvCubemapHeight);
+    captureFBO.RenderBufferAttachment(GL_FALSE, GL_DEPTH24_STENCIL8, m_EnvCubemapWidth, m_EnvCubemapHeight);
     FrameBuffer::CheckStatus();
     FrameBuffer::UnBind();
 
@@ -277,7 +290,7 @@ void SandboxLayer::OnAttach()
     m_Irradiancemap.GenerateCubemap(m_IrradiancemapWidth, m_IrradiancemapHeight);
 
     captureFBO.Bind();
-    captureFBO.ResizeRenderBuffer(m_IrradiancemapWidth, m_IrradiancemapHeight);
+    captureFBO.ResizeRenderBuffer(GL_DEPTH24_STENCIL8, m_IrradiancemapWidth, m_IrradiancemapHeight);
 
     m_EnvCubemap.BindCubemap(0);
     ResourceManager::GetShader("irradiance").Use().SetMatrix4(0, captureProjection);
@@ -310,7 +323,7 @@ void SandboxLayer::OnAttach()
         // reisze framebuffer according to mip-level size.
         GLuint mipWidth = m_PrefiltermapWidth * std::pow(0.5, mip);
         GLuint mipHeight = m_PrefiltermapHeight * std::pow(0.5, mip);
-        captureFBO.ResizeRenderBuffer(mipWidth, mipHeight);
+        captureFBO.ResizeRenderBuffer(GL_DEPTH24_STENCIL8, mipWidth, mipHeight);
         glViewport(0, 0, mipWidth, mipHeight);
 
         float roughness = (float)mip / (float)(maxMipLevels - 1);
@@ -338,7 +351,7 @@ void SandboxLayer::OnAttach()
 
     // then re-configure capture framebuffer object and render screen-space quad with BRDF shader
     captureFBO.Bind();
-    captureFBO.ResizeRenderBuffer(m_BRDFLUTTextureWidth, m_BRDFLUTTextureHeight);
+    captureFBO.ResizeRenderBuffer(GL_DEPTH24_STENCIL8, m_BRDFLUTTextureWidth, m_BRDFLUTTextureHeight);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_BRDFLUTTexture.ID, 0);
 
     glViewport(0, 0, m_BRDFLUTTextureWidth, m_BRDFLUTTextureHeight);
@@ -403,8 +416,8 @@ void SandboxLayer::OnUpdate()
     m_Irradiancemap.BindCubemap(0);
     m_Prefiltermap.BindCubemap(1);
     m_BRDFLUTTexture.Bind(2);
-    for (unsigned int i = 0; i < 5; i++) {
-        for (unsigned int j = 0; j < 5; j++) {
+    for (GLuint i = 0; i < 5; i++) {
+        for (GLuint j = 0; j < 5; j++) {
             glm::mat4 model = glm::mat4(1.0f);
             model = glm::translate(model, glm::vec3(-6.0f + (i*3), 0.5f + (j*3), 0.0f));
             model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
@@ -423,18 +436,40 @@ void SandboxLayer::OnUpdate()
     renderCube();
     Texture2D::UnBindCubemap();
 
-    multisampleFBO.Blit(intermediateFBO, m_Width, m_Height);
-    multisampleFBO.UnBind();
+    FrameBuffer::UnBind();
+
+    // blur bright fragments with two-pass Gaussian blur
+    bool horizontal = true, first_iteration = true;
+    GLuint amount = 10;
+    for (GLuint i = 0; i < amount; i++) {
+        pingpongFBO[horizontal].Bind();
+        ResourceManager::GetShader("blur").Use().SetInteger("horizontal", horizontal);
+        glActiveTexture(GL_TEXTURE0);
+        if (first_iteration)
+            hdrFBO.BindTexture(1);
+        else
+            pingpongFBO[!horizontal].BindTexture(0);
+        renderQuad();
+        horizontal = !horizontal;
+        if (first_iteration)
+            first_iteration = false;
+    }
+    FrameBuffer::UnBind();
+
+    multisampleFBO.Blit(hdrFBO, m_Width, m_Height);
+    FrameBuffer::UnBind();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glDisable(GL_DEPTH_TEST);
 
     imguiFBO.Bind();
     glActiveTexture(GL_TEXTURE0);
-    intermediateFBO.BindTexture(0);
+    hdrFBO.BindTexture(0);
+    glActiveTexture(GL_TEXTURE1);
+    pingpongFBO[!horizontal].BindTexture(0);
     ResourceManager::GetShader("post_proc").Use();
     renderQuad();
     Texture2D::UnBind();
-    imguiFBO.UnBind();
+    FrameBuffer::UnBind();
 }
 
 void SandboxLayer::renderPlane()
@@ -592,6 +627,14 @@ void SandboxLayer::OnImGuiRender()
 
             ImGui::TreePop();
         }
+
+        if (ImGui::TreeNode("HDR Settings")) {
+            if (ImGui::DragFloat("Exposure", &m_Exposure, 0.01f, 0.0f, FLT_MAX, "%.2f")) {
+                ResourceManager::GetShader("post_proc").Use().SetFloat("postProcessing.exposure", m_Exposure);
+            }
+
+            ImGui::TreePop();
+        }
     }
 
     if (ImGui::CollapsingHeader("PBR Settings")) {
@@ -624,15 +667,22 @@ bool SandboxLayer::imGuiResize()
         glViewport(0, 0, m_Width, m_Height);
 
         multisampleFBO.Bind();
-        multisampleFBO.ResizeTextureAttachment(GL_TEXTURE_2D_MULTISAMPLE, GL_RGBA, m_Width, m_Height);
-        multisampleFBO.ResizeRenderBufferAttachment(GL_TRUE, m_Width, m_Height);
+        multisampleFBO.ResizeTextureAttachment(GL_TEXTURE_2D_MULTISAMPLE, GL_RGB16F, m_Width, m_Height);
+        multisampleFBO.ResizeRenderBufferAttachment(GL_TRUE, GL_DEPTH24_STENCIL8, m_Width, m_Height);
         FrameBuffer::CheckStatus();
         FrameBuffer::UnBind();
 
-        intermediateFBO.Bind();
-        intermediateFBO.ResizeTextureAttachment(GL_TEXTURE_2D, GL_RGBA8, m_Width, m_Height);
+        hdrFBO.Bind();
+        hdrFBO.ResizeTextureAttachment(GL_TEXTURE_2D, GL_RGB16F, m_Width, m_Height);
         FrameBuffer::CheckStatus();
         FrameBuffer::UnBind();
+
+        for (GLuint i = 0; i < 2; i++) {
+            pingpongFBO[i].Bind();
+            pingpongFBO[i].ResizeTextureAttachment(GL_TEXTURE_2D, GL_RGB16F, m_Width, m_Height);
+            FrameBuffer::CheckStatus();
+            FrameBuffer::UnBind();
+        }
 
         imguiFBO.Bind();
         imguiFBO.ResizeTextureAttachment(GL_TEXTURE_2D, GL_RGBA8, m_Width, m_Height);
@@ -655,7 +705,9 @@ void SandboxLayer::OnDetach()
     screenQuadVBO.Destroy();
 
     multisampleFBO.Destroy();
-    intermediateFBO.Destroy();
+    hdrFBO.Destroy();
+    for (GLuint i = 0; i < 2; i++)
+        pingpongFBO[i].Destroy();
     imguiFBO.Destroy();
     captureFBO.Destroy();
 }

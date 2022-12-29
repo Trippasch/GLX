@@ -27,9 +27,11 @@ public:
     void TextureAttachment(GLuint n, GLenum mode, GLint inFormat, GLuint width, GLuint height);
     void ResizeTextureAttachment(GLenum mode, GLint inFormat, GLuint width, GLuint height);
     void Blit(FrameBuffer fbo, GLuint width, GLuint height) const;
-    void RenderBufferAttachment(GLboolean multisample, GLuint width, GLuint height);
-    void ResizeRenderBuffer(GLuint width, GLuint height) const;
-    void ResizeRenderBufferAttachment(GLboolean multisample, GLuint width, GLuint height);
+    void RenderBufferAttachment(GLboolean multisample, GLenum inFormat, GLuint width, GLuint height);
+    void ResizeRenderBuffer(GLenum inFormat, GLuint width, GLuint height) const;
+    void ResizeRenderBufferAttachment(GLboolean multisample, GLenum inFormat, GLuint width, GLuint height);
 
+    inline GLuint &GetID() { return m_RendererID; }
+    inline GLuint &GetRenderBufferID() { return m_RenderBufferID; }
     inline std::vector<GLuint> &GetTextureAttachments() { return textures; }
 };

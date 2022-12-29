@@ -4,7 +4,8 @@
 
 #define M_PI 3.14159265358979323846
 
-out vec4 FragColor;
+layout (location = 0) out vec4 FragColor;
+layout (location = 1) out vec4 BrightColor;
 
 in VS_OUT
 {
@@ -151,10 +152,12 @@ void main()
 
     vec3 color = ambient + Lo;
 
-    // HDR tonemapping
-    color = color / (color + vec3(1.0));
-    // gamma correct
-    color = pow(color, vec3(1.0 / gamma));
-
     FragColor = vec4(color, 1.0);
+
+    // check whether result is higher than some threshold, if so, output as bloom threshold color
+    float brightness = dot(FragColor.rgb, vec3(0.2126, 0.7152, 0.0722));
+    if(brightness > 1.0)
+        BrightColor = vec4(FragColor.rgb, 1.0);
+    else
+        BrightColor = vec4(0.0, 0.0, 0.0, 1.0);
 }
