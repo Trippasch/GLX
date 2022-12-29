@@ -570,6 +570,15 @@ void SandboxLayer::OnImGuiRender()
     ImGuiIO& io = ImGui::GetIO();
 
     ImGui::Text("Dear ImGui %s", ImGui::GetVersion());
+
+#ifdef GL_DEBUG
+    ImGui::Text("Running on Debug mode");
+#elif GL_RELEASE
+    ImGui::Text("Running on Release mode");
+#elif GL_DIST
+    ImGui::Text("Running on Dist mode");
+#endif
+
     ImGui::Text("Application average\n %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
 
     ImGui::End();
