@@ -57,6 +57,10 @@ private:
     FrameBuffer pingpongFBO[2];
     FrameBuffer imguiFBO;
     FrameBuffer captureFBO;
+    FrameBuffer depthMapFBO;
+
+    GLuint m_ShadowWidth = 1024;
+    GLuint m_ShadowHeight = 1024;
 
     Texture2D m_EnvCubemap;
     GLuint m_EnvCubemapWidth = 2048;
@@ -74,8 +78,14 @@ private:
     GLuint m_BRDFLUTTextureWidth = 512;
     GLuint m_BRDFLUTTextureHeight = 512;
 
-    std::vector<glm::vec3> lightPositions;
-    std::vector<glm::vec3> lightColors;
+    // directional light
+    glm::vec3 m_DirLightDirection = glm::vec3(-1.0f, -1.0f, -0.55f);
+    glm::vec3 m_DirLightColor = glm::vec3(0.95f, 0.89f, 0.38f);
+    float m_DirLightIntensity = 10.0f;
+
+    // point lights
+    std::vector<glm::vec3> m_PointLightPositions;
+    std::vector<glm::vec3> m_PointLightColors;
 
     // Post Processing
     bool m_UseGreyscale = false;

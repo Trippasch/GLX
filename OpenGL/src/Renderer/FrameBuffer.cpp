@@ -34,31 +34,50 @@ void FrameBuffer::BindTexture(GLuint index) const
     glBindTexture(GL_TEXTURE_2D, textures[index]);
 }
 
-void FrameBuffer::TextureAttachment(GLuint n, GLenum mode, GLint inFormat, GLuint width, GLuint height)
+void FrameBuffer::TextureAttachment(GLuint n, GLuint mode, GLenum target, GLint inFormat, GLuint width, GLuint height)
 {
     GLuint *tex = new GLuint[n];
     glGenTextures(n, tex);
 
     for (size_t i = 0; i < n; i++) {
-        glBindTexture(mode, tex[i]);
+        glBindTexture(target, tex[i]);
 
-        if (mode == GL_TEXTURE_2D) {
-            glTexImage2D(mode, 0, inFormat, width, height, 0, GL_RGB, GL_FLOAT, NULL);
-            glTexParameteri(mode, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-            glTexParameteri(mode, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            glTexParameteri(mode, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-            glTexParameteri(mode, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        if (target == GL_TEXTURE_2D) {
+            if (!mode) {
+                glTexImage2D(target, 0, inFormat, width, height, 0, GL_RGB, GL_FLOAT, NULL);
+                glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                glTexParameteri(target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+                glTexParameteri(target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+            }
+            else {
+                glTexImage2D(target, 0, inFormat, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+                glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+                glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+                glTexParameteri(target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+                glTexParameteri(target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+            }
         }
-        else if (mode == GL_TEXTURE_2D_MULTISAMPLE) {
-            glTexImage2DMultisample(mode, 4, inFormat, width, height, GL_TRUE);
-            glTexParameteri(mode, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            glTexParameteri(mode, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-            glTexParameteri(mode, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-            glTexParameteri(mode, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        else if (target == GL_TEXTURE_2D_MULTISAMPLE) {
+            glTexImage2DMultisample(target, 4, inFormat, width, height, GL_TRUE);
+            glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexParameteri(target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            glTexParameteri(target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         }
 
-        glBindTexture(mode, 0);
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, mode, tex[i], 0);
+        if (!mode) {
+            glBindTexture(target, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, target, tex[i], 0);
+        }
+        else {
+            float borderColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+            glTexParameterfv(target, GL_TEXTURE_BORDER_COLOR, borderColor);
+            glBindTexture(target, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, target, tex[i], 0);
+            glDrawBuffer(GL_NONE);
+            glReadBuffer(GL_NONE);
+        }
     }
 
     textures.clear();
@@ -68,28 +87,47 @@ void FrameBuffer::TextureAttachment(GLuint n, GLenum mode, GLint inFormat, GLuin
     delete [] tex;
 }
 
-void FrameBuffer::ResizeTextureAttachment(GLenum mode, GLint inFormat, GLuint width, GLuint height)
+void FrameBuffer::ResizeTextureAttachment(GLuint mode, GLenum target, GLint inFormat, GLuint width, GLuint height)
 {
     for (size_t i = 0; i < textures.size(); i++) {
-        glBindTexture(mode, textures[i]);
+        glBindTexture(target, textures[i]);
 
-        if (mode == GL_TEXTURE_2D) {
-            glTexImage2D(mode, 0, inFormat, width, height, 0, GL_RGB, GL_FLOAT, NULL);
-            glTexParameteri(mode, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-            glTexParameteri(mode, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            glTexParameteri(mode, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-            glTexParameteri(mode, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        if (target == GL_TEXTURE_2D) {
+            if (!mode) {
+                glTexImage2D(target, 0, inFormat, width, height, 0, GL_RGB, GL_FLOAT, NULL);
+                glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                glTexParameteri(target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+                glTexParameteri(target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+            }
+            else {
+                glTexImage2D(target, 0, inFormat, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+                glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+                glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+                glTexParameteri(target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+                glTexParameteri(target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+            }
         }
-        else if (mode == GL_TEXTURE_2D_MULTISAMPLE) {
-            glTexImage2DMultisample(mode, 4, inFormat, width, height, GL_TRUE);
-            glTexParameteri(mode, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            glTexParameteri(mode, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-            glTexParameteri(mode, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-            glTexParameteri(mode, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        else if (target == GL_TEXTURE_2D_MULTISAMPLE) {
+            glTexImage2DMultisample(target, 4, inFormat, width, height, GL_TRUE);
+            glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexParameteri(target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            glTexParameteri(target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         }
 
-        glBindTexture(mode, 0);
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, mode, textures[i], 0);
+        if (!mode) {
+            glBindTexture(target, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, target, textures[i], 0);
+        }
+        else {
+            float borderColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+            glTexParameterfv(target, GL_TEXTURE_BORDER_COLOR, borderColor);
+            glBindTexture(target, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, target, textures[i], 0);
+            glDrawBuffer(GL_NONE);
+            glReadBuffer(GL_NONE);
+        }
     }
 }
 

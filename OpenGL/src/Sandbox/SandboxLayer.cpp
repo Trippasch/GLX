@@ -200,21 +200,27 @@ void SandboxLayer::OnAttach()
     ResourceManager::GetShader("pbr_lighting").Use().SetFloat("material.roughness", m_Roughness);
     ResourceManager::GetShader("pbr_lighting").Use().SetFloat("material.ao", m_AO);
 
-    // Generate lights
-    lightPositions.push_back(glm::vec3(-5.0f, 2.0f, 10.0f));
-    lightPositions.push_back(glm::vec3(5.0f, 2.0f, 10.0f));
-    lightColors.push_back(glm::vec3(100.0f, 0.0f, 0.0f));
-    lightColors.push_back(glm::vec3(100.0f, 100.0f, 100.0f));
-    for (size_t i = 0; i < lightPositions.size(); i++) {
-        ResourceManager::GetShader("pbr_lighting").Use().SetVector3f(("lightPositions[" + std::to_string(i) + "]").c_str(), lightPositions[i]);
-        ResourceManager::GetShader("pbr_lighting").Use().SetVector3f(("lightColors[" + std::to_string(i) + "]").c_str(), lightColors[i]);
-        ResourceManager::GetShader("pbr_lighting_textured").Use().SetVector3f(("lightPositions[" + std::to_string(i) + "]").c_str(), lightPositions[i]);
-        ResourceManager::GetShader("pbr_lighting_textured").Use().SetVector3f(("lightColors[" + std::to_string(i) + "]").c_str(), lightColors[i]);
+    // Generate directional light
+    ResourceManager::GetShader("pbr_lighting").Use().SetVector3f("dirLight.direction", m_DirLightDirection);
+    ResourceManager::GetShader("pbr_lighting").Use().SetVector3f("dirLight.color", m_DirLightColor * m_DirLightIntensity);
+    ResourceManager::GetShader("pbr_lighting_textured").Use().SetVector3f("dirLight.direction", m_DirLightDirection);
+    ResourceManager::GetShader("pbr_lighting_textured").Use().SetVector3f("dirLight.color", m_DirLightColor * m_DirLightIntensity);
+
+    // Generate point lights
+    m_PointLightPositions.push_back(glm::vec3(-5.0f, 2.0f, 10.0f));
+    m_PointLightPositions.push_back(glm::vec3(5.0f, 2.0f, 10.0f));
+    m_PointLightColors.push_back(glm::vec3(100.0f, 0.0f, 0.0f));
+    m_PointLightColors.push_back(glm::vec3(100.0f, 100.0f, 100.0f));
+    for (size_t i = 0; i < m_PointLightPositions.size(); i++) {
+        ResourceManager::GetShader("pbr_lighting").Use().SetVector3f(("pointLights[" + std::to_string(i) + "].position").c_str(), m_PointLightPositions[i]);
+        ResourceManager::GetShader("pbr_lighting").Use().SetVector3f(("pointLights[" + std::to_string(i) + "].color").c_str(), m_PointLightColors[i]);
+        ResourceManager::GetShader("pbr_lighting_textured").Use().SetVector3f(("pointLights[" + std::to_string(i) + "].position").c_str(), m_PointLightPositions[i]);
+        ResourceManager::GetShader("pbr_lighting_textured").Use().SetVector3f(("pointLights[" + std::to_string(i) + "].color").c_str(), m_PointLightColors[i]);
     }
 
     multisampleFBO = FrameBuffer();
     multisampleFBO.Bind();
-    multisampleFBO.TextureAttachment(2, GL_TEXTURE_2D_MULTISAMPLE, GL_RGB16F, m_Width, m_Height);
+    multisampleFBO.TextureAttachment(2, 0, GL_TEXTURE_2D_MULTISAMPLE, GL_RGB16F, m_Width, m_Height);
     multisampleFBO.RenderBufferAttachment(GL_TRUE, GL_DEPTH24_STENCIL8, m_Width, m_Height);
     // tell OpenGL which color attachments we'll use (of this framebuffer) for rendering
     GLenum attachments[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
@@ -224,27 +230,33 @@ void SandboxLayer::OnAttach()
 
     hdrFBO = FrameBuffer();
     hdrFBO.Bind();
-    hdrFBO.TextureAttachment(2, GL_TEXTURE_2D, GL_RGB16F, m_Width, m_Height);
+    hdrFBO.TextureAttachment(2, 0, GL_TEXTURE_2D, GL_RGB16F, m_Width, m_Height);
     FrameBuffer::CheckStatus();
     FrameBuffer::UnBind();
 
     for (GLuint i = 0; i < 2; i++) {
         pingpongFBO[i] = FrameBuffer();
         pingpongFBO[i].Bind();
-        pingpongFBO[i].TextureAttachment(1, GL_TEXTURE_2D, GL_RGB16F, m_Width, m_Height);
+        pingpongFBO[i].TextureAttachment(1, 0, GL_TEXTURE_2D, GL_RGB16F, m_Width, m_Height);
         FrameBuffer::CheckStatus();
         FrameBuffer::UnBind();
     }
 
     imguiFBO = FrameBuffer();
     imguiFBO.Bind();
-    imguiFBO.TextureAttachment(1, GL_TEXTURE_2D, GL_RGBA8, m_Width, m_Height);
+    imguiFBO.TextureAttachment(1, 0, GL_TEXTURE_2D, GL_RGBA8, m_Width, m_Height);
     FrameBuffer::CheckStatus();
     FrameBuffer::UnBind();
 
     captureFBO = FrameBuffer();
     captureFBO.Bind();
     captureFBO.RenderBufferAttachment(GL_FALSE, GL_DEPTH24_STENCIL8, m_EnvCubemapWidth, m_EnvCubemapHeight);
+    FrameBuffer::CheckStatus();
+    FrameBuffer::UnBind();
+
+    depthMapFBO = FrameBuffer();
+    depthMapFBO.Bind();
+    depthMapFBO.TextureAttachment(1, 1, GL_TEXTURE_2D, GL_DEPTH_COMPONENT, m_ShadowWidth, m_ShadowHeight);
     FrameBuffer::CheckStatus();
     FrameBuffer::UnBind();
 
@@ -363,6 +375,8 @@ void SandboxLayer::OnAttach()
 
     glViewport(0, 0, m_Width, m_Height);
 
+    // generate the depth map for directional shadows
+
     // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 }
 
@@ -401,12 +415,12 @@ void SandboxLayer::OnUpdate()
     Texture2D::UnBindCubemap();
 
     // Render Light Cubes
-    for (size_t i = 0; i < lightPositions.size(); i++) {
+    for (size_t i = 0; i < m_PointLightPositions.size(); i++) {
         glm::mat4 model = glm::mat4(1.0f);
-        model = glm::translate(model, lightPositions[i]);
+        model = glm::translate(model, m_PointLightPositions[i]);
         model = glm::scale(model, glm::vec3(0.3f, 0.3f, 0.3f));
         ResourceManager::GetShader("light_source").Use().SetMatrix4(1, model);
-        ResourceManager::GetShader("light_source").Use().SetVector3f("color", lightColors[i]);
+        ResourceManager::GetShader("light_source").Use().SetVector3f("color", m_PointLightColors[i]);
         renderCube();
     }
 
@@ -675,6 +689,25 @@ void SandboxLayer::OnImGuiRender()
         }
     }
 
+    if (ImGui::CollapsingHeader("Light Settings", base_flags)) {
+        if (ImGui::TreeNodeEx("Directional Light", base_flags)) {
+            if (ImGui::DragFloat3("Direction", (float*)&m_DirLightDirection, 0.01f, -1.0f, 1.0f, "%.2f")) {
+                ResourceManager::GetShader("pbr_lighting").Use().SetVector3f("dirLight.direction", m_DirLightDirection);
+                ResourceManager::GetShader("pbr_lighting_textured").Use().SetVector3f("dirLight.direction", m_DirLightDirection);
+            }
+            else if (ImGui::ColorEdit3("Color", (float*)&m_DirLightColor)) {
+                ResourceManager::GetShader("pbr_lighting").Use().SetVector3f("dirLight.color", m_DirLightColor * m_DirLightIntensity);
+                ResourceManager::GetShader("pbr_lighting_textured").Use().SetVector3f("dirLight.color", m_DirLightColor * m_DirLightIntensity);
+            }
+            else if (ImGui::DragFloat("Intensity", &m_DirLightIntensity, 0.01f, 0.0f, FLT_MAX, "%.2f")) {
+                ResourceManager::GetShader("pbr_lighting").Use().SetVector3f("dirLight.color", m_DirLightColor * m_DirLightIntensity);
+                ResourceManager::GetShader("pbr_lighting_textured").Use().SetVector3f("dirLight.color", m_DirLightColor * m_DirLightIntensity);
+            }
+
+            ImGui::TreePop();
+        }
+    }
+
     ImGui::End();
 }
 
@@ -693,25 +726,30 @@ bool SandboxLayer::imGuiResize()
         glViewport(0, 0, m_Width, m_Height);
 
         multisampleFBO.Bind();
-        multisampleFBO.ResizeTextureAttachment(GL_TEXTURE_2D_MULTISAMPLE, GL_RGB16F, m_Width, m_Height);
+        multisampleFBO.ResizeTextureAttachment(0, GL_TEXTURE_2D_MULTISAMPLE, GL_RGB16F, m_Width, m_Height);
         multisampleFBO.ResizeRenderBufferAttachment(GL_TRUE, GL_DEPTH24_STENCIL8, m_Width, m_Height);
         FrameBuffer::CheckStatus();
         FrameBuffer::UnBind();
 
         hdrFBO.Bind();
-        hdrFBO.ResizeTextureAttachment(GL_TEXTURE_2D, GL_RGB16F, m_Width, m_Height);
+        hdrFBO.ResizeTextureAttachment(0, GL_TEXTURE_2D, GL_RGB16F, m_Width, m_Height);
         FrameBuffer::CheckStatus();
         FrameBuffer::UnBind();
 
         for (GLuint i = 0; i < 2; i++) {
             pingpongFBO[i].Bind();
-            pingpongFBO[i].ResizeTextureAttachment(GL_TEXTURE_2D, GL_RGB16F, m_Width, m_Height);
+            pingpongFBO[i].ResizeTextureAttachment(0, GL_TEXTURE_2D, GL_RGB16F, m_Width, m_Height);
             FrameBuffer::CheckStatus();
             FrameBuffer::UnBind();
         }
 
         imguiFBO.Bind();
-        imguiFBO.ResizeTextureAttachment(GL_TEXTURE_2D, GL_RGBA8, m_Width, m_Height);
+        imguiFBO.ResizeTextureAttachment(0, GL_TEXTURE_2D, GL_RGBA8, m_Width, m_Height);
+        FrameBuffer::CheckStatus();
+        FrameBuffer::UnBind();
+
+        depthMapFBO.Bind();
+        depthMapFBO.ResizeTextureAttachment(1, GL_TEXTURE_2D, GL_DEPTH_COMPONENT, m_ShadowWidth, m_ShadowHeight);
         FrameBuffer::CheckStatus();
         FrameBuffer::UnBind();
 
