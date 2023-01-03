@@ -12,6 +12,8 @@ in VS_OUT
     vec2 TexCoords;
     vec3 WorldPos;
     vec3 Normal;
+    vec3 FragPos;
+    vec4 FragPosLightSpace;
 } fs_in;
 
 // IBL
@@ -26,10 +28,13 @@ layout (binding = 5) uniform sampler2D metallicMap;
 layout (binding = 6) uniform sampler2D roughnessMap;
 layout (binding = 7) uniform sampler2D aoMap;
 
+layout (binding = 8) uniform sampler2D depthMap;
+
 // directional light
 struct DirLight {
     vec3 direction;
     vec3 color;
+    bool shadows;
 };
 uniform DirLight dirLight;
 
@@ -108,6 +113,40 @@ vec3 FresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness)
     return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }
 
+float DirShadowsCalculation(vec4 fragPosLightSpace, vec3 lightDir)
+{
+    // perform perspective division
+    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+    // transform to [0,1] range
+    projCoords = projCoords * 0.5 + 0.5;
+    // get closest depth value from light's perspective
+    float closestDepth = texture(depthMap, projCoords.xy).r;
+    // get depth of current fragment from light's perspective
+    float currentDepth = projCoords.z;
+    // calculate bias (based on depth map resolution and slope)
+    vec3 normal = normalize(fs_in.Normal);
+    lightDir = normalize(lightDir - fs_in.FragPos);
+    float bias = max(0.005 * (1.0 - dot(normal, lightDir)), 0.005);
+    // check whether current frag pos is in shadow
+    // float shadow = currentDepth - bias > closestDepth ? 1.0 : 0.0;
+    // PCF
+    float shadow = 0.0;
+    vec2 texelSize = 1.0 / textureSize(depthMap, 0);
+    for (int x = -1; x <= 1; x++) {
+        for (int y = -1; y <= 1; y++) {
+            float pcfDepth = texture(depthMap, projCoords.xy + vec2(x, y) * texelSize).r;
+            shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;
+        }
+    }
+    shadow /= 9.0;
+
+    // keep the shadow at 0.0 when outside the far plane region of the light's frustum
+    if (projCoords.z > 1.0)
+        shadow = 0.0;
+
+    return shadow;
+}
+
 vec3 CalcDirLight(vec3 N, vec3 V, vec3 R, vec3 F0, vec3 albedo, float metallic, float roughness, float ao)
 {
     // reflectance equation
@@ -164,7 +203,11 @@ vec3 CalcDirLight(vec3 N, vec3 V, vec3 R, vec3 F0, vec3 albedo, float metallic, 
 
     vec3 ambient = (kD * diffuse + specular) * ao;
 
-    return ambient + Lo;
+    float shadow = 0.0;
+    if (dirLight.shadows)
+        shadow = DirShadowsCalculation(fs_in.FragPosLightSpace, dirLight.direction);
+
+    return (1.0 - shadow) * (ambient + Lo);
 }
 
 vec3 CalcPointLight(vec3 N, vec3 V, vec3 R, vec3 F0, vec3 albedo, float metallic, float roughness, float ao)

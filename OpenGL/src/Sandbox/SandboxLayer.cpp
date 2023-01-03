@@ -170,7 +170,6 @@ void SandboxLayer::OnAttach()
     // Load HDR Textures
     ResourceManager::LoadHDRTexture("assets/textures/hdr/Nature_8K_hdri.jpg", "skybox_hdr");
     // Load Shaders
-    ResourceManager::LoadShader("assets/shaders/lightingVS.glsl", "assets/shaders/lightingFS.glsl", nullptr, "basic_lighting");
     ResourceManager::LoadShader("assets/shaders/lightSourceVS.glsl", "assets/shaders/lightSourceFS.glsl", nullptr, "light_source");
     ResourceManager::LoadShader("assets/shaders/postProcessingVS.glsl", "assets/shaders/postProcessingFS.glsl", nullptr, "post_proc");
     ResourceManager::LoadShader("assets/shaders/pbrVS.glsl", "assets/shaders/pbrFS.glsl", nullptr, "pbr_lighting");
@@ -181,6 +180,8 @@ void SandboxLayer::OnAttach()
     ResourceManager::LoadShader("assets/shaders/hdrSkyboxVS.glsl", "assets/shaders/hdrSkyboxFS.glsl", nullptr, "hdr_skybox");
     ResourceManager::LoadShader("assets/shaders/brdfVS.glsl", "assets/shaders/brdfFS.glsl", nullptr, "brdf");
     ResourceManager::LoadShader("assets/shaders/blurVS.glsl", "assets/shaders/blurFS.glsl", nullptr, "blur");
+    ResourceManager::LoadShader("assets/shaders/depthQuadVS.glsl", "assets/shaders/depthQuadFS.glsl", nullptr, "depth_quad");
+    ResourceManager::LoadShader("assets/shaders/depthMapVS.glsl", "assets/shaders/depthMapFS.glsl", nullptr, "depth_map");
 
     // Post Processing - Activate only one per group
     // Kernel effects
@@ -203,8 +204,10 @@ void SandboxLayer::OnAttach()
     // Generate directional light
     ResourceManager::GetShader("pbr_lighting").Use().SetVector3f("dirLight.direction", m_DirLightDirection);
     ResourceManager::GetShader("pbr_lighting").Use().SetVector3f("dirLight.color", m_DirLightColor * m_DirLightIntensity);
+    ResourceManager::GetShader("pbr_lighting").Use().SetInteger("dirLight.shadows", m_UseDirShadows);
     ResourceManager::GetShader("pbr_lighting_textured").Use().SetVector3f("dirLight.direction", m_DirLightDirection);
     ResourceManager::GetShader("pbr_lighting_textured").Use().SetVector3f("dirLight.color", m_DirLightColor * m_DirLightIntensity);
+    ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger("dirLight.shadows", m_UseDirShadows);
 
     // Generate point lights
     m_PointLightPositions.push_back(glm::vec3(-5.0f, 2.0f, 10.0f));
@@ -375,9 +378,35 @@ void SandboxLayer::OnAttach()
 
     glViewport(0, 0, m_Width, m_Height);
 
-    // generate the depth map for directional shadows
-
     // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+    // generate depth map projection matrix
+    float boxLimit = 20.0f;
+    float minX = -boxLimit;
+    float maxX = boxLimit;
+    float minY = -boxLimit;
+    float maxY = boxLimit;
+    float minZ = -boxLimit;
+    float maxZ = boxLimit;
+
+    glm::vec3 center = glm::vec3((minX + maxX) / 2.0f, (minY + maxY) / 2.0f, (minZ + maxZ) / 2.0f);
+
+    float width = maxX - minX;
+    float height = maxY - minY;
+    float depth = maxZ - minZ;
+
+    float nearDistance = glm::length(center - m_DepthMapOrig) - depth / 2.0f;
+    float farDistance = glm::length(center - m_DepthMapOrig) + depth / 2.0f;
+
+    float left = center.x - width / 2.0f - m_DepthMapOrig.x;
+    float right = center.x + width / 2.0f - m_DepthMapOrig.x;
+    float bottom = center.y - height / 2.0f - m_DepthMapOrig.y;
+    float top = center.y + height / 2.0f - m_DepthMapOrig.y;
+
+    m_DepthMapProjection = glm::ortho(left, right, bottom, top, nearDistance, farDistance);
+
+    ResourceManager::GetShader("depth_quad").Use().SetFloat("nearPlane", nearDistance);
+    ResourceManager::GetShader("depth_quad").Use().SetFloat("farPlane", farDistance);
 }
 
 void SandboxLayer::OnUpdate()
@@ -394,6 +423,54 @@ void SandboxLayer::OnUpdate()
 
     glEnable(GL_DEPTH_TEST);
 
+    if (m_UseDirShadows) {
+        // generate the depth map for directional shadows
+        glm::mat4 depthMapView = glm::lookAt(m_DepthMapOrig, m_DepthMapOrig + m_DirLightDirection, glm::vec3(0.0f, 1.0f, 0.0f));
+        glm::mat4 depthMapLightSpaceMatrix = m_DepthMapProjection * depthMapView;
+
+        ResourceManager::GetShader("depth_map").Use().SetMatrix4(0, depthMapLightSpaceMatrix);
+        ResourceManager::GetShader("pbr_lighting").Use().SetMatrix4(2, depthMapLightSpaceMatrix);
+        ResourceManager::GetShader("pbr_lighting_textured").Use().SetMatrix4(2, depthMapLightSpaceMatrix);
+
+        // shadow mapping
+        glViewport(0, 0, m_ShadowWidth, m_ShadowHeight);
+
+        // directional shadows
+        depthMapFBO.Bind();
+        glClear(GL_DEPTH_BUFFER_BIT);
+
+        glm::mat4 model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(0.0f, -0.01f, 0.0f));
+        model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
+        ResourceManager::GetShader("depth_map").Use().SetMatrix4(1, model);
+        renderPlane();
+
+        for (size_t i = 0; i < m_PointLightPositions.size(); i++) {
+            glm::mat4 model = glm::mat4(1.0f);
+            model = glm::translate(model, m_PointLightPositions[i]);
+            model = glm::scale(model, glm::vec3(0.3f, 0.3f, 0.3f));
+            ResourceManager::GetShader("depth_map").Use().SetMatrix4(1, model);
+            renderCube();
+        }
+
+        renderModel(ResourceManager::GetShader("depth_map"));
+
+        for (GLuint i = 0; i < 5; i++) {
+            for (GLuint j = 0; j < 5; j++) {
+                glm::mat4 model = glm::mat4(1.0f);
+                model = glm::translate(model, glm::vec3(-6.0f + (i*3), 0.5f + (j*3), 0.0f));
+                model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
+                ResourceManager::GetShader("depth_map").Use().SetMatrix4(1, model);
+                renderSphere();
+            }
+        }
+
+        FrameBuffer::UnBind();
+
+        glViewport(0, 0, m_Width, m_Height);
+    }
+
+    // Render Normal Scene
     multisampleFBO.Bind();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -406,6 +483,10 @@ void SandboxLayer::OnUpdate()
     ResourceManager::GetTexture("grass_metallic").Bind(5);
     ResourceManager::GetTexture("grass_roughness").Bind(6);
     ResourceManager::GetTexture("grass_ao").Bind(7);
+    if (m_UseDirShadows) {
+        glActiveTexture(GL_TEXTURE8);
+        depthMapFBO.BindTexture(0);
+    }
     glm::mat4 model = glm::mat4(1.0f);
     model = glm::translate(model, glm::vec3(0.0f, -0.01f, 0.0f));
     model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
@@ -425,12 +506,20 @@ void SandboxLayer::OnUpdate()
     }
 
     // Render Models
+    if (m_UseDirShadows) {
+        glActiveTexture(GL_TEXTURE8);
+        depthMapFBO.BindTexture(0);
+    }
     renderModel(ResourceManager::GetShader("pbr_lighting_textured"));
 
     // Render Spheres
     m_Irradiancemap.BindCubemap(0);
     m_Prefiltermap.BindCubemap(1);
     m_BRDFLUTTexture.Bind(2);
+    if (m_UseDirShadows) {
+        glActiveTexture(GL_TEXTURE8);
+        depthMapFBO.BindTexture(0);
+    }
     for (GLuint i = 0; i < 5; i++) {
         for (GLuint j = 0; j < 5; j++) {
             glm::mat4 model = glm::mat4(1.0f);
@@ -480,13 +569,20 @@ void SandboxLayer::OnUpdate()
     glDisable(GL_DEPTH_TEST);
 
     imguiFBO.Bind();
-    glActiveTexture(GL_TEXTURE0);
-    hdrFBO.BindTexture(0);
-    if (m_UseBloom) {
-        glActiveTexture(GL_TEXTURE1);
-        pingpongFBO[0].BindTexture(0);
+    if (m_DebugDepthMap) {
+        glActiveTexture(GL_TEXTURE0);
+        depthMapFBO.BindTexture(0);
+        ResourceManager::GetShader("depth_quad").Use();
     }
-    ResourceManager::GetShader("post_proc").Use();
+    else {
+        glActiveTexture(GL_TEXTURE0);
+        hdrFBO.BindTexture(0);
+        if (m_UseBloom) {
+            glActiveTexture(GL_TEXTURE1);
+            pingpongFBO[0].BindTexture(0);
+        }
+        ResourceManager::GetShader("post_proc").Use();
+    }
     renderQuad();
     Texture2D::UnBind();
     FrameBuffer::UnBind();
@@ -703,6 +799,12 @@ void SandboxLayer::OnImGuiRender()
                 ResourceManager::GetShader("pbr_lighting").Use().SetVector3f("dirLight.color", m_DirLightColor * m_DirLightIntensity);
                 ResourceManager::GetShader("pbr_lighting_textured").Use().SetVector3f("dirLight.color", m_DirLightColor * m_DirLightIntensity);
             }
+            else if (ImGui::Checkbox("Directional Shadows", &m_UseDirShadows)) {
+                ResourceManager::GetShader("pbr_lighting").Use().SetInteger("dirLight.shadows", m_UseDirShadows);
+                ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger("dirLight.shadows", m_UseDirShadows);
+            }
+            else if (ImGui::Checkbox("Debug Depth Map", &m_DebugDepthMap))
+            {}
 
             ImGui::TreePop();
         }
