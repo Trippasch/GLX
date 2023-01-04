@@ -29,9 +29,9 @@ void FrameBuffer::CheckStatus()
         GL_ERROR("ERROR::FRAMEBUFFER:: Framebuffer is not complete!");
 }
 
-void FrameBuffer::BindTexture(GLuint index) const
+void FrameBuffer::BindTexture(GLenum target, GLuint index) const
 {
-    glBindTexture(GL_TEXTURE_2D, textures[index]);
+    glBindTexture(target, textures[index]);
 }
 
 void FrameBuffer::TextureAttachment(GLuint n, GLuint mode, GLenum target, GLint inFormat, GLuint width, GLuint height)
@@ -43,14 +43,14 @@ void FrameBuffer::TextureAttachment(GLuint n, GLuint mode, GLenum target, GLint 
         glBindTexture(target, tex[i]);
 
         if (target == GL_TEXTURE_2D) {
-            if (!mode) {
+            if (mode == 0) {
                 glTexImage2D(target, 0, inFormat, width, height, 0, GL_RGB, GL_FLOAT, NULL);
                 glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
                 glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
                 glTexParameteri(target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
                 glTexParameteri(target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
             }
-            else {
+            else if (mode == 1) {
                 glTexImage2D(target, 0, inFormat, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
                 glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
                 glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -65,16 +65,33 @@ void FrameBuffer::TextureAttachment(GLuint n, GLuint mode, GLenum target, GLint 
             glTexParameteri(target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
             glTexParameteri(target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         }
+        else if (target == GL_TEXTURE_CUBE_MAP) {
+            if (mode == 2) {
+                for (GLuint i = 0; i < 6; i++)
+                    glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, inFormat, width, height, 0, inFormat, GL_FLOAT, NULL);
+                glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+                glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+                glTexParameteri(target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+                glTexParameteri(target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+                glTexParameteri(target, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+            }
+        }
 
-        if (!mode) {
+        if (mode == 0) {
             glBindTexture(target, 0);
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, target, tex[i], 0);
         }
-        else {
+        else if (mode == 1) {
             float borderColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
             glTexParameterfv(target, GL_TEXTURE_BORDER_COLOR, borderColor);
             glBindTexture(target, 0);
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, target, tex[i], 0);
+            glDrawBuffer(GL_NONE);
+            glReadBuffer(GL_NONE);
+        }
+        else if (mode == 2) {
+            glBindTexture(target, 0);
+            glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, tex[i], 0);
             glDrawBuffer(GL_NONE);
             glReadBuffer(GL_NONE);
         }
@@ -93,14 +110,14 @@ void FrameBuffer::ResizeTextureAttachment(GLuint mode, GLenum target, GLint inFo
         glBindTexture(target, textures[i]);
 
         if (target == GL_TEXTURE_2D) {
-            if (!mode) {
+            if (mode == 0) {
                 glTexImage2D(target, 0, inFormat, width, height, 0, GL_RGB, GL_FLOAT, NULL);
                 glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
                 glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
                 glTexParameteri(target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
                 glTexParameteri(target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
             }
-            else {
+            else if (mode == 1) {
                 glTexImage2D(target, 0, inFormat, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
                 glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
                 glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -115,16 +132,33 @@ void FrameBuffer::ResizeTextureAttachment(GLuint mode, GLenum target, GLint inFo
             glTexParameteri(target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
             glTexParameteri(target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         }
+        else if (target == GL_TEXTURE_CUBE_MAP) {
+            if (mode == 2) {
+                for (GLuint i = 0; i < 6; i++)
+                    glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, inFormat, width, height, 0, inFormat, GL_FLOAT, NULL);
+                glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+                glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+                glTexParameteri(target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+                glTexParameteri(target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+                glTexParameteri(target, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+            }
+        }
 
-        if (!mode) {
+        if (mode == 0) {
             glBindTexture(target, 0);
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, target, textures[i], 0);
         }
-        else {
+        else if (mode == 1) {
             float borderColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
             glTexParameterfv(target, GL_TEXTURE_BORDER_COLOR, borderColor);
             glBindTexture(target, 0);
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, target, textures[i], 0);
+            glDrawBuffer(GL_NONE);
+            glReadBuffer(GL_NONE);
+        }
+        else if (mode == 2) {
+            glBindTexture(target, 0);
+            glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, textures[i], 0);
             glDrawBuffer(GL_NONE);
             glReadBuffer(GL_NONE);
         }

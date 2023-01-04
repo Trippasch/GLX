@@ -22,7 +22,7 @@ public:
     static void UnBind();
     static void CheckStatus();
 
-    void BindTexture(GLuint index) const;
+    void BindTexture(GLenum target, GLuint index) const;
 
     void TextureAttachment(GLuint n, GLuint mode, GLenum target, GLint inFormat, GLuint width, GLuint height);
     void ResizeTextureAttachment(GLuint mode, GLenum target, GLint inFormat, GLuint width, GLuint height);

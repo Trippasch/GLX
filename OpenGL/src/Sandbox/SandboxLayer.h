@@ -58,6 +58,7 @@ private:
     FrameBuffer imguiFBO;
     FrameBuffer captureFBO;
     FrameBuffer depthMapFBO;
+    FrameBuffer depthCubeMapFBO;
 
     Texture2D m_EnvCubemap;
     GLuint m_EnvCubemapWidth = 2048;
@@ -78,19 +79,23 @@ private:
     // Light Properties
     bool m_UseDirShadows = true;
     bool m_DebugDepthMap = false;
+    bool m_UsePointShadows = true;
+    bool m_DebugDepthCubeMap = false;
 
-    // directional light
-    GLuint m_ShadowWidth = 4096;
-    GLuint m_ShadowHeight = 4096;
+    // Directional light
     glm::vec3 m_DirLightDirection = glm::vec3(-1.0f, -1.0f, -1.0f);
     glm::vec3 m_DirLightColor = glm::vec3(0.95f, 0.89f, 0.38f);
     float m_DirLightIntensity = 10.0f;
-    glm::vec3 m_DepthMapOrig = glm::vec3(0.0f);
-    glm::mat4 m_DepthMapProjection;
 
-    // point lights
+    // Point lights
     std::vector<glm::vec3> m_PointLightPositions;
     std::vector<glm::vec3> m_PointLightColors;
+
+    // Shadows
+    GLuint m_ShadowWidth = 4096;
+    GLuint m_ShadowHeight = 4096;
+    glm::vec3 m_DepthMapOrig = glm::vec3(0.0f);
+    glm::mat4 m_DepthMapProjection;
 
     // Post Processing
     bool m_UseGreyscale = false;
