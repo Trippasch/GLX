@@ -800,7 +800,7 @@ void SandboxLayer::OnImGuiRender()
                 ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.ridge", m_UseRidge);
                 ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.edge", m_UseEdge);
             }
-            else if (ImGui::Checkbox("Sharpen", &m_UseSharpen)) {
+            if (ImGui::Checkbox("Sharpen", &m_UseSharpen)) {
                 m_UseEdge = false;
                 m_UseRidge = false;
                 m_UseBlur = false;
@@ -809,7 +809,7 @@ void SandboxLayer::OnImGuiRender()
                 ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.ridge", m_UseRidge);
                 ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.edge", m_UseEdge);
             }
-            else if (ImGui::Checkbox("Ridge", &m_UseRidge)) {
+            if (ImGui::Checkbox("Ridge", &m_UseRidge)) {
                 m_UseEdge = false;
                 m_UseSharpen = false;
                 m_UseBlur = false;
@@ -818,7 +818,7 @@ void SandboxLayer::OnImGuiRender()
                 ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.ridge", m_UseRidge);
                 ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.edge", m_UseEdge);
             }
-            else if (ImGui::Checkbox("Edge", &m_UseEdge)) {
+            if (ImGui::Checkbox("Edge", &m_UseEdge)) {
                 m_UseRidge = false;
                 m_UseSharpen = false;
                 m_UseBlur = false;
@@ -837,12 +837,11 @@ void SandboxLayer::OnImGuiRender()
                 ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.greyscale", m_UseGreyscale);
                 ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.inversion", m_UseInversion);
             }
-            else if (ImGui::Checkbox("Inversion", &m_UseInversion)) {
+            if (ImGui::Checkbox("Inversion", &m_UseInversion)) {
                 m_UseGreyscale = false;
                 ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.greyscale", m_UseGreyscale);
                 ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.inversion", m_UseInversion);
             }
-
             if (ImGui::Checkbox("Bloom", &m_UseBloom)) {
                 ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.bloom", m_UseBloom);
             }
@@ -863,10 +862,10 @@ void SandboxLayer::OnImGuiRender()
         if (ImGui::ColorEdit3("Albedo", (float*)&m_Albedo)) {
             ResourceManager::GetShader("pbr_lighting").Use().SetVector3f("material.albedo", m_Albedo);
         }
-        else if (ImGui::DragFloat("Metallic", &m_Metallic, 0.01f, 0.0f, 1.0f, "%.2f")) {
+        if (ImGui::DragFloat("Metallic", &m_Metallic, 0.01f, 0.0f, 1.0f, "%.2f")) {
             ResourceManager::GetShader("pbr_lighting").Use().SetFloat("material.metallic", m_Metallic);
         }
-        else if (ImGui::DragFloat("Roughness", &m_Roughness, 0.01f, 0.0f, 1.0f, "%.2f")) {
+        if (ImGui::DragFloat("Roughness", &m_Roughness, 0.01f, 0.0f, 1.0f, "%.2f")) {
             ResourceManager::GetShader("pbr_lighting").Use().SetFloat("material.roughness", m_Roughness);
         }
     }
@@ -877,19 +876,19 @@ void SandboxLayer::OnImGuiRender()
                 ResourceManager::GetShader("pbr_lighting").Use().SetVector3f("dirLight.direction", m_DirLightDirection);
                 ResourceManager::GetShader("pbr_lighting_textured").Use().SetVector3f("dirLight.direction", m_DirLightDirection);
             }
-            else if (ImGui::ColorEdit3("Color", (float*)&m_DirLightColor)) {
+            if (ImGui::ColorEdit3("Color", (float*)&m_DirLightColor)) {
                 ResourceManager::GetShader("pbr_lighting").Use().SetVector3f("dirLight.color", m_DirLightColor * m_DirLightIntensity);
                 ResourceManager::GetShader("pbr_lighting_textured").Use().SetVector3f("dirLight.color", m_DirLightColor * m_DirLightIntensity);
             }
-            else if (ImGui::DragFloat("Intensity", &m_DirLightIntensity, 0.01f, 0.0f, FLT_MAX, "%.2f")) {
+            if (ImGui::DragFloat("Intensity", &m_DirLightIntensity, 0.01f, 0.0f, FLT_MAX, "%.2f")) {
                 ResourceManager::GetShader("pbr_lighting").Use().SetVector3f("dirLight.color", m_DirLightColor * m_DirLightIntensity);
                 ResourceManager::GetShader("pbr_lighting_textured").Use().SetVector3f("dirLight.color", m_DirLightColor * m_DirLightIntensity);
             }
-            else if (ImGui::Checkbox("Directional Shadows", &m_UseDirShadows)) {
+            if (ImGui::Checkbox("Directional Shadows", &m_UseDirShadows)) {
                 ResourceManager::GetShader("pbr_lighting").Use().SetInteger("dirLight.shadows", m_UseDirShadows);
                 ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger("dirLight.shadows", m_UseDirShadows);
             }
-            else if (ImGui::Checkbox("Debug Depth Map", &m_DebugDepthMap))
+            if (ImGui::Checkbox("Debug Depth Map", &m_DebugDepthMap))
             {}
 
             ImGui::TreePop();
@@ -900,21 +899,21 @@ void SandboxLayer::OnImGuiRender()
                 ResourceManager::GetShader("pbr_lighting").Use().SetVector3f("pointLights[0].position", m_PointLightPositions[0]);
                 ResourceManager::GetShader("pbr_lighting_textured").Use().SetVector3f("pointLights[0].position", m_PointLightPositions[0]);
             }
-            else if (ImGui::ColorEdit3("Color", (float*)&m_PointLightColors[0])) {
+            if (ImGui::ColorEdit3("Color", (float*)&m_PointLightColors[0])) {
                 ResourceManager::GetShader("pbr_lighting").Use().SetVector3f("pointLights[0].color", m_PointLightColors[0] * m_PointLightIntensities[0]);
                 ResourceManager::GetShader("pbr_lighting_textured").Use().SetVector3f("pointLights[0].color", m_PointLightColors[0] * m_PointLightIntensities[0]);
             }
-            else if (ImGui::DragFloat("Intensity", &m_PointLightIntensities[0], 0.01f, 0.0f, FLT_MAX, "%.2f")) {
+            if (ImGui::DragFloat("Intensity", &m_PointLightIntensities[0], 0.01f, 0.0f, FLT_MAX, "%.2f")) {
                 ResourceManager::GetShader("pbr_lighting").Use().SetVector3f("pointLights[0].color", m_PointLightColors[0] * m_PointLightIntensities[0]);
                 ResourceManager::GetShader("pbr_lighting_textured").Use().SetVector3f("pointLights[0].color", m_PointLightColors[0] * m_PointLightIntensities[0]);
             }
-            else if (ImGui::Checkbox("Point Shadows", &m_UsePointShadows)) {
+            if (ImGui::Checkbox("Point Shadows", &m_UsePointShadows)) {
                 for (size_t i = 0; i < m_PointLightPositions.size(); i++) {
                     ResourceManager::GetShader("pbr_lighting").Use().SetInteger(("pointLights[" + std::to_string(i) + "].shadows").c_str(), m_UsePointShadows);
                     ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger(("pointLights[" + std::to_string(i) + "].shadows").c_str(), m_UsePointShadows);
                 }
             }
-            else if (ImGui::Checkbox("Debug Depth Cube Map", &m_DebugDepthCubeMap)) {
+            if (ImGui::Checkbox("Debug Depth Cube Map", &m_DebugDepthCubeMap)) {
                 ResourceManager::GetShader("pbr_lighting").Use().SetInteger("debugDepthCubeMap", m_DebugDepthCubeMap);
                 ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger("debugDepthCubeMap", m_DebugDepthCubeMap);
             }
