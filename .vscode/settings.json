@@ -69,6 +69,9 @@
         "streambuf": "cpp",
         "thread": "cpp",
         "cinttypes": "cpp",
-        "valarray": "cpp"
+        "valarray": "cpp",
+        "ranges": "cpp",
+        "xstring": "cpp",
+        "xutility": "cpp"
     }
 }

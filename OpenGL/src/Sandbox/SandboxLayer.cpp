@@ -742,7 +742,7 @@ void SandboxLayer::OnImGuiRender()
         return;
     }
 
-    ImGui::Image((void*)(intptr_t)imguiFBO.GetTextureAttachments().at(0), ImVec2(m_Width, m_Height), ImVec2(0, 1), ImVec2(1, 0));
+    ImGui::ImageButton((void*)(intptr_t)imguiFBO.GetTextureAttachments().at(0), ImVec2(m_Width, m_Height), ImVec2(0, 1), ImVec2(1, 0), 0);
     ImGui::PopStyleVar();
 
     if (ImGui::IsWindowHovered()) {
@@ -752,7 +752,7 @@ void SandboxLayer::OnImGuiRender()
         }
     }
 
-    if (ImGui::IsWindowFocused()) {
+    if (ImGui::IsItemActive()) {
         m_Camera.Inputs((GLFWwindow *)ImGui::GetMainViewport()->PlatformHandle, deltaTime);
     }
     else {
@@ -786,7 +786,7 @@ void SandboxLayer::OnImGuiRender()
     if (ImGui::CollapsingHeader("Camera", base_flags)) {
         ImGui::DragFloat3("Position", (float*)&m_Camera.m_Position, 0.01f, -FLT_MAX, FLT_MAX, "%.2f");
         ImGui::DragFloat3("Orientation", (float*)&m_Camera.m_Orientation, 0.01f, -FLT_MAX, FLT_MAX, "%.2f");
-        ImGui::DragFloat("Field of view", &m_Camera.m_Fov, 0.1f, 1.0f, 90.0f, "%.2f");
+        ImGui::SliderFloat("Field of view", &m_Camera.m_Fov, 1.0f, 90.0f, "%.2f");
     }
 
     if (ImGui::CollapsingHeader("Post Processing", base_flags)) {
@@ -862,17 +862,17 @@ void SandboxLayer::OnImGuiRender()
         if (ImGui::ColorEdit3("Albedo", (float*)&m_Albedo)) {
             ResourceManager::GetShader("pbr_lighting").Use().SetVector3f("material.albedo", m_Albedo);
         }
-        if (ImGui::DragFloat("Metallic", &m_Metallic, 0.01f, 0.0f, 1.0f, "%.2f")) {
+        if (ImGui::SliderFloat("Metallic", &m_Metallic, 0.0f, 1.0f, "%.2f")) {
             ResourceManager::GetShader("pbr_lighting").Use().SetFloat("material.metallic", m_Metallic);
         }
-        if (ImGui::DragFloat("Roughness", &m_Roughness, 0.01f, 0.0f, 1.0f, "%.2f")) {
+        if (ImGui::SliderFloat("Roughness", &m_Roughness, 0.0f, 1.0f, "%.2f")) {
             ResourceManager::GetShader("pbr_lighting").Use().SetFloat("material.roughness", m_Roughness);
         }
     }
 
     if (ImGui::CollapsingHeader("Light Settings", base_flags)) {
         if (ImGui::TreeNodeEx("Directional Light", base_flags)) {
-            if (ImGui::DragFloat3("Direction", (float*)&m_DirLightDirection, 0.01f, -1.0f, 1.0f, "%.2f")) {
+            if (ImGui::SliderFloat3("Direction", (float*)&m_DirLightDirection, -1.0f, 1.0f, "%.2f")) {
                 ResourceManager::GetShader("pbr_lighting").Use().SetVector3f("dirLight.direction", m_DirLightDirection);
                 ResourceManager::GetShader("pbr_lighting_textured").Use().SetVector3f("dirLight.direction", m_DirLightDirection);
             }
