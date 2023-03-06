@@ -752,7 +752,7 @@ void SandboxLayer::OnImGuiRender()
         }
     }
 
-    if (ImGui::IsItemActive()) {
+    if (ImGui::IsWindowFocused()) {
         m_Camera.Inputs((GLFWwindow *)ImGui::GetMainViewport()->PlatformHandle, deltaTime);
     }
     else {
