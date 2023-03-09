@@ -203,9 +203,11 @@ void SandboxLayer::OnAttach()
     ResourceManager::GetShader("pbr_lighting").Use().SetFloat("material.ao", m_AO);
 
     // Generate directional light
+    ResourceManager::GetShader("pbr_lighting").Use().SetInteger("dirLight.use", m_UseDirLight);
     ResourceManager::GetShader("pbr_lighting").Use().SetVector3f("dirLight.direction", m_DirLightDirection);
     ResourceManager::GetShader("pbr_lighting").Use().SetVector3f("dirLight.color", m_DirLightColor * m_DirLightIntensity);
     ResourceManager::GetShader("pbr_lighting").Use().SetInteger("dirLight.shadows", m_UseDirShadows);
+    ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger("dirLight.use", m_UseDirLight);
     ResourceManager::GetShader("pbr_lighting_textured").Use().SetVector3f("dirLight.direction", m_DirLightDirection);
     ResourceManager::GetShader("pbr_lighting_textured").Use().SetVector3f("dirLight.color", m_DirLightColor * m_DirLightIntensity);
     ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger("dirLight.shadows", m_UseDirShadows);
@@ -225,6 +227,8 @@ void SandboxLayer::OnAttach()
         ResourceManager::GetShader("pbr_lighting_textured").Use().SetVector3f(("pointLights[" + std::to_string(i) + "].color").c_str(), m_PointLightColors[i] * m_PointLightIntensities[i]);
         ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger(("pointLights[" + std::to_string(i) + "].shadows").c_str(), m_UsePointShadows);
     }
+    ResourceManager::GetShader("pbr_lighting").Use().SetInteger("pointLight.use", m_UsePointLights);
+    ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger("pointLight.use", m_UsePointLights);
     ResourceManager::GetShader("pbr_lighting").Use().SetInteger("debugDepthCubeMap", m_DebugDepthCubeMap);
     ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger("debugDepthCubeMap", m_DebugDepthCubeMap);
 
@@ -445,7 +449,7 @@ void SandboxLayer::OnUpdate()
 
     glEnable(GL_DEPTH_TEST);
 
-    if (m_UseDirShadows) {
+    if (m_UseDirShadows && m_UseDirLight) {
         // generate the depth map for directional shadows
         glm::mat4 depthMapView = glm::lookAt(m_DepthMapOrig, m_DepthMapOrig + m_DirLightDirection, glm::vec3(0.0f, 1.0f, 0.0f));
         glm::mat4 depthMapLightSpaceMatrix = m_DepthMapProjection * depthMapView;
@@ -467,12 +471,14 @@ void SandboxLayer::OnUpdate()
         ResourceManager::GetShader("depth_map").Use().SetMatrix4(1, model);
         renderPlane();
 
-        for (size_t i = 0; i < m_PointLightPositions.size(); i++) {
-            glm::mat4 model = glm::mat4(1.0f);
-            model = glm::translate(model, m_PointLightPositions[i]);
-            model = glm::scale(model, glm::vec3(0.3f, 0.3f, 0.3f));
-            ResourceManager::GetShader("depth_map").Use().SetMatrix4(1, model);
-            renderCube();
+        if (m_UsePointLights) {
+            for (size_t i = 0; i < m_PointLightPositions.size(); i++) {
+                glm::mat4 model = glm::mat4(1.0f);
+                model = glm::translate(model, m_PointLightPositions[i]);
+                model = glm::scale(model, glm::vec3(0.3f, 0.3f, 0.3f));
+                ResourceManager::GetShader("depth_map").Use().SetMatrix4(1, model);
+                renderCube();
+            }
         }
 
         // renderModel(ResourceManager::GetShader("depth_map"));
@@ -492,7 +498,7 @@ void SandboxLayer::OnUpdate()
         glViewport(0, 0, m_Width, m_Height);
     }
 
-    if (m_UsePointShadows) {
+    if (m_UsePointShadows && m_UsePointLights) {
         // generate depth cube map
         std::vector<glm::mat4> pointLightMatrices;
 
@@ -552,11 +558,11 @@ void SandboxLayer::OnUpdate()
     // ResourceManager::GetTexture("grass_metallic").Bind(5);
     // ResourceManager::GetTexture("grass_roughness").Bind(6);
     // ResourceManager::GetTexture("grass_ao").Bind(7);
-    if (m_UseDirShadows) {
+    if (m_UseDirShadows && m_UseDirLight) {
         glActiveTexture(GL_TEXTURE8);
         depthMapFBO.BindTexture(GL_TEXTURE_2D, 0);
     }
-    if (m_UsePointShadows) {
+    if (m_UsePointShadows && m_UsePointLights) {
         glActiveTexture(GL_TEXTURE9);
         depthCubeMapFBO.BindTexture(GL_TEXTURE_CUBE_MAP, 0);
     }
@@ -569,24 +575,26 @@ void SandboxLayer::OnUpdate()
     Texture2D::UnBindCubemap();
 
     // Render Light Cubes
-    for (size_t i = 0; i < m_PointLightPositions.size(); i++) {
-        glm::mat4 model = glm::mat4(1.0f);
-        model = glm::translate(model, m_PointLightPositions[i]);
-        model = glm::scale(model, glm::vec3(0.3f, 0.3f, 0.3f));
-        ResourceManager::GetShader("light_source").Use().SetMatrix4(1, model);
-        ResourceManager::GetShader("light_source").Use().SetVector3f("color", m_PointLightColors[i] * m_PointLightIntensities[i]);
-        renderCube();
+    if (m_UsePointLights) {
+        for (size_t i = 0; i < m_PointLightPositions.size(); i++) {
+            glm::mat4 model = glm::mat4(1.0f);
+            model = glm::translate(model, m_PointLightPositions[i]);
+            model = glm::scale(model, glm::vec3(0.3f, 0.3f, 0.3f));
+            ResourceManager::GetShader("light_source").Use().SetMatrix4(1, model);
+            ResourceManager::GetShader("light_source").Use().SetVector3f("color", m_PointLightColors[i] * m_PointLightIntensities[i]);
+            renderCube();
+        }
     }
 
     // Render Models
     // m_Irradiancemap.BindCubemap(0);
     // m_Prefiltermap.BindCubemap(1);
     // m_BRDFLUTTexture.Bind(2);
-    // if (m_UseDirShadows) {
+    // if (m_UseDirShadows && m_UseDirLight) {
     //     glActiveTexture(GL_TEXTURE8);
     //     depthMapFBO.BindTexture(GL_TEXTURE_2D, 0);
     // }
-    // if (m_UsePointShadows) {
+    // if (m_UsePointShadows && m_UsePointLights) {
     //     glActiveTexture(GL_TEXTURE9);
     //     depthCubeMapFBO.BindTexture(GL_TEXTURE_CUBE_MAP, 0);
     // }
@@ -598,11 +606,11 @@ void SandboxLayer::OnUpdate()
     m_Irradiancemap.BindCubemap(0);
     m_Prefiltermap.BindCubemap(1);
     m_BRDFLUTTexture.Bind(2);
-    if (m_UseDirShadows) {
+    if (m_UseDirShadows && m_UseDirLight) {
         glActiveTexture(GL_TEXTURE8);
         depthMapFBO.BindTexture(GL_TEXTURE_2D, 0);
     }
-    if (m_UsePointShadows) {
+    if (m_UsePointShadows && m_UsePointLights) {
         glActiveTexture(GL_TEXTURE9);
         depthCubeMapFBO.BindTexture(GL_TEXTURE_CUBE_MAP, 0);
     }
@@ -872,6 +880,11 @@ void SandboxLayer::OnImGuiRender()
 
     if (ImGui::CollapsingHeader("Light Settings", base_flags)) {
         if (ImGui::TreeNodeEx("Directional Light", base_flags)) {
+            ImGui::SameLine();
+            if (ImGuiLayer::ToggleButton(" ", &m_UseDirLight)) {
+                ResourceManager::GetShader("pbr_lighting").Use().SetInteger("dirLight.use", m_UseDirLight);
+                ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger("dirLight.use", m_UseDirLight);
+            }
             if (ImGui::SliderFloat3("Direction", (float*)&m_DirLightDirection, -1.0f, 1.0f, "%.2f")) {
                 ResourceManager::GetShader("pbr_lighting").Use().SetVector3f("dirLight.direction", m_DirLightDirection);
                 ResourceManager::GetShader("pbr_lighting_textured").Use().SetVector3f("dirLight.direction", m_DirLightDirection);
@@ -895,6 +908,11 @@ void SandboxLayer::OnImGuiRender()
         }
 
         if (ImGui::TreeNodeEx("Point Lights", base_flags)) {
+            ImGui::SameLine();
+            if (ImGuiLayer::ToggleButton(" ", &m_UsePointLights)) {
+                ResourceManager::GetShader("pbr_lighting").Use().SetInteger("pointLight.use", m_UsePointLights);
+                ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger("pointLight.use", m_UsePointLights);
+            }
             if (ImGui::DragFloat3("Position", (float*)&m_PointLightPositions[0], 0.01f, -FLT_MAX, FLT_MAX, "%.2f")) {
                 ResourceManager::GetShader("pbr_lighting").Use().SetVector3f("pointLights[0].position", m_PointLightPositions[0]);
                 ResourceManager::GetShader("pbr_lighting_textured").Use().SetVector3f("pointLights[0].position", m_PointLightPositions[0]);

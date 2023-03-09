@@ -77,17 +77,19 @@ private:
     GLuint m_BRDFLUTTextureHeight = 512;
 
     // Light Properties
-    bool m_UseDirShadows = true;
     bool m_DebugDepthMap = false;
-    bool m_UsePointShadows = true;
     bool m_DebugDepthCubeMap = false;
 
     // Directional light
+    bool m_UseDirLight = true;
+    bool m_UseDirShadows = true;
     glm::vec3 m_DirLightDirection = glm::vec3(-1.0f, -1.0f, -1.0f);
     glm::vec3 m_DirLightColor = glm::vec3(0.95f, 0.89f, 0.38f);
     float m_DirLightIntensity = 5.0f;
 
     // Point lights
+    bool m_UsePointLights = true;
+    bool m_UsePointShadows = true;
     std::vector<glm::vec3> m_PointLightPositions;
     std::vector<glm::vec3> m_PointLightColors;
     std::vector<float> m_PointLightIntensities;

@@ -34,6 +34,7 @@ layout (binding = 9) uniform samplerCube depthCubeMap;
 
 // directional light
 struct DirLight {
+    bool use;
     vec3 direction;
     vec3 color;
     bool shadows;
@@ -44,11 +45,13 @@ uniform DirLight dirLight;
 #define NR_LIGHTS 1
 
 struct PointLight {
+    bool use;
     vec3 position;
     vec3 color;
     bool shadows;
 };
 uniform PointLight pointLights[NR_LIGHTS];
+uniform PointLight pointLight;
 
 uniform vec3 camPos;
 uniform bool debugDepthCubeMap;
@@ -352,8 +355,12 @@ void main()
     F0 = mix(F0, albedo, metallic);
 
     vec3 result = vec3(0.0);
-    result += CalcDirLight(N, V, R, F0, albedo, metallic, roughness, ao);
-    result += CalcPointLight(N, V, R, F0, albedo, metallic, roughness, ao);
+
+    if (dirLight.use)
+        result += CalcDirLight(N, V, R, F0, albedo, metallic, roughness, ao);
+
+    if (pointLight.use)
+        result += CalcPointLight(N, V, R, F0, albedo, metallic, roughness, ao);
 
     FragColor = vec4(result, 1.0);
 
