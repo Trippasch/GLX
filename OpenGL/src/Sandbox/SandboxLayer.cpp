@@ -481,7 +481,7 @@ void SandboxLayer::OnUpdate()
             }
         }
 
-        // renderModel(ResourceManager::GetShader("depth_map"));
+        renderModel(ResourceManager::GetShader("depth_map"));
 
         for (GLuint i = 0; i < 5; i++) {
             for (GLuint j = 0; j < 5; j++) {
@@ -528,7 +528,7 @@ void SandboxLayer::OnUpdate()
         ResourceManager::GetShader("depth_cube_map").Use().SetMatrix4(1, model);
         renderPlane();
 
-        // renderModel(ResourceManager::GetShader("depth_cube_map"));
+        renderModel(ResourceManager::GetShader("depth_cube_map"));
 
         for (GLuint i = 0; i < 5; i++) {
             for (GLuint j = 0; j < 5; j++) {
@@ -587,20 +587,20 @@ void SandboxLayer::OnUpdate()
     }
 
     // Render Models
-    // m_Irradiancemap.BindCubemap(0);
-    // m_Prefiltermap.BindCubemap(1);
-    // m_BRDFLUTTexture.Bind(2);
-    // if (m_UseDirShadows && m_UseDirLight) {
-    //     glActiveTexture(GL_TEXTURE8);
-    //     depthMapFBO.BindTexture(GL_TEXTURE_2D, 0);
-    // }
-    // if (m_UsePointShadows && m_UsePointLights) {
-    //     glActiveTexture(GL_TEXTURE9);
-    //     depthCubeMapFBO.BindTexture(GL_TEXTURE_CUBE_MAP, 0);
-    // }
-    // renderModel(ResourceManager::GetShader("pbr_lighting_textured"));
-    // Texture2D::UnBind();
-    // Texture2D::UnBindCubemap();
+    m_Irradiancemap.BindCubemap(0);
+    m_Prefiltermap.BindCubemap(1);
+    m_BRDFLUTTexture.Bind(2);
+    if (m_UseDirShadows && m_UseDirLight) {
+        glActiveTexture(GL_TEXTURE8);
+        depthMapFBO.BindTexture(GL_TEXTURE_2D, 0);
+    }
+    if (m_UsePointShadows && m_UsePointLights) {
+        glActiveTexture(GL_TEXTURE9);
+        depthCubeMapFBO.BindTexture(GL_TEXTURE_CUBE_MAP, 0);
+    }
+    renderModel(ResourceManager::GetShader("pbr_lighting_textured"));
+    Texture2D::UnBind();
+    Texture2D::UnBindCubemap();
 
     // Render Spheres
     m_Irradiancemap.BindCubemap(0);

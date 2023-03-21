@@ -374,6 +374,12 @@ void main()
         FragColor = vec4(vec3(closestDepth / far_plane), 1.0);
     }
 
+    // Debug textures
+    // FragColor = vec4(albedo, 1.0);
+    // FragColor = vec4(texture(metallicMap, fs_in.TexCoords).rrr, 1.0);
+    // FragColor = vec4(texture(roughnessMap, fs_in.TexCoords).rrr, 1.0);
+    // FragColor = vec4(texture(aoMap, fs_in.TexCoords).rrr, 1.0);
+
     // check whether result is higher than some threshold, if so, output as bloom threshold color
     float brightness = dot(FragColor.rgb, vec3(0.2126, 0.7152, 0.0722));
     if(brightness > 1.0)
