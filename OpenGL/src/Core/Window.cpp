@@ -77,12 +77,35 @@ void Window::Init(const WindowProps& props)
     glDepthFunc(GL_LEQUAL);
     glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
+    glfwSetWindowUserPointer(m_Window, this);
+
     // Set GLFW callbacks
     glfwSetKeyCallback(m_Window, [](GLFWwindow* window, int key, int scancode, int action, int mods)
     {
-        if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-        {
+        Window& w = *(Window*)glfwGetWindowUserPointer(window);
+
+        if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
             glfwSetWindowShouldClose(window, true);
+        }
+
+        if (glfwGetKey(window, GLFW_KEY_F11) == GLFW_PRESS) {
+
+            GLFWmonitor *monitor = glfwGetWindowMonitor(window);
+            if (monitor != nullptr) {
+                glfwSetWindowMonitor(window, nullptr, w.GetXPos(), w.GetYPos(), w.GetWidth(), w.GetHeight(), 0);
+            }
+            else {
+                int xpos, ypos, width, height;
+                glfwGetWindowPos(window, &xpos, &ypos);
+                glfwGetWindowSize(window, &width, &height);
+                w.SetWidth(width);
+                w.SetHeight(height);
+                w.SetXPos(xpos);
+                w.SetYPos(ypos);
+                GLFWmonitor *monitor = glfwGetPrimaryMonitor();
+                const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+                glfwSetWindowMonitor(window, monitor, 0, 0, mode->width, mode->height, mode->refreshRate);
+            }
         }
     });
 

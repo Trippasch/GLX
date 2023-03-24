@@ -839,7 +839,7 @@ void SandboxLayer::OnImGuiRender()
             ImGui::TreePop();
         }
 
-        if (ImGui::TreeNodeEx("General Post Processing Effects", base_flags)) {
+        if (ImGui::TreeNodeEx("General Effects", base_flags)) {
             if (ImGui::Checkbox("Greyscale", &m_UseGreyscale)) {
                 m_UseInversion = false;
                 ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.greyscale", m_UseGreyscale);

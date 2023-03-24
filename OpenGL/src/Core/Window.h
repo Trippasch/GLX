@@ -29,6 +29,11 @@ public:
     inline void SetWidth(uint32_t width) { m_Data.Width = width; }
     inline void SetHeight(uint32_t height) { m_Data.Height = height; }
 
+    inline uint32_t& GetXPos() { return m_Data.XPos; }
+    inline uint32_t& GetYPos() { return m_Data.YPos; }
+    inline void SetXPos(uint32_t xpos) { m_Data.XPos = xpos; }
+    inline void SetYPos(uint32_t ypos) { m_Data.YPos = ypos; }
+
     // Window attributes
     // inline void SetEventCallback(const EventCallbackFn& callback) override { m_Data.EventCallback = callback; }
     void SetVSync(bool enabled);
@@ -47,6 +52,7 @@ private:
     {
         std::string Title;
         unsigned int Width, Height;
+        unsigned int XPos, YPos;
         bool VSync;
 
         // EventCallbackFn EventCallback;
