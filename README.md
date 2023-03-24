@@ -1,5 +1,5 @@
-# OpenGL Engine
-OpenGL is an early-stage OpenGL rendering engine for learning purposes.
+# GLX Engine
+GLX is an early-stage OpenGL rendering engine for learning purposes.
 
 ## Getting Started
 <ins>**1. Downloading the repository:**</ins>
