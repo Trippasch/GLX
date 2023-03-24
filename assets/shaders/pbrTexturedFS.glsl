@@ -341,8 +341,8 @@ vec3 CalcPointLight(vec3 N, vec3 V, vec3 R, vec3 F0, vec3 albedo, float metallic
 void main()
 {
     vec3 albedo = pow(texture(albedoMap, fs_in.TexCoords).rgb, vec3(gamma));
-    float metallic = texture(metallicMap, fs_in.TexCoords).r;
-    float roughness = texture(roughnessMap, fs_in.TexCoords).r;
+    float metallic = texture(metallicMap, fs_in.TexCoords).b;
+    float roughness = texture(roughnessMap, fs_in.TexCoords).g;
     float ao = texture(aoMap, fs_in.TexCoords).r;
 
     vec3 N = getNormalFromMap();
@@ -376,8 +376,8 @@ void main()
 
     // Debug textures
     // FragColor = vec4(albedo, 1.0);
-    // FragColor = vec4(texture(metallicMap, fs_in.TexCoords).rrr, 1.0);
-    // FragColor = vec4(texture(roughnessMap, fs_in.TexCoords).rrr, 1.0);
+    // FragColor = vec4(texture(metallicMap, fs_in.TexCoords).bbb, 1.0);
+    // FragColor = vec4(texture(roughnessMap, fs_in.TexCoords).ggg, 1.0);
     // FragColor = vec4(texture(aoMap, fs_in.TexCoords).rrr, 1.0);
 
     // check whether result is higher than some threshold, if so, output as bloom threshold color

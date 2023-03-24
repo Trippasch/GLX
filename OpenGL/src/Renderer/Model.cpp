@@ -108,55 +108,57 @@ Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene)
             indices.push_back(face.mIndices[j]);
     }
     // process materials
-    aiMaterial *material = scene->mMaterials[mesh->mMaterialIndex];
-    // we assume a convention for sampler names in the shaders. Each diffuse texture should be named
-    // as 'texture_diffuseN' where N is a sequential number ranging from 1 to MAX_SAMPLER_NUMBER.
-    // Same applies to other texture as the following list summarizes:
-    // albedo: texture_albedoN
-    // normal: texture_normalN
-    // metallic: texture_metallicN
+    if (mesh->mMaterialIndex >= 0) {
+        aiMaterial *material = scene->mMaterials[mesh->mMaterialIndex];
+        // we assume a convention for sampler names in the shaders. Each diffuse texture should be named
+        // as 'texture_diffuseN' where N is a sequential number ranging from 1 to MAX_SAMPLER_NUMBER.
+        // Same applies to other texture as the following list summarizes:
+        // albedo: texture_albedoN
+        // normal: texture_normalN
+        // metallic: texture_metallicN
 
-    // We use a PBR metallic/roughness workflow so the loaded models are expected to have 
-    // textures conform the workflow: albedo, (normal), metallic, roughness, (ao). Since Assimp
-    // made certain assumptions regarding possible types of loaded textures it doesn't directly
-    // translate to our model thus we make some assumptions as well which the 3D author has to
-    // comply with if he wants the mesh(es) to directly render with its specified textures:
+        // We use a PBR metallic/roughness workflow so the loaded models are expected to have 
+        // textures conform the workflow: albedo, (normal), metallic, roughness, (ao). Since Assimp
+        // made certain assumptions regarding possible types of loaded textures it doesn't directly
+        // translate to our model thus we make some assumptions as well which the 3D author has to
+        // comply with if he wants the mesh(es) to directly render with its specified textures:
 
-    // - aiTextureType_DIFFUSE:   Albedo
-    // - aiTextureType_NORMALS:   Normal
-    // - aiTextureType_SPECULAR:  metallic
-    // - aiTextureType_SHININESS: roughness 
-    // - aiTextureType_AMBIENT:   AO (ambient occlusion)
-    // - aiTextureType_EMISSIVE:  Emissive
+        // - aiTextureType_DIFFUSE:   Albedo
+        // - aiTextureType_NORMALS:   Normal
+        // - aiTextureType_SPECULAR:  metallic
+        // - aiTextureType_SHININESS: roughness 
+        // - aiTextureType_AMBIENT:   AO (ambient occlusion)
+        // - aiTextureType_EMISSIVE:  Emissive
 
-    // albedo maps
-    std::vector<Texture2D> albedoMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_albedo");
-    textures.insert(textures.end(), albedoMaps.begin(), albedoMaps.end());
-    // normal maps
-    std::vector<Texture2D> normalMaps = loadMaterialTextures(material, aiTextureType_NORMALS, "texture_normal");
-    textures.insert(textures.end(), normalMaps.begin(), normalMaps.end());
-    // metallic maps
-    std::vector<Texture2D> metallicMaps = loadMaterialTextures(material, aiTextureType_SPECULAR, "texture_metallic");
-    textures.insert(textures.end(), metallicMaps.begin(), metallicMaps.end());
-    // roughness maps
-    std::vector<Texture2D> roughnessMaps = loadMaterialTextures(material, aiTextureType_SHININESS, "texture_roughness");
-    textures.insert(textures.end(), roughnessMaps.begin(), roughnessMaps.end());
-    // ao maps
-    std::vector<Texture2D> aoMaps = loadMaterialTextures(material, aiTextureType_AMBIENT, "texture_ao");
-    textures.insert(textures.end(), aoMaps.begin(), aoMaps.end());
+        // albedo maps
+        std::vector<Texture2D> albedoMaps = loadMaterialTextures(material,aiTextureType_BASE_COLOR, "texture_albedo");
+        textures.insert(textures.end(), albedoMaps.begin(), albedoMaps.end());
+        // normal maps
+        std::vector<Texture2D> normalMaps = loadMaterialTextures(material, aiTextureType_NORMALS, "texture_normal");
+        textures.insert(textures.end(), normalMaps.begin(), normalMaps.end());
+        // metallic maps
+        std::vector<Texture2D> metallicMaps = loadMaterialTextures(material, aiTextureType_UNKNOWN, "texture_metallic");
+        textures.insert(textures.end(), metallicMaps.begin(), metallicMaps.end());
+        // roughness maps
+        std::vector<Texture2D> roughnessMaps = loadMaterialTextures(material, aiTextureType_UNKNOWN, "texture_roughness");
+        textures.insert(textures.end(), roughnessMaps.begin(), roughnessMaps.end());
+        // ao maps
+        std::vector<Texture2D> aoMaps = loadMaterialTextures(material, aiTextureType_UNKNOWN, "texture_ao");
+        textures.insert(textures.end(), aoMaps.begin(), aoMaps.end());
 
-    // // 1. diffuse maps
-    // std::vector<Texture2D> diffuseMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse");
-    // textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
-    // // 2. specular maps
-    // std::vector<Texture2D> specularMaps = loadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular");
-    // textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
-    // // 3. normal maps
-    // std::vector<Texture2D> normalMaps = loadMaterialTextures(material, aiTextureType_HEIGHT, "texture_normal");
-    // textures.insert(textures.end(), normalMaps.begin(), normalMaps.end());
-    // // 4. height maps
-    // std::vector<Texture2D> heightMaps = loadMaterialTextures(material, aiTextureType_AMBIENT, "texture_height");
-    // textures.insert(textures.end(), heightMaps.begin(), heightMaps.end());
+        // // 1. diffuse maps
+        // std::vector<Texture2D> diffuseMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse");
+        // textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
+        // // 2. specular maps
+        // std::vector<Texture2D> specularMaps = loadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular");
+        // textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
+        // // 3. normal maps
+        // std::vector<Texture2D> normalMaps = loadMaterialTextures(material, aiTextureType_HEIGHT, "texture_normal");
+        // textures.insert(textures.end(), normalMaps.begin(), normalMaps.end());
+        // // 4. height maps
+        // std::vector<Texture2D> heightMaps = loadMaterialTextures(material, aiTextureType_AMBIENT, "texture_height");
+        // textures.insert(textures.end(), heightMaps.begin(), heightMaps.end());
+    }
 
     // return a mesh object created from the extracted mesh data
     return Mesh(vertices, indices, textures);
@@ -200,7 +202,7 @@ Texture2D Model::textureFromFile(const char *path, const std::string &directory,
 
     Texture2D texture;
 
-    stbi_set_flip_vertically_on_load(1);
+    // stbi_set_flip_vertically_on_load(1);
     int width, height, nrComponents;
     unsigned char *data = stbi_load(filename.c_str(), &width, &height, &nrComponents, 0);
     if (data)

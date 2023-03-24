@@ -153,7 +153,7 @@ void SandboxLayer::OnAttach()
 
     // Load Resources
     // Load Models
-    ResourceManager::LoadModel("assets/objects/backpack/backpack.obj", "backpack");
+    ResourceManager::LoadModel("assets/objects/biomutant/Biomech_Mutant_Skin_1.gltf", "3d_model");
     // Load Textures
     // Rusted Iron
     ResourceManager::LoadTexture("assets/textures/pbr/rusted_iron/albedo.png", "rusted_albedo", true);
@@ -162,7 +162,7 @@ void SandboxLayer::OnAttach()
     ResourceManager::LoadTexture("assets/textures/pbr/rusted_iron/roughness.png", "rusted_roughness");
     ResourceManager::LoadTexture("assets/textures/pbr/rusted_iron/ao.png", "rusted_ao");
     // Grass
-    ResourceManager::LoadTexture("assets/textures/pbr/grass/albedo.png", "grass_albedo", true);
+    ResourceManager::LoadTexture("assets/textures/pbr/grass/albedo.png", "grass_albedo");
     ResourceManager::LoadTexture("assets/textures/pbr/grass/normal.png", "grass_normal");
     ResourceManager::LoadTexture("assets/textures/pbr/grass/metallic.png", "grass_metallic");
     ResourceManager::LoadTexture("assets/textures/pbr/grass/roughness.png", "grass_roughness");
@@ -213,9 +213,9 @@ void SandboxLayer::OnAttach()
     ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger("dirLight.shadows", m_UseDirShadows);
 
     // Generate point lights
-    m_PointLightPositions.push_back(glm::vec3(-5.0f, 2.0f, 5.0f));
-    m_PointLightColors.push_back(glm::vec3(1.0f, 0.0f, 0.0f));
-    m_PointLightIntensities.push_back(300.0f);
+    m_PointLightPositions.push_back(glm::vec3(-4.5f, 3.5f, 8.0f));
+    m_PointLightColors.push_back(glm::vec3(1.0f, 1.0f, 1.0f));
+    m_PointLightIntensities.push_back(100.0f);
     // m_PointLightPositions.push_back(glm::vec3(5.0f, 2.0f, 10.0f));
     // m_PointLightColors.push_back(glm::vec3(1.0f, 1.0f, 1.0f));
     // m_PointLightIntensities.push_back(100.0f);
@@ -567,7 +567,7 @@ void SandboxLayer::OnUpdate()
         depthCubeMapFBO.BindTexture(GL_TEXTURE_CUBE_MAP, 0);
     }
     glm::mat4 model = glm::mat4(1.0f);
-    model = glm::translate(model, glm::vec3(0.0f, -0.01f, 0.0f));
+    model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
     model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
     ResourceManager::GetShader("pbr_lighting").Use().SetMatrix4(1, model);
     renderPlane();
@@ -579,7 +579,7 @@ void SandboxLayer::OnUpdate()
         for (size_t i = 0; i < m_PointLightPositions.size(); i++) {
             glm::mat4 model = glm::mat4(1.0f);
             model = glm::translate(model, m_PointLightPositions[i]);
-            model = glm::scale(model, glm::vec3(0.3f, 0.3f, 0.3f));
+            model = glm::scale(model, glm::vec3(0.1f));
             ResourceManager::GetShader("light_source").Use().SetMatrix4(1, model);
             ResourceManager::GetShader("light_source").Use().SetVector3f("color", m_PointLightColors[i] * m_PointLightIntensities[i]);
             renderCube();
@@ -598,7 +598,7 @@ void SandboxLayer::OnUpdate()
         glActiveTexture(GL_TEXTURE9);
         depthCubeMapFBO.BindTexture(GL_TEXTURE_CUBE_MAP, 0);
     }
-    renderModel(ResourceManager::GetShader("pbr_lighting_textured"));
+    renderModel(ResourceManager::GetShader("pbr_lighting"));
     Texture2D::UnBind();
     Texture2D::UnBindCubemap();
 
@@ -729,10 +729,10 @@ void SandboxLayer::renderQuad()
 void SandboxLayer::renderModel(Shader shader)
 {
     glm::mat4 model = glm::mat4(1.0f);
-    model = glm::translate(model, glm::vec3(0.0f, 3.0f, 4.0f));
-    model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
+    model = glm::translate(model, glm::vec3(0.0f, -0.5f, 4.0f));
+    model = glm::scale(model, glm::vec3(1.0f));
     shader.Use().SetMatrix4(1, model);
-    ResourceManager::GetModel("backpack").Draw(shader);
+    ResourceManager::GetModel("3d_model").Draw(shader);
 }
 
 void SandboxLayer::OnImGuiRender()

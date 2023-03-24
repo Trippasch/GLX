@@ -84,7 +84,7 @@ private:
     bool m_UseDirLight = true;
     bool m_UseDirShadows = true;
     glm::vec3 m_DirLightDirection = glm::vec3(-1.0f, -1.0f, -1.0f);
-    glm::vec3 m_DirLightColor = glm::vec3(0.95f, 0.89f, 0.38f);
+    glm::vec3 m_DirLightColor = glm::vec3(1.0f, 1.0f, 1.0f);
     float m_DirLightIntensity = 5.0f;
 
     // Point lights
@@ -112,9 +112,9 @@ private:
     float m_Exposure = 0.5f;
 
     // PBR Material Properties
-    glm::vec3 m_Albedo = glm::vec3(0.5f, 0.0f, 0.0f);
-    float m_Metallic = 0.2f;
-    float m_Roughness = 0.3f;
+    glm::vec3 m_Albedo = glm::vec3(0.21f, 0.17f, 0.17f);
+    float m_Metallic = 0.0f;
+    float m_Roughness = 0.5f;
     float m_AO = 1.0f;
 
     void renderPlane();
