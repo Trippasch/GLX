@@ -6,21 +6,21 @@ GLX is an early-stage OpenGL rendering engine for learning purposes.
 
 Start by cloning the repository with:
 ```
-git clone --recurse-submodules git@github.com:Trippasch/OpenGL.git
+git clone --recurse-submodules git@github.com:Trippasch/GLX.git
 ```
 If the repository was cloned non-recursively previously, use ```git submodule update --init``` to clone the necessary submodules.
 
 <ins>**2. Generate Project files:**</ins>
 
-For Windows run the [GenerateProjects.bat](https://github.com/Trippasch/OpenGL/blob/main/GenerateProjects.bat) file. This will generate the visual studio (2022) solution to compile and run the project.
+For Windows run the [GenerateProjects.bat](https://github.com/Trippasch/GLX/blob/main/GenerateProjects.bat) file. This will generate the visual studio (2022) solution to compile and run the project.
 
-For Linux run the [GenerateProjects.sh](https://github.com/Trippasch/OpenGL/blob/main/GenerateProjects.sh) file. This will generate makefiles to compile and run the project. The compiler used inside the script is LLVM's clang but you can change it to gcc as well.
+For Linux run the [GenerateProjects.sh](https://github.com/Trippasch/GLX/blob/main/GenerateProjects.sh) file. This will generate makefiles to compile and run the project. The compiler used inside the script is LLVM's clang but you can change it to gcc as well.
 
 <ins>**3. Clean Project files:**</ins>
 
-For Windows run the [CleanProjects.bat](https://github.com/Trippasch/OpenGL/blob/main/CleanProjects.bat) file.
+For Windows run the [CleanProjects.bat](https://github.com/Trippasch/GLX/blob/main/CleanProjects.bat) file.
 
-For Linux run the [CleanProjects.sh](https://github.com/Trippasch/OpenGL/blob/main/CleanProjects.sh) file.
+For Linux run the [CleanProjects.sh](https://github.com/Trippasch/GLX/blob/main/CleanProjects.sh) file.
 
 ## Dependencies
 The project uses the following dependencies:
