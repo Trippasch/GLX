@@ -1,4 +1,4 @@
--- OpenGLExternal.lua
+-- GLXExternal.lua
 
 IncludeDir = {}
 IncludeDir["glm"] = "../vendor/glm"
@@ -11,4 +11,4 @@ group "Dependencies"
     include "vendor/Assimp"
 group ""
 
-include "OpenGL"
+include "GLX"

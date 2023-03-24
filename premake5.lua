@@ -1,9 +1,9 @@
 -- premake5.lua
-workspace "OpenGL"
+workspace "GLX"
     architecture "x64"
     configurations { "Debug", "Release", "Dist" }
-    startproject "OpenGL"
+    startproject "GLX"
 
 outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 
-include "OpenGLExternal.lua"
+include "GLXExternal.lua"

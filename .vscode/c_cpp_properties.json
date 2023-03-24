@@ -3,7 +3,7 @@
         {
             "name": "Linux",
             "includePath": [
-                "${workspaceFolder}/OpenGL/src",
+                "${workspaceFolder}/GLX/src",
                 "${workspaceFolder}/vendor/GLFW/include",
                 "${workspaceFolder}/vendor/Assimp/include",
                 "${workspaceFolder}/vendor/Glad/include",
@@ -25,7 +25,7 @@
         {
             "name": "Win32",
             "includePath": [
-                "${workspaceFolder}/OpenGL/src",
+                "${workspaceFolder}/GLX/src",
                 "${workspaceFolder}/vendor/GLFW/include",
                 "${workspaceFolder}/vendor/Assimp/include",
                 "${workspaceFolder}/vendor/Glad/include",
