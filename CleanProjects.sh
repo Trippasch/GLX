@@ -3,7 +3,7 @@
 echo "Cleaning projects..."
 
 echo "find . -name 'Makefile' -delete"
-find . -name 'Makefile' -delete
+find . -name 'Makefile' -not -path "./vendor/Assimp/contrib/gtest/*" -delete
 
 echo "rm -rf ./bin ./vendor/Glad/bin ./vendor/GLFW/bin ./vendor/ImGui/bin ./vendor/Assimp/bin"
 rm -rf ./bin ./vendor/Glad/bin ./vendor/GLFW/bin ./vendor/ImGui/bin ./vendor/Assimp/bin
