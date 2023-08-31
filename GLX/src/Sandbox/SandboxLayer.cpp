@@ -156,7 +156,7 @@ void SandboxLayer::OnAttach()
     ResourceManager::LoadModel("assets/objects/biomutant/Biomech_Mutant_Skin_1.gltf", "3d_model");
     // Load Textures
     // Rusted Iron
-    ResourceManager::LoadTexture("assets/textures/pbr/rusted_iron/albedo.png", "rusted_albedo", true);
+    ResourceManager::LoadTexture("assets/textures/pbr/rusted_iron/albedo.png", "rusted_albedo");
     ResourceManager::LoadTexture("assets/textures/pbr/rusted_iron/normal.png", "rusted_normal");
     ResourceManager::LoadTexture("assets/textures/pbr/rusted_iron/metallic.png", "rusted_metallic");
     ResourceManager::LoadTexture("assets/textures/pbr/rusted_iron/roughness.png", "rusted_roughness");
@@ -167,6 +167,42 @@ void SandboxLayer::OnAttach()
     ResourceManager::LoadTexture("assets/textures/pbr/grass/metallic.png", "grass_metallic");
     ResourceManager::LoadTexture("assets/textures/pbr/grass/roughness.png", "grass_roughness");
     ResourceManager::LoadTexture("assets/textures/pbr/grass/ao.png", "grass_ao");
+    // Wall
+    ResourceManager::LoadTexture("assets/textures/pbr/wall/albedo.png", "wall_albedo");
+    ResourceManager::LoadTexture("assets/textures/pbr/wall/normal.png", "wall_normal");
+    ResourceManager::LoadTexture("assets/textures/pbr/wall/metallic.png", "wall_metallic");
+    ResourceManager::LoadTexture("assets/textures/pbr/wall/roughness.png", "wall_roughness");
+    ResourceManager::LoadTexture("assets/textures/pbr/wall/ao.png", "wall_ao");
+    // Gold
+    ResourceManager::LoadTexture("assets/textures/pbr/gold/albedo.png", "gold_albedo");
+    ResourceManager::LoadTexture("assets/textures/pbr/gold/normal.png", "gold_normal");
+    ResourceManager::LoadTexture("assets/textures/pbr/gold/metallic.png", "gold_metallic");
+    ResourceManager::LoadTexture("assets/textures/pbr/gold/roughness.png", "gold_roughness");
+    ResourceManager::LoadTexture("assets/textures/pbr/gold/ao.png", "gold_ao");
+    // Plastic
+    ResourceManager::LoadTexture("assets/textures/pbr/plastic/albedo.png", "plastic_albedo");
+    ResourceManager::LoadTexture("assets/textures/pbr/plastic/normal.png", "plastic_normal");
+    ResourceManager::LoadTexture("assets/textures/pbr/plastic/metallic.png", "plastic_metallic");
+    ResourceManager::LoadTexture("assets/textures/pbr/plastic/roughness.png", "plastic_roughness");
+    ResourceManager::LoadTexture("assets/textures/pbr/plastic/ao.png", "plastic_ao");
+    // Patchy Meadow 1
+    ResourceManager::LoadTexture("assets/textures/pbr/patchy-meadow/patchy-meadow1_albedo.png", "patchy_albedo");
+    ResourceManager::LoadTexture("assets/textures/pbr/patchy-meadow/patchy-meadow1_normal-ogl.png", "patchy_normal");
+    ResourceManager::LoadTexture("assets/textures/pbr/patchy-meadow/patchy-meadow1_metallic.png", "patchy_metallic");
+    ResourceManager::LoadTexture("assets/textures/pbr/patchy-meadow/patchy-meadow1_roughness.png", "patchy_roughness");
+    ResourceManager::LoadTexture("assets/textures/pbr/patchy-meadow/patchy-meadow1_ao.png", "patchy_ao");
+    // Wavy Sand
+    ResourceManager::LoadTexture("assets/textures/pbr/wavy-sand/wavy-sand_albedo.png", "wavy_albedo");
+    ResourceManager::LoadTexture("assets/textures/pbr/wavy-sand/wavy-sand_normal-ogl.png", "wavy_normal");
+    ResourceManager::LoadTexture("assets/textures/pbr/wavy-sand/wavy-sand_metallic.png", "wavy_metallic");
+    ResourceManager::LoadTexture("assets/textures/pbr/wavy-sand/wavy-sand_roughness.png", "wavy_roughness");
+    ResourceManager::LoadTexture("assets/textures/pbr/wavy-sand/wavy-sand_ao.png", "wavy_ao");
+    // Sand
+    ResourceManager::LoadTexture("assets/textures/pbr/sand/sand_albedo.png", "sand_albedo");
+    ResourceManager::LoadTexture("assets/textures/pbr/sand/sand_normal.png", "sand_normal");
+    ResourceManager::LoadTexture("assets/textures/pbr/sand/sand_metallic.png", "sand_metallic");
+    ResourceManager::LoadTexture("assets/textures/pbr/sand/sand_roughness.png", "sand_roughness");
+    ResourceManager::LoadTexture("assets/textures/pbr/sand/sand_ao.png", "sand_ao");
     // Load HDR Textures
     ResourceManager::LoadHDRTexture("assets/textures/hdr/Nature_8K_hdri.jpg", "skybox_hdr");
     // Load Shaders
@@ -202,6 +238,8 @@ void SandboxLayer::OnAttach()
     ResourceManager::GetShader("pbr_lighting").Use().SetFloat("material.roughness", m_Roughness);
     ResourceManager::GetShader("pbr_lighting").Use().SetFloat("material.ao", m_AO);
 
+    ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger("isGLTF", 0);
+
     // Generate directional light
     ResourceManager::GetShader("pbr_lighting").Use().SetInteger("dirLight.use", m_UseDirLight);
     ResourceManager::GetShader("pbr_lighting").Use().SetVector3f("dirLight.direction", m_DirLightDirection);
@@ -215,7 +253,7 @@ void SandboxLayer::OnAttach()
     // Generate point lights
     m_PointLightPositions.push_back(glm::vec3(-4.5f, 3.5f, 8.0f));
     m_PointLightColors.push_back(glm::vec3(1.0f, 1.0f, 1.0f));
-    m_PointLightIntensities.push_back(100.0f);
+    m_PointLightIntensities.push_back(20.0f);
     // m_PointLightPositions.push_back(glm::vec3(5.0f, 2.0f, 10.0f));
     // m_PointLightColors.push_back(glm::vec3(1.0f, 1.0f, 1.0f));
     // m_PointLightIntensities.push_back(100.0f);
@@ -282,10 +320,13 @@ void SandboxLayer::OnAttach()
 
     // create environment cubemap
     m_EnvCubemap.Internal_Format = GL_RGB16F;
+    m_EnvCubemap.Image_Format = GL_RGB;
     m_EnvCubemap.Data_Type = GL_FLOAT;
     m_EnvCubemap.Wrap_S = GL_CLAMP_TO_EDGE;
     m_EnvCubemap.Wrap_T = GL_CLAMP_TO_EDGE;
     m_EnvCubemap.Wrap_R = GL_CLAMP_TO_EDGE;
+    m_EnvCubemap.Filter_Min = GL_LINEAR_MIPMAP_LINEAR;
+    m_EnvCubemap.Filter_Max = GL_LINEAR;
     m_EnvCubemap.GenerateCubemap(m_EnvCubemapWidth, m_EnvCubemapHeight);
 
     // projView matrices form capturing data onto the 6 cubemap face directions
@@ -314,12 +355,19 @@ void SandboxLayer::OnAttach()
     FrameBuffer::UnBind();
     Texture2D::UnBind();
 
+    glBindTexture(GL_TEXTURE_CUBE_MAP, m_EnvCubemap.ID);
+    glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
+    Texture2D::UnBindCubemap();
+
     // create an irradiance cubemap, and re-scale captureFBO to irradiance scale
     m_Irradiancemap.Internal_Format = GL_RGB16F;
+    m_Irradiancemap.Image_Format = GL_RGB;
     m_Irradiancemap.Data_Type = GL_FLOAT;
     m_Irradiancemap.Wrap_S = GL_CLAMP_TO_EDGE;
     m_Irradiancemap.Wrap_T = GL_CLAMP_TO_EDGE;
     m_Irradiancemap.Wrap_R = GL_CLAMP_TO_EDGE;
+    m_Irradiancemap.Filter_Min = GL_LINEAR;
+    m_Irradiancemap.Filter_Max = GL_LINEAR;
     m_Irradiancemap.GenerateCubemap(m_IrradiancemapWidth, m_IrradiancemapHeight);
 
     captureFBO.Bind();
@@ -339,11 +387,13 @@ void SandboxLayer::OnAttach()
 
     // prefilter HDR environment map
     m_Prefiltermap.Internal_Format = GL_RGB16F;
+    m_Prefiltermap.Image_Format = GL_RGB;
     m_Prefiltermap.Data_Type = GL_FLOAT;
     m_Prefiltermap.Wrap_S = GL_CLAMP_TO_EDGE;
     m_Prefiltermap.Wrap_T = GL_CLAMP_TO_EDGE;
     m_Prefiltermap.Wrap_R = GL_CLAMP_TO_EDGE;
     m_Prefiltermap.Filter_Min = GL_LINEAR_MIPMAP_LINEAR;
+    m_Prefiltermap.Filter_Max = GL_LINEAR;
     m_Prefiltermap.GenerateCubemap(m_PrefiltermapWidth, m_PrefiltermapHeight, GL_TRUE);
 
     // run a quasi monte-carlo simulation on the environment lighting to create a prefilter (cube)map.
@@ -380,6 +430,8 @@ void SandboxLayer::OnAttach()
     m_BRDFLUTTexture.Data_Type = GL_FLOAT;
     m_BRDFLUTTexture.Wrap_S = GL_CLAMP_TO_EDGE;
     m_BRDFLUTTexture.Wrap_T = GL_CLAMP_TO_EDGE;
+    m_BRDFLUTTexture.Filter_Min = GL_LINEAR;
+    m_BRDFLUTTexture.Filter_Max = GL_LINEAR;
     m_BRDFLUTTexture.Generate(m_BRDFLUTTextureWidth, m_BRDFLUTTextureHeight, 0);
 
     // then re-configure capture framebuffer object and render screen-space quad with BRDF shader
@@ -433,7 +485,7 @@ void SandboxLayer::OnAttach()
 
     ResourceManager::GetShader("depth_cube_map").Use().SetFloat("far_plane", farPlane);
     ResourceManager::GetShader("pbr_lighting").Use().SetFloat("far_plane", farPlane);
-    ResourceManager::GetShader("pbr_lighting_texture").Use().SetFloat("far_plane", farPlane);
+    ResourceManager::GetShader("pbr_lighting_textured").Use().SetFloat("far_plane", farPlane);
 }
 
 void SandboxLayer::OnUpdate()
@@ -493,6 +545,14 @@ void SandboxLayer::OnUpdate()
             }
         }
 
+        for (GLuint i = 0; i < 5; i++) {
+            glm::mat4 model = glm::mat4(1.0f);
+            model = glm::translate(model, glm::vec3(-6.0f + (i*3), 6.0f, 4.0f));
+            model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
+            ResourceManager::GetShader("depth_map").Use().SetMatrix4(1, model);
+            renderSphere();
+        }
+
         FrameBuffer::UnBind();
 
         glViewport(0, 0, m_Width, m_Height);
@@ -540,6 +600,14 @@ void SandboxLayer::OnUpdate()
             }
         }
 
+        for (GLuint i = 0; i < 5; i++) {
+            glm::mat4 model = glm::mat4(1.0f);
+            model = glm::translate(model, glm::vec3(-6.0f + (i*3), 6.0f, 4.0f));
+            model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
+            ResourceManager::GetShader("depth_cube_map").Use().SetMatrix4(1, model);
+            renderSphere();
+        }
+
         FrameBuffer::UnBind();
 
         glViewport(0, 0, m_Width, m_Height);
@@ -553,11 +621,11 @@ void SandboxLayer::OnUpdate()
     m_Irradiancemap.BindCubemap(0);
     m_Prefiltermap.BindCubemap(1);
     m_BRDFLUTTexture.Bind(2);
-    // ResourceManager::GetTexture("grass_albedo").Bind(3);
-    // ResourceManager::GetTexture("grass_normal").Bind(4);
-    // ResourceManager::GetTexture("grass_metallic").Bind(5);
-    // ResourceManager::GetTexture("grass_roughness").Bind(6);
-    // ResourceManager::GetTexture("grass_ao").Bind(7);
+    ResourceManager::GetTexture("wavy_albedo").Bind(3);
+    ResourceManager::GetTexture("wavy_normal").Bind(4);
+    ResourceManager::GetTexture("wavy_metallic").Bind(5);
+    ResourceManager::GetTexture("wavy_roughness").Bind(6);
+    ResourceManager::GetTexture("wavy_ao").Bind(7);
     if (m_UseDirShadows && m_UseDirLight) {
         glActiveTexture(GL_TEXTURE8);
         depthMapFBO.BindTexture(GL_TEXTURE_2D, 0);
@@ -569,7 +637,7 @@ void SandboxLayer::OnUpdate()
     glm::mat4 model = glm::mat4(1.0f);
     model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
     model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
-    ResourceManager::GetShader("pbr_lighting").Use().SetMatrix4(1, model);
+    ResourceManager::GetShader("pbr_lighting_textured").Use().SetMatrix4(1, model);
     renderPlane();
     Texture2D::UnBind();
     Texture2D::UnBindCubemap();
@@ -587,6 +655,7 @@ void SandboxLayer::OnUpdate()
     }
 
     // Render Models
+    ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger("isGLTF", 1);
     m_Irradiancemap.BindCubemap(0);
     m_Prefiltermap.BindCubemap(1);
     m_BRDFLUTTexture.Bind(2);
@@ -598,9 +667,10 @@ void SandboxLayer::OnUpdate()
         glActiveTexture(GL_TEXTURE9);
         depthCubeMapFBO.BindTexture(GL_TEXTURE_CUBE_MAP, 0);
     }
-    renderModel(ResourceManager::GetShader("pbr_lighting"));
+    renderModel(ResourceManager::GetShader("pbr_lighting_textured"));
     Texture2D::UnBind();
     Texture2D::UnBindCubemap();
+    ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger("isGLTF", 0);
 
     // Render Spheres
     m_Irradiancemap.BindCubemap(0);
@@ -623,6 +693,79 @@ void SandboxLayer::OnUpdate()
             renderSphere();
         }
     }
+    Texture2D::UnBind();
+    Texture2D::UnBindCubemap();
+
+    // Render Textured Spheres
+    m_Irradiancemap.BindCubemap(0);
+    m_Prefiltermap.BindCubemap(1);
+    m_BRDFLUTTexture.Bind(2);
+    if (m_UseDirShadows && m_UseDirLight) {
+        glActiveTexture(GL_TEXTURE8);
+        depthMapFBO.BindTexture(GL_TEXTURE_2D, 0);
+    }
+    if (m_UsePointShadows && m_UsePointLights) {
+        glActiveTexture(GL_TEXTURE9);
+        depthCubeMapFBO.BindTexture(GL_TEXTURE_CUBE_MAP, 0);
+    }
+
+    {
+        ResourceManager::GetTexture("wall_albedo").Bind(3);
+        ResourceManager::GetTexture("wall_normal").Bind(4);
+        ResourceManager::GetTexture("wall_metallic").Bind(5);
+        ResourceManager::GetTexture("wall_roughness").Bind(6);
+        ResourceManager::GetTexture("wall_ao").Bind(7);
+        glm::mat4 model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(-6.0f, 6.0f, 4.0f));
+        model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
+        ResourceManager::GetShader("pbr_lighting_textured").Use().SetMatrix4(1, model);
+        renderSphere();
+
+        ResourceManager::GetTexture("plastic_albedo").Bind(3);
+        ResourceManager::GetTexture("plastic_normal").Bind(4);
+        ResourceManager::GetTexture("plastic_metallic").Bind(5);
+        ResourceManager::GetTexture("plastic_roughness").Bind(6);
+        ResourceManager::GetTexture("plastic_ao").Bind(7);
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(-6.0f + 3, 6.0f, 4.0f));
+        model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
+        ResourceManager::GetShader("pbr_lighting_textured").Use().SetMatrix4(1, model);
+        renderSphere();
+
+        ResourceManager::GetTexture("grass_albedo").Bind(3);
+        ResourceManager::GetTexture("grass_normal").Bind(4);
+        ResourceManager::GetTexture("grass_metallic").Bind(5);
+        ResourceManager::GetTexture("grass_roughness").Bind(6);
+        ResourceManager::GetTexture("grass_ao").Bind(7);
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(-6.0f + 6, 6.0f, 4.0f));
+        model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
+        ResourceManager::GetShader("pbr_lighting_textured").Use().SetMatrix4(1, model);
+        renderSphere();
+
+        ResourceManager::GetTexture("gold_albedo").Bind(3);
+        ResourceManager::GetTexture("gold_normal").Bind(4);
+        ResourceManager::GetTexture("gold_metallic").Bind(5);
+        ResourceManager::GetTexture("gold_roughness").Bind(6);
+        ResourceManager::GetTexture("gold_ao").Bind(7);
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(-6.0f + 9, 6.0f, 4.0f));
+        model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
+        ResourceManager::GetShader("pbr_lighting_textured").Use().SetMatrix4(1, model);
+        renderSphere();
+
+        ResourceManager::GetTexture("rusted_albedo").Bind(3);
+        ResourceManager::GetTexture("rusted_normal").Bind(4);
+        ResourceManager::GetTexture("rusted_metallic").Bind(5);
+        ResourceManager::GetTexture("rusted_roughness").Bind(6);
+        ResourceManager::GetTexture("rusted_ao").Bind(7);
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(-6.0f + 12, 6.0f, 4.0f));
+        model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
+        ResourceManager::GetShader("pbr_lighting_textured").Use().SetMatrix4(1, model);
+        renderSphere();
+    }
+
     Texture2D::UnBind();
     Texture2D::UnBindCubemap();
 
@@ -730,7 +873,7 @@ void SandboxLayer::renderModel(Shader shader)
 {
     glm::mat4 model = glm::mat4(1.0f);
     model = glm::translate(model, glm::vec3(0.0f, -0.5f, 4.0f));
-    model = glm::scale(model, glm::vec3(1.0f));
+    model = glm::scale(model, glm::vec3(3.0f));
     shader.Use().SetMatrix4(1, model);
     ResourceManager::GetModel("3d_model").Draw(shader);
 }

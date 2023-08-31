@@ -325,15 +325,15 @@ vec3 CalcPointLight(vec3 N, vec3 V, vec3 R, vec3 F0)
 
 void main()
 {
+    vec3 result = vec3(0.0);
+    // calculate reflectance at normal incidence; if dia-electric (like plastic) use F0 of 0.04 and if it's a metal, use the albedo color as F0 (metallic workflow)
+    vec3 F0 = vec3(0.04);
+
     vec3 N = normalize(fs_in.Normal);
     vec3 V = normalize(camPos - fs_in.WorldPos);
     vec3 R = reflect(-V, N);
 
-    // calculate reflectance at normal incidence; if dia-electric (like plastic) use F0 of 0.04 and if it's a metal, use the albedo color as F0 (metallic workflow)
-    vec3 F0 = vec3(0.04);
     F0 = mix(F0, material.albedo, material.metallic);
-
-    vec3 result = vec3(0.0);
 
     if (dirLight.use)
         result += CalcDirLight(N, V, R, F0);

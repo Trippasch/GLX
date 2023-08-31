@@ -57,6 +57,8 @@ uniform vec3 camPos;
 uniform bool debugDepthCubeMap;
 uniform float far_plane;
 
+uniform bool isGLTF;
+
 const float gamma = 2.2;
 
 vec3 getNormalFromMap()
@@ -340,21 +342,31 @@ vec3 CalcPointLight(vec3 N, vec3 V, vec3 R, vec3 F0, vec3 albedo, float metallic
 
 void main()
 {
+    vec3 result = vec3(0.0);
+    // calculate reflectance at normal incidence; if dia-electric (like plastic) use F0 of 0.04 and if it's a metal, use the albedo color as F0 (metallic workflow)
+    vec3 F0 = vec3(0.04);
+
     vec3 albedo = pow(texture(albedoMap, fs_in.TexCoords).rgb, vec3(gamma));
-    float metallic = texture(metallicMap, fs_in.TexCoords).b;
-    float roughness = texture(roughnessMap, fs_in.TexCoords).g;
+
+    float metallic;
+    float roughness;
+
+    if (!isGLTF) {
+        metallic = texture(metallicMap, fs_in.TexCoords).r;
+        roughness = texture(roughnessMap, fs_in.TexCoords).r;
+    }
+    else {
+        metallic = texture(metallicMap, fs_in.TexCoords).b;
+        roughness = texture(roughnessMap, fs_in.TexCoords).g;
+    }
+
     float ao = texture(aoMap, fs_in.TexCoords).r;
 
     vec3 N = getNormalFromMap();
-    // vec3 N = normalize(fs_in.Normal);
     vec3 V = normalize(camPos - fs_in.WorldPos);
     vec3 R = reflect(-V, N);
 
-    // calculate reflectance at normal incidence; if dia-electric (like plastic) use F0 of 0.04 and if it's a metal, use the albedo color as F0 (metallic workflow)
-    vec3 F0 = vec3(0.04);
     F0 = mix(F0, albedo, metallic);
-
-    vec3 result = vec3(0.0);
 
     if (dirLight.use)
         result += CalcDirLight(N, V, R, F0, albedo, metallic, roughness, ao);

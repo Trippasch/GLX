@@ -69,8 +69,8 @@ private:
     GLuint m_IrradiancemapHeight = 32;
 
     Texture2D m_Prefiltermap;
-    GLuint m_PrefiltermapWidth = 128;
-    GLuint m_PrefiltermapHeight = 128;
+    GLuint m_PrefiltermapWidth = 512;
+    GLuint m_PrefiltermapHeight = 512;
 
     Texture2D m_BRDFLUTTexture;
     GLuint m_BRDFLUTTextureWidth = 512;
@@ -85,7 +85,7 @@ private:
     bool m_UseDirShadows = true;
     glm::vec3 m_DirLightDirection = glm::vec3(-1.0f, -1.0f, -1.0f);
     glm::vec3 m_DirLightColor = glm::vec3(1.0f, 1.0f, 1.0f);
-    float m_DirLightIntensity = 5.0f;
+    float m_DirLightIntensity = 1.0f;
 
     // Point lights
     bool m_UsePointLights = true;
@@ -113,8 +113,8 @@ private:
 
     // PBR Material Properties
     glm::vec3 m_Albedo = glm::vec3(0.21f, 0.17f, 0.17f);
-    float m_Metallic = 0.0f;
-    float m_Roughness = 0.5f;
+    float m_Metallic = 0.39f;
+    float m_Roughness = 0.23f;
     float m_AO = 1.0f;
 
     void renderPlane();
