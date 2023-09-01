@@ -185,24 +185,30 @@ void SandboxLayer::OnAttach()
     ResourceManager::LoadTexture("assets/textures/pbr/plastic/metallic.png", "plastic_metallic");
     ResourceManager::LoadTexture("assets/textures/pbr/plastic/roughness.png", "plastic_roughness");
     ResourceManager::LoadTexture("assets/textures/pbr/plastic/ao.png", "plastic_ao");
-    // Patchy Meadow 1
-    ResourceManager::LoadTexture("assets/textures/pbr/patchy-meadow/patchy-meadow1_albedo.png", "patchy_albedo");
-    ResourceManager::LoadTexture("assets/textures/pbr/patchy-meadow/patchy-meadow1_normal-ogl.png", "patchy_normal");
-    ResourceManager::LoadTexture("assets/textures/pbr/patchy-meadow/patchy-meadow1_metallic.png", "patchy_metallic");
-    ResourceManager::LoadTexture("assets/textures/pbr/patchy-meadow/patchy-meadow1_roughness.png", "patchy_roughness");
-    ResourceManager::LoadTexture("assets/textures/pbr/patchy-meadow/patchy-meadow1_ao.png", "patchy_ao");
-    // Wavy Sand
-    ResourceManager::LoadTexture("assets/textures/pbr/wavy-sand/wavy-sand_albedo.png", "wavy_albedo");
-    ResourceManager::LoadTexture("assets/textures/pbr/wavy-sand/wavy-sand_normal-ogl.png", "wavy_normal");
-    ResourceManager::LoadTexture("assets/textures/pbr/wavy-sand/wavy-sand_metallic.png", "wavy_metallic");
-    ResourceManager::LoadTexture("assets/textures/pbr/wavy-sand/wavy-sand_roughness.png", "wavy_roughness");
-    ResourceManager::LoadTexture("assets/textures/pbr/wavy-sand/wavy-sand_ao.png", "wavy_ao");
-    // Sand
-    ResourceManager::LoadTexture("assets/textures/pbr/sand/sand_albedo.png", "sand_albedo");
-    ResourceManager::LoadTexture("assets/textures/pbr/sand/sand_normal.png", "sand_normal");
-    ResourceManager::LoadTexture("assets/textures/pbr/sand/sand_metallic.png", "sand_metallic");
-    ResourceManager::LoadTexture("assets/textures/pbr/sand/sand_roughness.png", "sand_roughness");
-    ResourceManager::LoadTexture("assets/textures/pbr/sand/sand_ao.png", "sand_ao");
+    // // Patchy Meadow 1
+    // ResourceManager::LoadTexture("assets/textures/pbr/patchy-meadow/patchy-meadow1_albedo.png", "patchy_albedo");
+    // ResourceManager::LoadTexture("assets/textures/pbr/patchy-meadow/patchy-meadow1_normal-ogl.png", "patchy_normal");
+    // ResourceManager::LoadTexture("assets/textures/pbr/patchy-meadow/patchy-meadow1_metallic.png", "patchy_metallic");
+    // ResourceManager::LoadTexture("assets/textures/pbr/patchy-meadow/patchy-meadow1_roughness.png", "patchy_roughness");
+    // ResourceManager::LoadTexture("assets/textures/pbr/patchy-meadow/patchy-meadow1_ao.png", "patchy_ao");
+    // // Wavy Sand
+    // ResourceManager::LoadTexture("assets/textures/pbr/wavy-sand/wavy-sand_albedo.png", "wavy_albedo");
+    // ResourceManager::LoadTexture("assets/textures/pbr/wavy-sand/wavy-sand_normal-ogl.png", "wavy_normal");
+    // ResourceManager::LoadTexture("assets/textures/pbr/wavy-sand/wavy-sand_metallic.png", "wavy_metallic");
+    // ResourceManager::LoadTexture("assets/textures/pbr/wavy-sand/wavy-sand_roughness.png", "wavy_roughness");
+    // ResourceManager::LoadTexture("assets/textures/pbr/wavy-sand/wavy-sand_ao.png", "wavy_ao");
+    // // Sand
+    // ResourceManager::LoadTexture("assets/textures/pbr/sand/sand_albedo.png", "sand_albedo");
+    // ResourceManager::LoadTexture("assets/textures/pbr/sand/sand_normal.png", "sand_normal");
+    // ResourceManager::LoadTexture("assets/textures/pbr/sand/sand_metallic.png", "sand_metallic");
+    // ResourceManager::LoadTexture("assets/textures/pbr/sand/sand_roughness.png", "sand_roughness");
+    // ResourceManager::LoadTexture("assets/textures/pbr/sand/sand_ao.png", "sand_ao");
+    // Rounded Alley
+    ResourceManager::LoadTexture("assets/textures/pbr/rounded-alley-brick/rounded-alley-brick_albedo.png", "alley_albedo");
+    ResourceManager::LoadTexture("assets/textures/pbr/rounded-alley-brick/rounded-alley-brick_normal.png", "alley_normal");
+    ResourceManager::LoadTexture("assets/textures/pbr/rounded-alley-brick/rounded-alley-brick_metallic.png", "alley_metallic");
+    ResourceManager::LoadTexture("assets/textures/pbr/rounded-alley-brick/rounded-alley-brick_roughness.png", "alley_roughness");
+    ResourceManager::LoadTexture("assets/textures/pbr/rounded-alley-brick/rounded-alley-brick_ao.png", "alley_ao");
     // Load HDR Textures
     ResourceManager::LoadHDRTexture("assets/textures/hdr/Nature_8K_hdri.jpg", "skybox_hdr");
     // Load Shaders
@@ -621,11 +627,11 @@ void SandboxLayer::OnUpdate()
     m_Irradiancemap.BindCubemap(0);
     m_Prefiltermap.BindCubemap(1);
     m_BRDFLUTTexture.Bind(2);
-    ResourceManager::GetTexture("wavy_albedo").Bind(3);
-    ResourceManager::GetTexture("wavy_normal").Bind(4);
-    ResourceManager::GetTexture("wavy_metallic").Bind(5);
-    ResourceManager::GetTexture("wavy_roughness").Bind(6);
-    ResourceManager::GetTexture("wavy_ao").Bind(7);
+    ResourceManager::GetTexture("alley_albedo").Bind(3);
+    ResourceManager::GetTexture("alley_normal").Bind(4);
+    ResourceManager::GetTexture("alley_metallic").Bind(5);
+    ResourceManager::GetTexture("alley_roughness").Bind(6);
+    ResourceManager::GetTexture("alley_ao").Bind(7);
     if (m_UseDirShadows && m_UseDirLight) {
         glActiveTexture(GL_TEXTURE8);
         depthMapFBO.BindTexture(GL_TEXTURE_2D, 0);
