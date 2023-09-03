@@ -131,20 +131,23 @@ Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene)
         // - aiTextureType_EMISSIVE:  Emissive
 
         // albedo maps
-        std::vector<Texture2D> albedoMaps = loadMaterialTextures(material,aiTextureType_BASE_COLOR, "texture_albedo");
+        std::vector<Texture2D> albedoMaps = loadMaterialTextures(material, aiTextureType_BASE_COLOR, "texture_albedo");
         textures.insert(textures.end(), albedoMaps.begin(), albedoMaps.end());
         // normal maps
         std::vector<Texture2D> normalMaps = loadMaterialTextures(material, aiTextureType_NORMALS, "texture_normal");
         textures.insert(textures.end(), normalMaps.begin(), normalMaps.end());
         // metallic maps
-        std::vector<Texture2D> metallicMaps = loadMaterialTextures(material, aiTextureType_UNKNOWN, "texture_metallic");
+        std::vector<Texture2D> metallicMaps = loadMaterialTextures(material, aiTextureType_METALNESS, "texture_metallic");
         textures.insert(textures.end(), metallicMaps.begin(), metallicMaps.end());
         // roughness maps
-        std::vector<Texture2D> roughnessMaps = loadMaterialTextures(material, aiTextureType_UNKNOWN, "texture_roughness");
+        std::vector<Texture2D> roughnessMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE_ROUGHNESS, "texture_roughness");
         textures.insert(textures.end(), roughnessMaps.begin(), roughnessMaps.end());
         // ao maps
-        std::vector<Texture2D> aoMaps = loadMaterialTextures(material, aiTextureType_UNKNOWN, "texture_ao");
+        std::vector<Texture2D> aoMaps = loadMaterialTextures(material, aiTextureType_AMBIENT, "texture_ao");
         textures.insert(textures.end(), aoMaps.begin(), aoMaps.end());
+        // emissive maps
+        std::vector<Texture2D> emissiveMaps = loadMaterialTextures(material, aiTextureType_EMISSIVE, "texture_emissive");
+        textures.insert(textures.end(), emissiveMaps.begin(), emissiveMaps.end());
 
         // // 1. diffuse maps
         // std::vector<Texture2D> diffuseMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse");

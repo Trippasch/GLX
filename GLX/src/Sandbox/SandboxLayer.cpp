@@ -153,7 +153,7 @@ void SandboxLayer::OnAttach()
 
     // Load Resources
     // Load Models
-    ResourceManager::LoadModel("assets/objects/biomutant/Biomech_Mutant_Skin_1.gltf", "3d_model");
+    ResourceManager::LoadModel("assets/objects/helmet/DamagedHelmet.gltf", "3d_model");
     // Load Textures
     // Rusted Iron
     ResourceManager::LoadTexture("assets/textures/pbr/rusted_iron/albedo.png", "rusted_albedo");
@@ -632,12 +632,14 @@ void SandboxLayer::OnUpdate()
     ResourceManager::GetTexture("alley_metallic").Bind(5);
     ResourceManager::GetTexture("alley_roughness").Bind(6);
     ResourceManager::GetTexture("alley_ao").Bind(7);
+    glActiveTexture(GL_TEXTURE8);
+    glBindTexture(GL_TEXTURE_2D, 0);
     if (m_UseDirShadows && m_UseDirLight) {
-        glActiveTexture(GL_TEXTURE8);
+        glActiveTexture(GL_TEXTURE9);
         depthMapFBO.BindTexture(GL_TEXTURE_2D, 0);
     }
     if (m_UsePointShadows && m_UsePointLights) {
-        glActiveTexture(GL_TEXTURE9);
+        glActiveTexture(GL_TEXTURE10);
         depthCubeMapFBO.BindTexture(GL_TEXTURE_CUBE_MAP, 0);
     }
     glm::mat4 model = glm::mat4(1.0f);
@@ -666,11 +668,11 @@ void SandboxLayer::OnUpdate()
     m_Prefiltermap.BindCubemap(1);
     m_BRDFLUTTexture.Bind(2);
     if (m_UseDirShadows && m_UseDirLight) {
-        glActiveTexture(GL_TEXTURE8);
+        glActiveTexture(GL_TEXTURE9);
         depthMapFBO.BindTexture(GL_TEXTURE_2D, 0);
     }
     if (m_UsePointShadows && m_UsePointLights) {
-        glActiveTexture(GL_TEXTURE9);
+        glActiveTexture(GL_TEXTURE10);
         depthCubeMapFBO.BindTexture(GL_TEXTURE_CUBE_MAP, 0);
     }
     renderModel(ResourceManager::GetShader("pbr_lighting_textured"));
@@ -706,12 +708,16 @@ void SandboxLayer::OnUpdate()
     m_Irradiancemap.BindCubemap(0);
     m_Prefiltermap.BindCubemap(1);
     m_BRDFLUTTexture.Bind(2);
+
+    glActiveTexture(GL_TEXTURE8);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
     if (m_UseDirShadows && m_UseDirLight) {
-        glActiveTexture(GL_TEXTURE8);
+        glActiveTexture(GL_TEXTURE9);
         depthMapFBO.BindTexture(GL_TEXTURE_2D, 0);
     }
     if (m_UsePointShadows && m_UsePointLights) {
-        glActiveTexture(GL_TEXTURE9);
+        glActiveTexture(GL_TEXTURE10);
         depthCubeMapFBO.BindTexture(GL_TEXTURE_CUBE_MAP, 0);
     }
 
@@ -878,8 +884,9 @@ void SandboxLayer::renderQuad()
 void SandboxLayer::renderModel(Shader shader)
 {
     glm::mat4 model = glm::mat4(1.0f);
-    model = glm::translate(model, glm::vec3(0.0f, -0.5f, 4.0f));
-    model = glm::scale(model, glm::vec3(3.0f));
+    model = glm::translate(model, glm::vec3(0.0f, 2.0f, 4.0f));
+    model = glm::rotate(model, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+    model = glm::scale(model, glm::vec3(1.0f));
     shader.Use().SetMatrix4(1, model);
     ResourceManager::GetModel("3d_model").Draw(shader);
 }

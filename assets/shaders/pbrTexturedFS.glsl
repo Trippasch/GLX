@@ -27,10 +27,11 @@ layout (binding = 4) uniform sampler2D normalMap;
 layout (binding = 5) uniform sampler2D metallicMap;
 layout (binding = 6) uniform sampler2D roughnessMap;
 layout (binding = 7) uniform sampler2D aoMap;
+layout (binding = 8) uniform sampler2D emissiveMap;
 
 // shadows
-layout (binding = 8) uniform sampler2D depthMap;
-layout (binding = 9) uniform samplerCube depthCubeMap;
+layout (binding = 9) uniform sampler2D depthMap;
+layout (binding = 10) uniform samplerCube depthCubeMap;
 
 // directional light
 struct DirLight {
@@ -361,6 +362,8 @@ void main()
     }
 
     float ao = texture(aoMap, fs_in.TexCoords).r;
+    vec3 emission = texture(emissiveMap, fs_in.TexCoords).rgb;
+    emission = emission * 20.0;
 
     vec3 N = getNormalFromMap();
     vec3 V = normalize(camPos - fs_in.WorldPos);
@@ -374,7 +377,7 @@ void main()
     if (pointLight.use)
         result += CalcPointLight(N, V, R, F0, albedo, metallic, roughness, ao);
 
-    FragColor = vec4(result, 1.0);
+    FragColor = vec4(result + emission, 1.0);
 
     if (debugDepthCubeMap) {
         // display closestDepth as debug (to visualize depth cubemap)
