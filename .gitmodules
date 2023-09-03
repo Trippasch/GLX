@@ -11,3 +11,6 @@
 	path = vendor/ImGui
 	url = git@github.com:Trippasch/imgui.git
 	branch = docking
+[submodule "vendor/Assimp"]
+	path = vendor/Assimp
+	url = git@github.com:assimp/assimp.git
