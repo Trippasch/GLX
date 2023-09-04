@@ -1,10 +1,10 @@
 {
     "configurations": [
     {
-        "name": "Debug",
+        "name": "Linux-Debug",
         "type": "cppdbg",
         "request": "launch",
-        "program": "${workspaceFolder}/bin/Debug-linux-x86_64/GLX/GLX",
+        "program": "${workspaceFolder}/build/Debug/GLX/GLX",
         "args": [],
         "stopAtEntry": false,
         "cwd": "${workspaceFolder}",
@@ -23,13 +23,13 @@
                 "ignoreFailures": true
             }
         ],
-        "preLaunchTask": "Make Debug"
+        "preLaunchTask": "Build Linux Debug"
     },
     {
-        "name": "Release",
+        "name": "Linux-Release",
         "type": "cppdbg",
         "request": "launch",
-        "program": "${workspaceFolder}/bin/Release-linux-x86_64/GLX/GLX",
+        "program": "${workspaceFolder}/build/Release/GLX/GLX",
         "args": [],
         "stopAtEntry": false,
         "cwd": "${workspaceFolder}",
@@ -48,7 +48,57 @@
                 "ignoreFailures": true
             }
         ],
-        "preLaunchTask": "Make Release"
+        "preLaunchTask": "Build Linux Release"
+    },
+    {
+        "name": "Windows-Debug",
+        "type": "cppdbg",
+        "request": "launch",
+        "program": "${workspaceFolder}/build/GLX/Debug/GLX.exe",
+        "args": [],
+        "stopAtEntry": false,
+        "cwd": "${workspaceFolder}",
+        "environment": [],
+        "externalConsole": false,
+        "MIMode": "gdb",
+        "setupCommands": [
+            {
+                "description": "Enable pretty-printing for gdb",
+                "text": "-enable-pretty-printing",
+                "ignoreFailures": true
+            },
+            {
+                "description":  "Set Disassembly Flavor to Intel",
+                "text": "-gdb-set disassembly-flavor intel",
+                "ignoreFailures": true
+            }
+        ],
+        "preLaunchTask": "Build Windows Debug"
+    },
+    {
+        "name": "Windows-Release",
+        "type": "cppdbg",
+        "request": "launch",
+        "program": "${workspaceFolder}/build/GLX/Release/GLX.exe",
+        "args": [],
+        "stopAtEntry": false,
+        "cwd": "${workspaceFolder}",
+        "environment": [],
+        "externalConsole": false,
+        "MIMode": "gdb",
+        "setupCommands": [
+            {
+                "description": "Enable pretty-printing for gdb",
+                "text": "-enable-pretty-printing",
+                "ignoreFailures": true
+            },
+            {
+                "description":  "Set Disassembly Flavor to Intel",
+                "text": "-gdb-set disassembly-flavor intel",
+                "ignoreFailures": true
+            }
+        ],
+        "preLaunchTask": "Build Windows Release"
     }
     ]
 }

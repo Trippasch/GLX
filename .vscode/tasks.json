@@ -4,19 +4,39 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "Make Debug",
+            "label": "Build Linux Debug",
             "type": "shell",
-            "command": "make",
+            "command": "cmake --build build/Debug -j",
             "problemMatcher": [],
             "group": {
                 "kind": "build",
-                "isDefault": true
+                "isDefault": false
             }
         },
         {
-            "label": "Make Release",
+            "label": "Build Linux Release",
             "type": "shell",
-            "command": "make config=release",
+            "command": "cmake --build build/Release -j",
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            }
+        },
+        {
+            "label": "Build Windows Debug",
+            "type": "shell",
+            "command": "cmake --build build/ --config=Debug -j",
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            }
+        },
+        {
+            "label": "Build Windows Release",
+            "type": "shell",
+            "command": "cmake --build build/ --config=Release -j",
             "problemMatcher": [],
             "group": {
                 "kind": "build",
