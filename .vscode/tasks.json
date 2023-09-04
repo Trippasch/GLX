@@ -26,7 +26,7 @@
         {
             "label": "Build Windows Debug",
             "type": "shell",
-            "command": "cmake --build build/ --config=Debug -j",
+            "command": "cmake --build build/Debug --config=Debug -j",
             "problemMatcher": [],
             "group": {
                 "kind": "build",
@@ -36,7 +36,7 @@
         {
             "label": "Build Windows Release",
             "type": "shell",
-            "command": "cmake --build build/ --config=Release -j",
+            "command": "cmake --build build/Release --config=Release -j",
             "problemMatcher": [],
             "group": {
                 "kind": "build",

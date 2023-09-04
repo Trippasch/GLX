@@ -7,14 +7,16 @@ def config(context, build_type="Release"):
     print(f"Configuring project with CMake (build_type: {build_type})...")
 
     if os.name == "nt":
-        build_dir = "build/"
+        build_dir = f"build/{build_type}"
         os.makedirs(build_dir, exist_ok=True)
         cmd = [
             "cmake",
+            f"-DCMAKE_BUILD_TYPE={build_type}",
             "-S",
             ".",
             "-B",
-            build_dir
+            build_dir,
+            '-G "MinGW Makefiles"'
         ]
     else:
         build_dir = f"build/{build_type}"
@@ -42,7 +44,7 @@ def build(context, build_type="Release"):
     print("Building project with CMake...")
 
     if os.name == "nt":
-        build_dir = "build/"
+        build_dir = f"build/{build_type}"
         cmd = [
             "cmake",
             "--build",
@@ -69,7 +71,7 @@ def run(context, build_type="Release"):
 
     if os.name == "nt":
         cmd = [
-            f".\\build\\GLX\\{build_type}\\GLX.exe"
+            f".\\build\\{build_type}\\GLX\\GLX.exe"
         ]
     else:
         cmd = [
