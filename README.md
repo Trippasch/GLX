@@ -8,19 +8,20 @@ Start by cloning the repository with:
 ```
 git clone --recurse-submodules git@github.com:Trippasch/GLX.git
 ```
+You can also use ```--remote-submodules``` to clone the submodules to their latest revision.
 If the repository was cloned non-recursively previously, use ```git submodule update --init``` to clone the necessary submodules.
 
 <ins>**2. Generate Project files:**</ins>
+You can use [CMake](https://cmake.org/) to generate the project files and build the project.
 
-For Windows run the [GenerateProjects.bat](https://github.com/Trippasch/GLX/blob/main/GenerateProjects.bat) file. This will generate the visual studio (2022) solution to compile and run the project.
+To streamline the building process you can also use the [invoke](https://www.pyinvoke.org/) python library. You can install it with ```pip install invoke```.
 
-For Linux run the [GenerateProjects.sh](https://github.com/Trippasch/GLX/blob/main/GenerateProjects.sh) file. This will generate makefiles to compile and run the project. The compiler used inside the script is LLVM's clang but you can change it to gcc as well.
+* ```inv config``` to generate the project files.
+* ```inv build``` to build the project.
+* ```inv run``` to run the project.
 
 <ins>**3. Clean Project files:**</ins>
-
-For Windows run the [CleanProjects.bat](https://github.com/Trippasch/GLX/blob/main/CleanProjects.bat) file.
-
-For Linux run the [CleanProjects.sh](https://github.com/Trippasch/GLX/blob/main/CleanProjects.sh) file.
+* ```inv clean``` to clean the project files.
 
 ## Dependencies
 The project uses the following dependencies:
@@ -31,4 +32,4 @@ The project uses the following dependencies:
   * [Glad](https://glad.dav1d.de/) for generating OpenGL functions.
   * [spdlog](https://github.com/gabime/spdlog) for logging.
   * [stb](https://github.com/nothings/stb) for image loading.
-  * [Premake](https://premake.github.io/) for building the project.
+  * [CMake](https://cmake.org/) for building the project.
