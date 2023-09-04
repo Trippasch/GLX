@@ -10,3 +10,7 @@
 [submodule "vendor/GLFW"]
 	path = vendor/GLFW
 	url = git@github.com:glfw/glfw.git
+[submodule "vendor/ImGui"]
+	path = vendor/ImGui
+	url = git@github.com:ocornut/imgui.git
+	branch = docking
