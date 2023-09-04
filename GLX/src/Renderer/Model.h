@@ -1,6 +1,6 @@
 #pragma once
 
-#include <glad/glad.h> 
+#include <glad/glad.h>
 
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>

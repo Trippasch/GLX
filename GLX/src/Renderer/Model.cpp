@@ -125,13 +125,13 @@ Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene)
 
         // - aiTextureType_DIFFUSE:   Albedo
         // - aiTextureType_NORMALS:   Normal
-        // - aiTextureType_SPECULAR:  metallic
-        // - aiTextureType_SHININESS: roughness 
-        // - aiTextureType_AMBIENT:   AO (ambient occlusion)
-        // - aiTextureType_EMISSIVE:  Emissive
+        // - aiTextureType_METALNESS:  metallic
+        // - aiTextureType_DIFFUSE_ROUGHNESS: roughness 
+        // - aiTextureType_AMBIENT_OCCLUSION:   AO (ambient occlusion)
+        // - aiTextureType_EMISSION_COLOR:  Emissive
 
         // albedo maps
-        std::vector<Texture2D> albedoMaps = loadMaterialTextures(material, aiTextureType_BASE_COLOR, "texture_albedo");
+        std::vector<Texture2D> albedoMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_albedo");
         textures.insert(textures.end(), albedoMaps.begin(), albedoMaps.end());
         // normal maps
         std::vector<Texture2D> normalMaps = loadMaterialTextures(material, aiTextureType_NORMALS, "texture_normal");
@@ -143,10 +143,10 @@ Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene)
         std::vector<Texture2D> roughnessMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE_ROUGHNESS, "texture_roughness");
         textures.insert(textures.end(), roughnessMaps.begin(), roughnessMaps.end());
         // ao maps
-        std::vector<Texture2D> aoMaps = loadMaterialTextures(material, aiTextureType_AMBIENT, "texture_ao");
+        std::vector<Texture2D> aoMaps = loadMaterialTextures(material, aiTextureType_AMBIENT_OCCLUSION, "texture_ao");
         textures.insert(textures.end(), aoMaps.begin(), aoMaps.end());
         // emissive maps
-        std::vector<Texture2D> emissiveMaps = loadMaterialTextures(material, aiTextureType_EMISSIVE, "texture_emissive");
+        std::vector<Texture2D> emissiveMaps = loadMaterialTextures(material, aiTextureType_EMISSION_COLOR, "texture_emissive");
         textures.insert(textures.end(), emissiveMaps.begin(), emissiveMaps.end());
 
         // // 1. diffuse maps
@@ -195,6 +195,14 @@ std::vector<Texture2D> Model::loadMaterialTextures(aiMaterial *mat, aiTextureTyp
             textures_loaded.push_back(texture); // store it as texture loaded for entire model, to ensure we won't unnecesery load duplicate textures.
         }
     }
+
+    if (textures.size()) {
+        GL_INFO("Texture : {0}, {1}", textures.size(), textures[0].Path);
+    }
+    else {
+        GL_INFO("Texture : {0}", textures.size());
+    }
+
     return textures;
 }
 

@@ -362,8 +362,8 @@ void main()
     }
 
     float ao = texture(aoMap, fs_in.TexCoords).r;
-    vec3 emission = texture(emissiveMap, fs_in.TexCoords).rgb;
-    emission = emission * 20.0;
+    vec3 emissive = texture(emissiveMap, fs_in.TexCoords).rgb;
+    // emissive = emissive * 10;
 
     vec3 N = getNormalFromMap();
     vec3 V = normalize(camPos - fs_in.WorldPos);
@@ -377,12 +377,12 @@ void main()
     if (pointLight.use)
         result += CalcPointLight(N, V, R, F0, albedo, metallic, roughness, ao);
 
-    FragColor = vec4(result + emission, 1.0);
+    FragColor = vec4(result + emissive, 1.0);
 
     if (debugDepthCubeMap) {
         // display closestDepth as debug (to visualize depth cubemap)
         vec3 fragToLight = fs_in.FragPos - pointLights[0].position;
-        // use the light to fragment vector to sample from the depth map    
+        // use the light to fragment vector to sample from the depth map
         float closestDepth = texture(depthCubeMap, fragToLight).r;
         // it is currently in linear range between [0,1]. Re-transform back to original value
         closestDepth *= far_plane;
@@ -391,6 +391,7 @@ void main()
 
     // Debug textures
     // FragColor = vec4(albedo, 1.0);
+    // FragColor = vec4(emissive, 1.0);
     // FragColor = vec4(texture(metallicMap, fs_in.TexCoords).bbb, 1.0);
     // FragColor = vec4(texture(roughnessMap, fs_in.TexCoords).ggg, 1.0);
     // FragColor = vec4(texture(aoMap, fs_in.TexCoords).rrr, 1.0);
