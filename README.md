@@ -12,6 +12,7 @@ You can also use ```--remote-submodules``` to clone the submodules to their late
 If the repository was cloned non-recursively previously, use ```git submodule update --init``` to clone the necessary submodules.
 
 <ins>**2. Generate Project files:**</ins>
+
 You can use [CMake](https://cmake.org/) to generate the project files and build the project.
 
 To streamline the building process you can also use the [invoke](https://www.pyinvoke.org/) python library. You can install it with ```pip install invoke```.
@@ -19,6 +20,14 @@ To streamline the building process you can also use the [invoke](https://www.pyi
 * ```inv config``` to generate the project files.
 * ```inv build``` to build the project.
 * ```inv run``` to run the project.
+
+To use Debug mode do:
+* ```inv config --build-type=Debug``` to generate the project files.
+* ```inv build --build-type=Debug``` to build the project.
+* ```inv run --build-type=Debug``` to run the project.
+
+** You can change the configuration of cmake in [tasks.py](https://github.com/Trippasch/GLX/blob/main/tasks.py).
+I use LLVM's clang with MinGW Makefiles.
 
 <ins>**3. Clean Project files:**</ins>
 * ```inv clean``` to clean the project files.
