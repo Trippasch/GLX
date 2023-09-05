@@ -6,6 +6,7 @@
 #include "ImGui/ImGuiLayer.h"
 #include "Sandbox/SandboxLayer.h"
 #include "Core/LayerStack.h"
+#include "Core/Console.h"
 
 class Application
 {
@@ -23,6 +24,8 @@ public:
 
     inline Window& GetWindow() { return *m_Window; }
     inline static Application& Get() { return *s_Instance; }
+
+    Console m_Console;
 
 private:
     std::unique_ptr<Window> m_Window;

@@ -895,6 +895,8 @@ void SandboxLayer::renderModel(Shader shader)
 
 void SandboxLayer::OnImGuiRender()
 {
+    Application& app = Application::Get();
+
     float currentFrame = static_cast<float>(glfwGetTime());
     deltaTime = currentFrame - lastFrame;
     lastFrame = currentFrame;
@@ -928,10 +930,14 @@ void SandboxLayer::OnImGuiRender()
 
     ImGui::End();
 
+    app.m_Console.Draw("Console");
+
     ImGui::Begin("Metrics");
     ImGuiIO& io = ImGui::GetIO();
 
     ImGui::Text("Dear ImGui %s", ImGui::GetVersion());
+
+    ImGui::Text("Generated image dimensions: %dx%d", m_Width, m_Height);
 
 #ifdef GL_DEBUG
     ImGui::Text("Running on Debug mode");
@@ -945,95 +951,14 @@ void SandboxLayer::OnImGuiRender()
 
     ImGui::End();
 
-    ImGui::Begin("Opions");
-
     static ImGuiTreeNodeFlags base_flags = ImGuiTreeNodeFlags_DefaultOpen;
+
+    ImGui::Begin("Settings");
 
     if (ImGui::CollapsingHeader("Camera", base_flags)) {
         ImGui::DragFloat3("Position", (float*)&m_Camera.m_Position, 0.01f, -FLT_MAX, FLT_MAX, "%.2f");
         ImGui::DragFloat3("Orientation", (float*)&m_Camera.m_Orientation, 0.01f, -FLT_MAX, FLT_MAX, "%.2f");
         ImGui::SliderFloat("Field of view", &m_Camera.m_Fov, 1.0f, 90.0f, "%.2f");
-    }
-
-    if (ImGui::CollapsingHeader("Post Processing", base_flags)) {
-        if (ImGui::TreeNodeEx("Kernel Effects", base_flags)) {
-            if (ImGui::Checkbox("Blur", &m_UseBlur)) {
-                m_UseEdge = false;
-                m_UseRidge = false;
-                m_UseSharpen = false;
-                ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.blur", m_UseBlur);
-                ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.sharpen", m_UseSharpen);
-                ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.ridge", m_UseRidge);
-                ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.edge", m_UseEdge);
-            }
-            if (ImGui::Checkbox("Sharpen", &m_UseSharpen)) {
-                m_UseEdge = false;
-                m_UseRidge = false;
-                m_UseBlur = false;
-                ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.blur", m_UseBlur);
-                ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.sharpen", m_UseSharpen);
-                ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.ridge", m_UseRidge);
-                ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.edge", m_UseEdge);
-            }
-            if (ImGui::Checkbox("Ridge", &m_UseRidge)) {
-                m_UseEdge = false;
-                m_UseSharpen = false;
-                m_UseBlur = false;
-                ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.blur", m_UseBlur);
-                ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.sharpen", m_UseSharpen);
-                ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.ridge", m_UseRidge);
-                ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.edge", m_UseEdge);
-            }
-            if (ImGui::Checkbox("Edge", &m_UseEdge)) {
-                m_UseRidge = false;
-                m_UseSharpen = false;
-                m_UseBlur = false;
-                ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.blur", m_UseBlur);
-                ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.sharpen", m_UseSharpen);
-                ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.ridge", m_UseRidge);
-                ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.edge", m_UseEdge);
-            }
-
-            ImGui::TreePop();
-        }
-
-        if (ImGui::TreeNodeEx("General Effects", base_flags)) {
-            if (ImGui::Checkbox("Greyscale", &m_UseGreyscale)) {
-                m_UseInversion = false;
-                ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.greyscale", m_UseGreyscale);
-                ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.inversion", m_UseInversion);
-            }
-            if (ImGui::Checkbox("Inversion", &m_UseInversion)) {
-                m_UseGreyscale = false;
-                ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.greyscale", m_UseGreyscale);
-                ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.inversion", m_UseInversion);
-            }
-            if (ImGui::Checkbox("Bloom", &m_UseBloom)) {
-                ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.bloom", m_UseBloom);
-            }
-
-            ImGui::TreePop();
-        }
-
-        if (ImGui::TreeNodeEx("HDR Settings", base_flags)) {
-            if (ImGui::DragFloat("Exposure", &m_Exposure, 0.01f, 0.0f, FLT_MAX, "%.2f")) {
-                ResourceManager::GetShader("post_proc").Use().SetFloat("postProcessing.exposure", m_Exposure);
-            }
-
-            ImGui::TreePop();
-        }
-    }
-
-    if (ImGui::CollapsingHeader("PBR Settings", base_flags)) {
-        if (ImGui::ColorEdit3("Albedo", (float*)&m_Albedo)) {
-            ResourceManager::GetShader("pbr_lighting").Use().SetVector3f("material.albedo", m_Albedo);
-        }
-        if (ImGui::SliderFloat("Metallic", &m_Metallic, 0.0f, 1.0f, "%.2f")) {
-            ResourceManager::GetShader("pbr_lighting").Use().SetFloat("material.metallic", m_Metallic);
-        }
-        if (ImGui::SliderFloat("Roughness", &m_Roughness, 0.0f, 1.0f, "%.2f")) {
-            ResourceManager::GetShader("pbr_lighting").Use().SetFloat("material.roughness", m_Roughness);
-        }
     }
 
     if (ImGui::CollapsingHeader("Light Settings", base_flags)) {
@@ -1098,9 +1023,86 @@ void SandboxLayer::OnImGuiRender()
         }
     }
 
-    if (ImGui::CollapsingHeader("Object Settings", base_flags)) {
-        if (ImGui::DragFloat("Emissive Intensity", &m_EmissiveIntensity, 0.01f, 0.0f, FLT_MAX, "%.2f")) {
+    if (ImGui::CollapsingHeader("PBR Materials", base_flags)) {
+        if (ImGui::ColorEdit3("Albedo", (float*)&m_Albedo)) {
+            ResourceManager::GetShader("pbr_lighting").Use().SetVector3f("material.albedo", m_Albedo);
+        }
+        if (ImGui::SliderFloat("Metallic", &m_Metallic, 0.0f, 1.0f, "%.2f")) {
+            ResourceManager::GetShader("pbr_lighting").Use().SetFloat("material.metallic", m_Metallic);
+        }
+        if (ImGui::SliderFloat("Roughness", &m_Roughness, 0.0f, 1.0f, "%.2f")) {
+            ResourceManager::GetShader("pbr_lighting").Use().SetFloat("material.roughness", m_Roughness);
+        }
+    }
+
+    if (ImGui::CollapsingHeader("3D Object", base_flags)) {
+        if (ImGui::DragFloat("Emissive", &m_EmissiveIntensity, 0.01f, 0.0f, FLT_MAX, "%.2f")) {
             ResourceManager::GetShader("pbr_lighting_textured").Use().SetFloat("object.emissiveIntensity", m_EmissiveIntensity);
+        }
+    }
+
+    ImGui::End();
+
+    ImGui::Begin("Post Processing");
+
+    if (ImGui::CollapsingHeader("Kernel Effects", base_flags)) {
+        if (ImGui::Checkbox("Blur", &m_UseBlur)) {
+            m_UseEdge = false;
+            m_UseRidge = false;
+            m_UseSharpen = false;
+            ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.blur", m_UseBlur);
+            ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.sharpen", m_UseSharpen);
+            ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.ridge", m_UseRidge);
+            ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.edge", m_UseEdge);
+        }
+        if (ImGui::Checkbox("Sharpen", &m_UseSharpen)) {
+            m_UseEdge = false;
+            m_UseRidge = false;
+            m_UseBlur = false;
+            ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.blur", m_UseBlur);
+            ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.sharpen", m_UseSharpen);
+            ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.ridge", m_UseRidge);
+            ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.edge", m_UseEdge);
+        }
+        if (ImGui::Checkbox("Ridge", &m_UseRidge)) {
+            m_UseEdge = false;
+            m_UseSharpen = false;
+            m_UseBlur = false;
+            ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.blur", m_UseBlur);
+            ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.sharpen", m_UseSharpen);
+            ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.ridge", m_UseRidge);
+            ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.edge", m_UseEdge);
+        }
+        if (ImGui::Checkbox("Edge", &m_UseEdge)) {
+            m_UseRidge = false;
+            m_UseSharpen = false;
+            m_UseBlur = false;
+            ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.blur", m_UseBlur);
+            ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.sharpen", m_UseSharpen);
+            ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.ridge", m_UseRidge);
+            ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.edge", m_UseEdge);
+        }
+    }
+
+    if (ImGui::CollapsingHeader("General Effects", base_flags)) {
+        if (ImGui::Checkbox("Greyscale", &m_UseGreyscale)) {
+            m_UseInversion = false;
+            ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.greyscale", m_UseGreyscale);
+            ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.inversion", m_UseInversion);
+        }
+        if (ImGui::Checkbox("Inversion", &m_UseInversion)) {
+            m_UseGreyscale = false;
+            ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.greyscale", m_UseGreyscale);
+            ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.inversion", m_UseInversion);
+        }
+        if (ImGui::Checkbox("Bloom", &m_UseBloom)) {
+            ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.bloom", m_UseBloom);
+        }
+    }
+
+    if (ImGui::CollapsingHeader("HDR Settings", base_flags)) {
+        if (ImGui::DragFloat("Exposure", &m_Exposure, 0.01f, 0.0f, FLT_MAX, "%.2f")) {
+            ResourceManager::GetShader("post_proc").Use().SetFloat("postProcessing.exposure", m_Exposure);
         }
     }
 
