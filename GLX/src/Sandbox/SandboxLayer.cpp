@@ -244,7 +244,9 @@ void SandboxLayer::OnAttach()
     ResourceManager::GetShader("pbr_lighting").Use().SetFloat("material.roughness", m_Roughness);
     ResourceManager::GetShader("pbr_lighting").Use().SetFloat("material.ao", m_AO);
 
-    ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger("isGLTF", 0);
+    // Object Settings
+    ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger("object.isGLTF", 0);
+    ResourceManager::GetShader("pbr_lighting_textured").Use().SetFloat("object.emissiveIntensity", m_EmissiveIntensity);
 
     // Generate directional light
     ResourceManager::GetShader("pbr_lighting").Use().SetInteger("dirLight.use", m_UseDirLight);
@@ -663,7 +665,7 @@ void SandboxLayer::OnUpdate()
     }
 
     // Render Models
-    ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger("isGLTF", 1);
+    ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger("object.isGLTF", 1);
     m_Irradiancemap.BindCubemap(0);
     m_Prefiltermap.BindCubemap(1);
     m_BRDFLUTTexture.Bind(2);
@@ -678,7 +680,7 @@ void SandboxLayer::OnUpdate()
     renderModel(ResourceManager::GetShader("pbr_lighting_textured"));
     Texture2D::UnBind();
     Texture2D::UnBindCubemap();
-    ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger("isGLTF", 0);
+    ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger("object.isGLTF", 0);
 
     // Render Spheres
     m_Irradiancemap.BindCubemap(0);
@@ -1093,6 +1095,12 @@ void SandboxLayer::OnImGuiRender()
             }
 
             ImGui::TreePop();
+        }
+    }
+
+    if (ImGui::CollapsingHeader("Object Settings", base_flags)) {
+        if (ImGui::DragFloat("Emissive Intensity", &m_EmissiveIntensity, 0.01f, 0.0f, FLT_MAX, "%.2f")) {
+            ResourceManager::GetShader("pbr_lighting_textured").Use().SetFloat("object.emissiveIntensity", m_EmissiveIntensity);
         }
     }
 

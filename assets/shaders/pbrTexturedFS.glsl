@@ -58,7 +58,12 @@ uniform vec3 camPos;
 uniform bool debugDepthCubeMap;
 uniform float far_plane;
 
-uniform bool isGLTF;
+struct Object {
+    bool isGLTF;
+    float emissiveIntensity;
+};
+uniform Object object;
+
 
 const float gamma = 2.2;
 
@@ -352,7 +357,7 @@ void main()
     float metallic;
     float roughness;
 
-    if (!isGLTF) {
+    if (!object.isGLTF) {
         metallic = texture(metallicMap, fs_in.TexCoords).r;
         roughness = texture(roughnessMap, fs_in.TexCoords).r;
     }
@@ -363,7 +368,7 @@ void main()
 
     float ao = texture(aoMap, fs_in.TexCoords).r;
     vec3 emissive = texture(emissiveMap, fs_in.TexCoords).rgb;
-    // emissive = emissive * 10;
+    emissive = emissive * object.emissiveIntensity;
 
     vec3 N = getNormalFromMap();
     vec3 V = normalize(camPos - fs_in.WorldPos);
@@ -391,7 +396,7 @@ void main()
 
     // Debug textures
     // FragColor = vec4(albedo, 1.0);
-    // FragColor = vec4(emissive, 1.0);
+    // FragColor = vec4(texture(emissiveMap, fs_in.TexCoords).rgb, 1.0);
     // FragColor = vec4(texture(metallicMap, fs_in.TexCoords).bbb, 1.0);
     // FragColor = vec4(texture(roughnessMap, fs_in.TexCoords).ggg, 1.0);
     // FragColor = vec4(texture(aoMap, fs_in.TexCoords).rrr, 1.0);

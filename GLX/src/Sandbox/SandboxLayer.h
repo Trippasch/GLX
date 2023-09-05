@@ -117,6 +117,9 @@ private:
     float m_Roughness = 0.23f;
     float m_AO = 1.0f;
 
+    // Object Properties
+    float m_EmissiveIntensity = 1.0f;
+
     void renderPlane();
     void renderCube();
     void renderSphere();
