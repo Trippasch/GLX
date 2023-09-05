@@ -1,6 +1,8 @@
 # GLX Engine
 GLX is an early-stage OpenGL rendering engine for learning purposes.
 
+![GLX](https://i.imgur.com/aNkFiN3.png)
+
 ## Getting Started
 <ins>**1. Downloading the repository:**</ins>
 
