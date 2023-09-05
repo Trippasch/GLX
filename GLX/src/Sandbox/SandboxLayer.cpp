@@ -2,6 +2,9 @@
 
 #include "Core/Application.h"
 
+#include "Utils/glfw_tools.h"
+#include "Utils/gl_tools.h"
+
 SandboxLayer::SandboxLayer()
     : Layer("SandboxLayer")
 {
@@ -932,13 +935,22 @@ void SandboxLayer::OnImGuiRender()
 
     app.m_Console.Draw("Console");
 
-    ImGui::Begin("Metrics");
+    ImGui::Begin("Profiling");
     ImGuiIO& io = ImGui::GetIO();
 
-    ImGui::Text("Dear ImGui %s", ImGui::GetVersion());
-
     ImGui::Text("Generated image dimensions: %dx%d", m_Width, m_Height);
-
+    ImGui::Separator();
+    if (ImGui::Checkbox("Enable V-Sync", &m_VSync)) {
+        if (m_VSync) {
+            glfwSwapInterval(1);
+        }
+        else {
+            glfwSwapInterval(0);
+        }
+    }
+    ImGui::Separator();
+    ImGui::Text("Application average\n %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+    ImGui::Separator();
 #ifdef GL_DEBUG
     ImGui::Text("Running on Debug mode");
 #elif GL_RELEASE
@@ -947,7 +959,15 @@ void SandboxLayer::OnImGuiRender()
     ImGui::Text("Running on Dist mode");
 #endif
 
-    ImGui::Text("Application average\n %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+    ImGui::End();
+
+    ImGui::Begin("Application Info");
+
+    printGLInfo();
+    ImGui::Separator();
+    printGLFWInfo(m_Window);
+    ImGui::Separator();
+    ImGui::Text("Dear ImGui %s", ImGui::GetVersion());
 
     ImGui::End();
 

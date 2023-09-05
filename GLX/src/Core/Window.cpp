@@ -1,14 +1,13 @@
 #include "Core/Window.h"
 
+#include <glad/glad.h>
+
 #include <imgui.h>
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_opengl3.h>
 
 #include "Core/Log.h"
 #include "Core/Core.h"
-
-#include "Utils/glfw_tools.h"
-#include "Utils/gl_tools.h"
 
 static bool s_GLFWInitialized = false;
 
@@ -38,7 +37,7 @@ void Window::Init(const WindowProps& props)
     m_Data.Width = props.Width;
     m_Data.Height = props.Height;
 
-    GL_INFO("Creating window {0} ({1}, {2})", props.Title, props.Width, props.Height);
+    // GL_INFO("Creating window {0} ({1}, {2})", props.Title, props.Width, props.Height);
 
     if (!s_GLFWInitialized)
     {
@@ -67,9 +66,6 @@ void Window::Init(const WindowProps& props)
     glfwMakeContextCurrent(m_Window);
     int status = gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
     GL_ASSERT(status, "Could not initialize Glad.");
-
-    printGLFWInfo(GetNativeWindow());
-    printGLInfo();
 
     SetVSync(false);
 

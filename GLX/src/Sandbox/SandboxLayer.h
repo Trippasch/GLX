@@ -40,6 +40,8 @@ private:
     GLuint m_Width = 800;
     GLuint m_Height = 600;
 
+    bool m_VSync = false;
+
     float deltaTime = 0.0f;
     float lastFrame = 0.0f;
     Camera m_Camera;
