@@ -5,6 +5,8 @@
 #include "Utils/glfw_tools.h"
 #include "Utils/gl_tools.h"
 
+#include "ImGui/ImGuiFileDialog.h"
+
 SandboxLayer::SandboxLayer()
     : Layer("SandboxLayer")
 {
@@ -213,7 +215,7 @@ void SandboxLayer::OnAttach()
     ResourceManager::LoadTexture("assets/textures/pbr/rounded-alley-brick/rounded-alley-brick_roughness.png", "alley_roughness");
     ResourceManager::LoadTexture("assets/textures/pbr/rounded-alley-brick/rounded-alley-brick_ao.png", "alley_ao");
     // Load HDR Textures
-    ResourceManager::LoadHDRTexture("assets/textures/hdr/Nature_8K_hdri.jpg", "skybox_hdr");
+    ResourceManager::LoadHDRTexture(m_SkyboxFilename.c_str(), "skybox_hdr");
     // Load Shaders
     ResourceManager::LoadShader("assets/shaders/lightSourceVS.glsl", "assets/shaders/lightSourceFS.glsl", nullptr, "light_source");
     ResourceManager::LoadShader("assets/shaders/postProcessingVS.glsl", "assets/shaders/postProcessingFS.glsl", nullptr, "post_proc");
@@ -329,134 +331,7 @@ void SandboxLayer::OnAttach()
     FrameBuffer::CheckStatus();
     FrameBuffer::UnBind();
 
-    // create environment cubemap
-    m_EnvCubemap.Internal_Format = GL_RGB16F;
-    m_EnvCubemap.Image_Format = GL_RGB;
-    m_EnvCubemap.Data_Type = GL_FLOAT;
-    m_EnvCubemap.Wrap_S = GL_CLAMP_TO_EDGE;
-    m_EnvCubemap.Wrap_T = GL_CLAMP_TO_EDGE;
-    m_EnvCubemap.Wrap_R = GL_CLAMP_TO_EDGE;
-    m_EnvCubemap.Filter_Min = GL_LINEAR_MIPMAP_LINEAR;
-    m_EnvCubemap.Filter_Max = GL_LINEAR;
-    m_EnvCubemap.GenerateCubemap(m_EnvCubemapWidth, m_EnvCubemapHeight);
-
-    // projView matrices form capturing data onto the 6 cubemap face directions
-    glm::mat4 captureProjection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
-    glm::mat4 captureViews[] =
-    {
-        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
-        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(-1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
-        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f,  1.0f,  0.0f), glm::vec3(0.0f,  0.0f,  1.0f)),
-        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f, -1.0f,  0.0f), glm::vec3(0.0f,  0.0f, -1.0f)),
-        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f,  0.0f,  1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
-        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f))
-    };
-
-    // convert HDR equirectangular environment map to cubemap equivalent
-    ResourceManager::GetTexture("skybox_hdr").Bind(0);
-    ResourceManager::GetShader("equirectangular_to_cubemap").Use().SetMatrix4(0, captureProjection);
-    glViewport(0, 0, m_EnvCubemapWidth, m_EnvCubemapHeight);
-    captureFBO.Bind();
-    for (GLuint i = 0; i < 6; i++) {
-        ResourceManager::GetShader("equirectangular_to_cubemap").Use().SetMatrix4(1, captureViews[i]);
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, m_EnvCubemap.ID, 0);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        renderCube();
-    }
-    FrameBuffer::UnBind();
-    Texture2D::UnBind();
-
-    glBindTexture(GL_TEXTURE_CUBE_MAP, m_EnvCubemap.ID);
-    glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
-    Texture2D::UnBindCubemap();
-
-    // create an irradiance cubemap, and re-scale captureFBO to irradiance scale
-    m_Irradiancemap.Internal_Format = GL_RGB16F;
-    m_Irradiancemap.Image_Format = GL_RGB;
-    m_Irradiancemap.Data_Type = GL_FLOAT;
-    m_Irradiancemap.Wrap_S = GL_CLAMP_TO_EDGE;
-    m_Irradiancemap.Wrap_T = GL_CLAMP_TO_EDGE;
-    m_Irradiancemap.Wrap_R = GL_CLAMP_TO_EDGE;
-    m_Irradiancemap.Filter_Min = GL_LINEAR;
-    m_Irradiancemap.Filter_Max = GL_LINEAR;
-    m_Irradiancemap.GenerateCubemap(m_IrradiancemapWidth, m_IrradiancemapHeight);
-
-    captureFBO.Bind();
-    captureFBO.ResizeRenderBuffer(GL_DEPTH24_STENCIL8, m_IrradiancemapWidth, m_IrradiancemapHeight);
-
-    m_EnvCubemap.BindCubemap(0);
-    ResourceManager::GetShader("irradiance").Use().SetMatrix4(0, captureProjection);
-    glViewport(0, 0, m_IrradiancemapWidth, m_IrradiancemapHeight);
-    for (GLuint i = 0; i < 6; i++) {
-        ResourceManager::GetShader("irradiance").Use().SetMatrix4(1, captureViews[i]);
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, m_Irradiancemap.ID, 0);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        renderCube();
-    }
-    FrameBuffer::UnBind();
-    Texture2D::UnBindCubemap();
-
-    // prefilter HDR environment map
-    m_Prefiltermap.Internal_Format = GL_RGB16F;
-    m_Prefiltermap.Image_Format = GL_RGB;
-    m_Prefiltermap.Data_Type = GL_FLOAT;
-    m_Prefiltermap.Wrap_S = GL_CLAMP_TO_EDGE;
-    m_Prefiltermap.Wrap_T = GL_CLAMP_TO_EDGE;
-    m_Prefiltermap.Wrap_R = GL_CLAMP_TO_EDGE;
-    m_Prefiltermap.Filter_Min = GL_LINEAR_MIPMAP_LINEAR;
-    m_Prefiltermap.Filter_Max = GL_LINEAR;
-    m_Prefiltermap.GenerateCubemap(m_PrefiltermapWidth, m_PrefiltermapHeight, GL_TRUE);
-
-    // run a quasi monte-carlo simulation on the environment lighting to create a prefilter (cube)map.
-    ResourceManager::GetShader("prefilter").Use().SetMatrix4(0, captureProjection);
-    m_EnvCubemap.BindCubemap(0);
-    captureFBO.Bind();
-    GLuint maxMipLevels = 5;
-    for (GLuint mip = 0; mip < maxMipLevels; ++mip)
-    {
-        // reisze framebuffer according to mip-level size.
-        GLuint mipWidth = m_PrefiltermapWidth * std::pow(0.5, mip);
-        GLuint mipHeight = m_PrefiltermapHeight * std::pow(0.5, mip);
-        captureFBO.ResizeRenderBuffer(GL_DEPTH24_STENCIL8, mipWidth, mipHeight);
-        glViewport(0, 0, mipWidth, mipHeight);
-
-        float roughness = (float)mip / (float)(maxMipLevels - 1);
-
-        ResourceManager::GetShader("prefilter").Use().SetFloat("roughness", roughness);
-        for (GLuint i = 0; i < 6; ++i)
-        {
-            ResourceManager::GetShader("prefilter").Use().SetMatrix4(1, captureViews[i]);
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-                                   GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, m_Prefiltermap.ID, mip);
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            renderCube();
-        }
-    }
-    FrameBuffer::UnBind();
-    Texture2D::UnBindCubemap();
-
-    // generate a 2D LUT from the BRDF equations used.
-    m_BRDFLUTTexture.Internal_Format = GL_RG16F;
-    m_BRDFLUTTexture.Image_Format = GL_RG;
-    m_BRDFLUTTexture.Data_Type = GL_FLOAT;
-    m_BRDFLUTTexture.Wrap_S = GL_CLAMP_TO_EDGE;
-    m_BRDFLUTTexture.Wrap_T = GL_CLAMP_TO_EDGE;
-    m_BRDFLUTTexture.Filter_Min = GL_LINEAR;
-    m_BRDFLUTTexture.Filter_Max = GL_LINEAR;
-    m_BRDFLUTTexture.Generate(m_BRDFLUTTextureWidth, m_BRDFLUTTextureHeight, 0);
-
-    // then re-configure capture framebuffer object and render screen-space quad with BRDF shader
-    captureFBO.Bind();
-    captureFBO.ResizeRenderBuffer(GL_DEPTH24_STENCIL8, m_BRDFLUTTextureWidth, m_BRDFLUTTextureHeight);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_BRDFLUTTexture.ID, 0);
-
-    glViewport(0, 0, m_BRDFLUTTextureWidth, m_BRDFLUTTextureHeight);
-    ResourceManager::GetShader("brdf").Use();
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    renderQuad();
-    FrameBuffer::UnBind();
-
-    glViewport(0, 0, m_Width, m_Height);
+    createSkybox();
 
     // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
@@ -975,12 +850,14 @@ void SandboxLayer::OnImGuiRender()
 
     ImGui::Begin("Settings");
 
+    ImGui::Separator();
     if (ImGui::CollapsingHeader("Camera", base_flags)) {
         ImGui::DragFloat3("Position", (float*)&m_Camera.m_Position, 0.01f, -FLT_MAX, FLT_MAX, "%.2f");
         ImGui::DragFloat3("Orientation", (float*)&m_Camera.m_Orientation, 0.01f, -FLT_MAX, FLT_MAX, "%.2f");
         ImGui::SliderFloat("Field of view", &m_Camera.m_Fov, 1.0f, 90.0f, "%.2f");
     }
 
+    ImGui::Separator();
     if (ImGui::CollapsingHeader("Light Settings", base_flags)) {
         if (ImGui::TreeNodeEx("Directional Light", base_flags)) {
             ImGui::SameLine();
@@ -1043,6 +920,7 @@ void SandboxLayer::OnImGuiRender()
         }
     }
 
+    ImGui::Separator();
     if (ImGui::CollapsingHeader("PBR Materials", base_flags)) {
         if (ImGui::ColorEdit3("Albedo", (float*)&m_Albedo)) {
             ResourceManager::GetShader("pbr_lighting").Use().SetVector3f("material.albedo", m_Albedo);
@@ -1055,16 +933,50 @@ void SandboxLayer::OnImGuiRender()
         }
     }
 
+    ImGui::Separator();
     if (ImGui::CollapsingHeader("3D Object", base_flags)) {
         if (ImGui::DragFloat("Emissive", &m_EmissiveIntensity, 0.01f, 0.0f, FLT_MAX, "%.2f")) {
             ResourceManager::GetShader("pbr_lighting_textured").Use().SetFloat("object.emissiveIntensity", m_EmissiveIntensity);
         }
     }
 
+    ImGui::Separator();
+    if (ImGui::CollapsingHeader("Skybox", base_flags)) {
+        if (ImGui::Button("Open...")) {
+            // clang-format off
+            ImGuiFileDialog::Instance()->OpenDialog(
+                "ChooseFileDlgKey",
+                "Choose File ",
+                ".jpg,.jpeg,.png,.hdr",
+                ".",
+                1, nullptr, ImGuiFileDialogFlags_Modal);
+            // clang-format on
+
+            // Always center this window when appearing
+            ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+            ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+        }
+
+        // display
+        if (ImGuiFileDialog::Instance()->Display("ChooseFileDlgKey")) {
+            // action if OK
+            if (ImGuiFileDialog::Instance()->IsOk()) {
+                m_SkyboxFilename = ("assets/textures/hdr/" + ImGuiFileDialog::Instance()->GetCurrentFileName());
+            }
+
+            // close
+            ImGuiFileDialog::Instance()->Close();
+        }
+
+        ImGui::Text("%s", m_SkyboxFilename.c_str());
+    }
+
+    ImGui::Separator();
     ImGui::End();
 
     ImGui::Begin("Post Processing");
 
+    ImGui::Separator();
     if (ImGui::CollapsingHeader("Kernel Effects", base_flags)) {
         if (ImGui::Checkbox("Blur", &m_UseBlur)) {
             m_UseEdge = false;
@@ -1104,6 +1016,7 @@ void SandboxLayer::OnImGuiRender()
         }
     }
 
+    ImGui::Separator();
     if (ImGui::CollapsingHeader("General Effects", base_flags)) {
         if (ImGui::Checkbox("Greyscale", &m_UseGreyscale)) {
             m_UseInversion = false;
@@ -1120,12 +1033,14 @@ void SandboxLayer::OnImGuiRender()
         }
     }
 
+    ImGui::Separator();
     if (ImGui::CollapsingHeader("HDR Settings", base_flags)) {
         if (ImGui::DragFloat("Exposure", &m_Exposure, 0.01f, 0.0f, FLT_MAX, "%.2f")) {
             ResourceManager::GetShader("post_proc").Use().SetFloat("postProcessing.exposure", m_Exposure);
         }
     }
 
+    ImGui::Separator();
     ImGui::End();
 }
 
@@ -1189,4 +1104,136 @@ void SandboxLayer::OnDetach()
     captureFBO.Destroy();
     depthMapFBO.Destroy();
     depthCubeMapFBO.Destroy();
+}
+
+void SandboxLayer::createSkybox()
+{
+    // create environment cubemap
+    m_EnvCubemap.Internal_Format = GL_RGB16F;
+    m_EnvCubemap.Image_Format = GL_RGB;
+    m_EnvCubemap.Data_Type = GL_FLOAT;
+    m_EnvCubemap.Wrap_S = GL_CLAMP_TO_EDGE;
+    m_EnvCubemap.Wrap_T = GL_CLAMP_TO_EDGE;
+    m_EnvCubemap.Wrap_R = GL_CLAMP_TO_EDGE;
+    m_EnvCubemap.Filter_Min = GL_LINEAR_MIPMAP_LINEAR;
+    m_EnvCubemap.Filter_Max = GL_LINEAR;
+    m_EnvCubemap.GenerateCubemap(m_EnvCubemapWidth, m_EnvCubemapHeight);
+
+    // projView matrices form capturing data onto the 6 cubemap face directions
+    glm::mat4 captureProjection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
+    glm::mat4 captureViews[] =
+    {
+        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(-1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f,  1.0f,  0.0f), glm::vec3(0.0f,  0.0f,  1.0f)),
+        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f, -1.0f,  0.0f), glm::vec3(0.0f,  0.0f, -1.0f)),
+        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f,  0.0f,  1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f))
+    };
+
+    // convert HDR equirectangular environment map to cubemap equivalent
+    ResourceManager::GetTexture("skybox_hdr").Bind(0);
+    ResourceManager::GetShader("equirectangular_to_cubemap").Use().SetMatrix4(0, captureProjection);
+    glViewport(0, 0, m_EnvCubemapWidth, m_EnvCubemapHeight);
+    captureFBO.Bind();
+    for (GLuint i = 0; i < 6; i++) {
+        ResourceManager::GetShader("equirectangular_to_cubemap").Use().SetMatrix4(1, captureViews[i]);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, m_EnvCubemap.ID, 0);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        renderCube();
+    }
+    FrameBuffer::UnBind();
+    Texture2D::UnBind();
+
+    glBindTexture(GL_TEXTURE_CUBE_MAP, m_EnvCubemap.ID);
+    glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
+    Texture2D::UnBindCubemap();
+
+    // create an irradiance cubemap, and re-scale captureFBO to irradiance scale
+    m_Irradiancemap.Internal_Format = GL_RGB16F;
+    m_Irradiancemap.Image_Format = GL_RGB;
+    m_Irradiancemap.Data_Type = GL_FLOAT;
+    m_Irradiancemap.Wrap_S = GL_CLAMP_TO_EDGE;
+    m_Irradiancemap.Wrap_T = GL_CLAMP_TO_EDGE;
+    m_Irradiancemap.Wrap_R = GL_CLAMP_TO_EDGE;
+    m_Irradiancemap.Filter_Min = GL_LINEAR;
+    m_Irradiancemap.Filter_Max = GL_LINEAR;
+    m_Irradiancemap.GenerateCubemap(m_IrradiancemapWidth, m_IrradiancemapHeight);
+
+    captureFBO.Bind();
+    captureFBO.ResizeRenderBuffer(GL_DEPTH24_STENCIL8, m_IrradiancemapWidth, m_IrradiancemapHeight);
+
+    m_EnvCubemap.BindCubemap(0);
+    ResourceManager::GetShader("irradiance").Use().SetMatrix4(0, captureProjection);
+    glViewport(0, 0, m_IrradiancemapWidth, m_IrradiancemapHeight);
+    for (GLuint i = 0; i < 6; i++) {
+        ResourceManager::GetShader("irradiance").Use().SetMatrix4(1, captureViews[i]);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, m_Irradiancemap.ID, 0);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        renderCube();
+    }
+    FrameBuffer::UnBind();
+    Texture2D::UnBindCubemap();
+
+    // prefilter HDR environment map
+    m_Prefiltermap.Internal_Format = GL_RGB16F;
+    m_Prefiltermap.Image_Format = GL_RGB;
+    m_Prefiltermap.Data_Type = GL_FLOAT;
+    m_Prefiltermap.Wrap_S = GL_CLAMP_TO_EDGE;
+    m_Prefiltermap.Wrap_T = GL_CLAMP_TO_EDGE;
+    m_Prefiltermap.Wrap_R = GL_CLAMP_TO_EDGE;
+    m_Prefiltermap.Filter_Min = GL_LINEAR_MIPMAP_LINEAR;
+    m_Prefiltermap.Filter_Max = GL_LINEAR;
+    m_Prefiltermap.GenerateCubemap(m_PrefiltermapWidth, m_PrefiltermapHeight, GL_TRUE);
+
+    // run a quasi monte-carlo simulation on the environment lighting to create a prefilter (cube)map.
+    ResourceManager::GetShader("prefilter").Use().SetMatrix4(0, captureProjection);
+    m_EnvCubemap.BindCubemap(0);
+    captureFBO.Bind();
+    GLuint maxMipLevels = 5;
+    for (GLuint mip = 0; mip < maxMipLevels; ++mip)
+    {
+        // reisze framebuffer according to mip-level size.
+        GLuint mipWidth = m_PrefiltermapWidth * std::pow(0.5, mip);
+        GLuint mipHeight = m_PrefiltermapHeight * std::pow(0.5, mip);
+        captureFBO.ResizeRenderBuffer(GL_DEPTH24_STENCIL8, mipWidth, mipHeight);
+        glViewport(0, 0, mipWidth, mipHeight);
+
+        float roughness = (float)mip / (float)(maxMipLevels - 1);
+
+        ResourceManager::GetShader("prefilter").Use().SetFloat("roughness", roughness);
+        for (GLuint i = 0; i < 6; ++i)
+        {
+            ResourceManager::GetShader("prefilter").Use().SetMatrix4(1, captureViews[i]);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                                   GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, m_Prefiltermap.ID, mip);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            renderCube();
+        }
+    }
+    FrameBuffer::UnBind();
+    Texture2D::UnBindCubemap();
+
+    // generate a 2D LUT from the BRDF equations used.
+    m_BRDFLUTTexture.Internal_Format = GL_RG16F;
+    m_BRDFLUTTexture.Image_Format = GL_RG;
+    m_BRDFLUTTexture.Data_Type = GL_FLOAT;
+    m_BRDFLUTTexture.Wrap_S = GL_CLAMP_TO_EDGE;
+    m_BRDFLUTTexture.Wrap_T = GL_CLAMP_TO_EDGE;
+    m_BRDFLUTTexture.Filter_Min = GL_LINEAR;
+    m_BRDFLUTTexture.Filter_Max = GL_LINEAR;
+    m_BRDFLUTTexture.Generate(m_BRDFLUTTextureWidth, m_BRDFLUTTextureHeight, 0);
+
+    // then re-configure capture framebuffer object and render screen-space quad with BRDF shader
+    captureFBO.Bind();
+    captureFBO.ResizeRenderBuffer(GL_DEPTH24_STENCIL8, m_BRDFLUTTextureWidth, m_BRDFLUTTextureHeight);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_BRDFLUTTexture.ID, 0);
+
+    glViewport(0, 0, m_BRDFLUTTextureWidth, m_BRDFLUTTextureHeight);
+    ResourceManager::GetShader("brdf").Use();
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    renderQuad();
+    FrameBuffer::UnBind();
+
+    glViewport(0, 0, m_Width, m_Height);
 }
