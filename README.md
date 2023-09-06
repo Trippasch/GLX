@@ -1,5 +1,5 @@
 # GLX Engine
-GLX is an early-stage OpenGL rendering engine for learning purposes.
+GLX is an early-stage cross-platform OpenGL rendering engine for learning purposes.
 
 ![GLX](https://i.imgur.com/aNkFiN3.png)
 
@@ -29,7 +29,6 @@ To use Debug mode do:
 * ```inv run --build-type=Debug``` to run the project.
 
 ** You can change the configuration of cmake in [tasks.py](https://github.com/Trippasch/GLX/blob/main/tasks.py).
-I use LLVM's clang with MinGW Makefiles.
 
 <ins>**3. Clean Project files:**</ins>
 * ```inv clean``` to clean the project files.
