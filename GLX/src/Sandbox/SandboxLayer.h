@@ -120,6 +120,12 @@ private:
     float m_AO = 1.0f;
 
     // Object Properties
+    glm::vec3 m_ObjectPosition = glm::vec3(0.0f, 2.0f, 4.0f);
+    float m_ObjectScale = 1.0f;
+    float m_RotationAngleX = 90.0f;
+    float m_RotationAngleY = 0.0f;
+    float m_RotationAngleZ = 0.0f;
+    glm::vec3 m_RotationAngles = glm::vec3(m_RotationAngleX, m_RotationAngleY, m_RotationAngleZ);
     float m_EmissiveIntensity = 1.0f;
 
     // Skybox Properties
@@ -129,7 +135,7 @@ private:
     void renderCube();
     void renderSphere();
     void renderQuad();
-    void renderModel(Shader shader);
+    void renderObject(Shader shader, glm::mat4 model);
 
     bool imGuiResize();
 

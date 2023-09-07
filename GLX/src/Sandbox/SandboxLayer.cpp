@@ -403,10 +403,10 @@ void SandboxLayer::OnUpdate()
         depthMapFBO.Bind();
         glClear(GL_DEPTH_BUFFER_BIT);
 
-        glm::mat4 model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(0.0f, -0.01f, 0.0f));
-        model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
-        ResourceManager::GetShader("depth_map").Use().SetMatrix4(1, model);
+        glm::mat4 plane_model = glm::mat4(1.0f);
+        plane_model = glm::translate(plane_model, glm::vec3(0.0f, -0.01f, 0.0f));
+        plane_model = glm::scale(plane_model, glm::vec3(1.0f, 1.0f, 1.0f));
+        ResourceManager::GetShader("depth_map").Use().SetMatrix4(1, plane_model);
         renderPlane();
 
         if (m_UsePointLights) {
@@ -419,7 +419,13 @@ void SandboxLayer::OnUpdate()
             }
         }
 
-        renderModel(ResourceManager::GetShader("depth_map"));
+        glm::mat4 object_model = glm::mat4(1.0f);
+        object_model = glm::translate(object_model, m_ObjectPosition);
+        object_model = glm::rotate(object_model, glm::radians(m_RotationAngleX), glm::vec3(1.0f, 0.0f, 0.0f));
+        object_model = glm::rotate(object_model, glm::radians(m_RotationAngleY), glm::vec3(0.0f, 1.0f, 0.0f));
+        object_model = glm::rotate(object_model, glm::radians(m_RotationAngleZ), glm::vec3(0.0f, 0.0f, 1.0f));
+        object_model = glm::scale(object_model, glm::vec3(1.0f) * m_ObjectScale);
+        renderObject(ResourceManager::GetShader("depth_map"), object_model);
 
         for (GLuint i = 0; i < 5; i++) {
             for (GLuint j = 0; j < 5; j++) {
@@ -468,13 +474,19 @@ void SandboxLayer::OnUpdate()
         depthCubeMapFBO.Bind();
         glClear(GL_DEPTH_BUFFER_BIT);
 
-        glm::mat4 model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(0.0f, -0.01f, 0.0f));
-        model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
-        ResourceManager::GetShader("depth_cube_map").Use().SetMatrix4(1, model);
+        glm::mat4 plane_model = glm::mat4(1.0f);
+        plane_model = glm::translate(plane_model, glm::vec3(0.0f, -0.01f, 0.0f));
+        plane_model = glm::scale(plane_model, glm::vec3(1.0f, 1.0f, 1.0f));
+        ResourceManager::GetShader("depth_cube_map").Use().SetMatrix4(1, plane_model);
         renderPlane();
 
-        renderModel(ResourceManager::GetShader("depth_cube_map"));
+        glm::mat4 object_model = glm::mat4(1.0f);
+        object_model = glm::translate(object_model, m_ObjectPosition);
+        object_model = glm::rotate(object_model, glm::radians(m_RotationAngleX), glm::vec3(1.0f, 0.0f, 0.0f));
+        object_model = glm::rotate(object_model, glm::radians(m_RotationAngleY), glm::vec3(0.0f, 1.0f, 0.0f));
+        object_model = glm::rotate(object_model, glm::radians(m_RotationAngleZ), glm::vec3(0.0f, 0.0f, 1.0f));
+        object_model = glm::scale(object_model, glm::vec3(1.0f) * m_ObjectScale);
+        renderObject(ResourceManager::GetShader("depth_cube_map"), object_model);
 
         for (GLuint i = 0; i < 5; i++) {
             for (GLuint j = 0; j < 5; j++) {
@@ -522,10 +534,10 @@ void SandboxLayer::OnUpdate()
         glActiveTexture(GL_TEXTURE10);
         depthCubeMapFBO.BindTexture(GL_TEXTURE_CUBE_MAP, 0);
     }
-    glm::mat4 model = glm::mat4(1.0f);
-    model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
-    model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
-    ResourceManager::GetShader("pbr_lighting_textured").Use().SetMatrix4(1, model);
+    glm::mat4 plane_model = glm::mat4(1.0f);
+    plane_model = glm::translate(plane_model, glm::vec3(0.0f, 0.0f, 0.0f));
+    plane_model = glm::scale(plane_model, glm::vec3(1.0f, 1.0f, 1.0f));
+    ResourceManager::GetShader("pbr_lighting_textured").Use().SetMatrix4(1, plane_model);
     renderPlane();
     Texture2D::UnBind();
     Texture2D::UnBindCubemap();
@@ -555,7 +567,15 @@ void SandboxLayer::OnUpdate()
         glActiveTexture(GL_TEXTURE10);
         depthCubeMapFBO.BindTexture(GL_TEXTURE_CUBE_MAP, 0);
     }
-    renderModel(ResourceManager::GetShader("pbr_lighting_textured"));
+
+    glm::mat4 object_model = glm::mat4(1.0f);
+    object_model = glm::translate(object_model, m_ObjectPosition);
+    object_model = glm::rotate(object_model, glm::radians(m_RotationAngleX), glm::vec3(1.0f, 0.0f, 0.0f));
+    object_model = glm::rotate(object_model, glm::radians(m_RotationAngleY), glm::vec3(0.0f, 1.0f, 0.0f));
+    object_model = glm::rotate(object_model, glm::radians(m_RotationAngleZ), glm::vec3(0.0f, 0.0f, 1.0f));
+    object_model = glm::scale(object_model, glm::vec3(1.0f) * m_ObjectScale);
+    renderObject(ResourceManager::GetShader("pbr_lighting_textured"), object_model);
+
     Texture2D::UnBind();
     Texture2D::UnBindCubemap();
     ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger("object.isGLTF", 0);
@@ -761,12 +781,8 @@ void SandboxLayer::renderQuad()
     screenQuadVBO.UnlinkAttrib(1);
 }
 
-void SandboxLayer::renderModel(Shader shader)
+void SandboxLayer::renderObject(Shader shader, glm::mat4 model)
 {
-    glm::mat4 model = glm::mat4(1.0f);
-    model = glm::translate(model, glm::vec3(0.0f, 2.0f, 4.0f));
-    model = glm::rotate(model, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-    model = glm::scale(model, glm::vec3(1.0f));
     shader.Use().SetMatrix4(1, model);
     ResourceManager::GetModel("3d_model").Draw(shader);
 }
@@ -852,8 +868,8 @@ void SandboxLayer::OnImGuiRender()
 
     ImGui::Separator();
     if (ImGui::CollapsingHeader("Camera", base_flags)) {
-        ImGui::DragFloat3("Position", (float*)&m_Camera.m_Position, 0.01f, -FLT_MAX, FLT_MAX, "%.2f");
-        ImGui::DragFloat3("Orientation", (float*)&m_Camera.m_Orientation, 0.01f, -FLT_MAX, FLT_MAX, "%.2f");
+        ImGui::DragFloat3("Camera Position", (float*)&m_Camera.m_Position, 0.01f, -FLT_MAX, FLT_MAX, "%.2f");
+        ImGui::DragFloat3("Camera Orientation", (float*)&m_Camera.m_Orientation, 0.01f, -FLT_MAX, FLT_MAX, "%.2f");
         ImGui::SliderFloat("Field of view", &m_Camera.m_Fov, 1.0f, 90.0f, "%.2f");
     }
 
@@ -935,6 +951,13 @@ void SandboxLayer::OnImGuiRender()
 
     ImGui::Separator();
     if (ImGui::CollapsingHeader("3D Object", base_flags)) {
+        ImGui::DragFloat3("Object Position", (float*)&m_ObjectPosition, 0.01f, -FLT_MAX, FLT_MAX, "%.2f");
+        if (ImGui::DragFloat3("Object Rotation", (float*)&m_RotationAngles, 0.01f, -180.0f, 180.0f, "%.2f")) {
+            m_RotationAngleX = m_RotationAngles.x;
+            m_RotationAngleY = m_RotationAngles.y;
+            m_RotationAngleZ = m_RotationAngles.z;
+        }
+        ImGui::DragFloat("Object Scale", &m_ObjectScale, 0.01f, 0.0f, FLT_MAX, "%.2f");
         if (ImGui::DragFloat("Emissive", &m_EmissiveIntensity, 0.01f, 0.0f, FLT_MAX, "%.2f")) {
             ResourceManager::GetShader("pbr_lighting_textured").Use().SetFloat("object.emissiveIntensity", m_EmissiveIntensity);
         }
