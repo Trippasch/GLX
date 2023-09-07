@@ -123,7 +123,7 @@ private:
     float m_EmissiveIntensity = 1.0f;
 
     // Skybox Properties
-    std::string m_SkyboxFilename = "assets/textures/hdr/Nature_8K_hdri.jpg";
+    std::string m_SkyboxFilename = "assets/textures/hdr-skyboxes/Nature_8K_hdri.jpg";
 
     void renderPlane();
     void renderCube();

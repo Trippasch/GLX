@@ -961,7 +961,18 @@ void SandboxLayer::OnImGuiRender()
         if (ImGuiFileDialog::Instance()->Display("ChooseFileDlgKey")) {
             // action if OK
             if (ImGuiFileDialog::Instance()->IsOk()) {
-                m_SkyboxFilename = ("assets/textures/hdr/" + ImGuiFileDialog::Instance()->GetCurrentFileName());
+                m_SkyboxFilename = ("assets/textures/hdr-skyboxes/" + ImGuiFileDialog::Instance()->GetCurrentFileName());
+
+                ResourceManager::LoadHDRTexture(m_SkyboxFilename.c_str(), "skybox_hdr");
+                m_EnvCubemap.Destroy();
+                m_Irradiancemap.Destroy();
+                m_Prefiltermap.Destroy();
+                m_BRDFLUTTexture.Destroy();
+                captureFBO.Bind();
+                captureFBO.ResizeRenderBuffer(GL_DEPTH24_STENCIL8, m_EnvCubemapWidth, m_EnvCubemapHeight);
+                FrameBuffer::CheckStatus();
+                FrameBuffer::UnBind();
+                createSkybox();
             }
 
             // close
@@ -1104,6 +1115,11 @@ void SandboxLayer::OnDetach()
     captureFBO.Destroy();
     depthMapFBO.Destroy();
     depthCubeMapFBO.Destroy();
+
+    m_EnvCubemap.Destroy();
+    m_Irradiancemap.Destroy();
+    m_Prefiltermap.Destroy();
+    m_BRDFLUTTexture.Destroy();
 }
 
 void SandboxLayer::createSkybox()
@@ -1193,7 +1209,7 @@ void SandboxLayer::createSkybox()
     GLuint maxMipLevels = 5;
     for (GLuint mip = 0; mip < maxMipLevels; ++mip)
     {
-        // reisze framebuffer according to mip-level size.
+        // resize framebuffer according to mip-level size.
         GLuint mipWidth = m_PrefiltermapWidth * std::pow(0.5, mip);
         GLuint mipHeight = m_PrefiltermapHeight * std::pow(0.5, mip);
         captureFBO.ResizeRenderBuffer(GL_DEPTH24_STENCIL8, mipWidth, mipHeight);
