@@ -1186,19 +1186,19 @@ bool SandboxLayer::imGuiResize()
         glViewport(0, 0, m_Width, m_Height);
 
         multisampleFBO.Bind();
-        multisampleFBO.ResizeTextureAttachment(0, GL_TEXTURE_2D_MULTISAMPLE, GL_RGB16F, m_Width, m_Height);
+        multisampleFBO.ResizeTextureAttachment(0, GL_TEXTURE_2D_MULTISAMPLE, GL_RGBA16F, m_Width, m_Height);
         multisampleFBO.ResizeRenderBufferAttachment(GL_TRUE, GL_DEPTH24_STENCIL8, m_Width, m_Height);
         FrameBuffer::CheckStatus();
         FrameBuffer::UnBind();
 
         hdrFBO.Bind();
-        hdrFBO.ResizeTextureAttachment(0, GL_TEXTURE_2D, GL_RGB16F, m_Width, m_Height);
+        hdrFBO.ResizeTextureAttachment(0, GL_TEXTURE_2D, GL_RGBA16F, m_Width, m_Height);
         FrameBuffer::CheckStatus();
         FrameBuffer::UnBind();
 
         for (GLuint i = 0; i < 2; i++) {
             pingpongFBO[i].Bind();
-            pingpongFBO[i].ResizeTextureAttachment(0, GL_TEXTURE_2D, GL_RGB16F, m_Width, m_Height);
+            pingpongFBO[i].ResizeTextureAttachment(0, GL_TEXTURE_2D, GL_RGBA16F, m_Width, m_Height);
             FrameBuffer::CheckStatus();
             FrameBuffer::UnBind();
         }
@@ -1209,7 +1209,7 @@ bool SandboxLayer::imGuiResize()
         FrameBuffer::UnBind();
 
         bloomFBO.Bind();
-        bloomFBO.BloomAttachment(m_Width, m_Height, 6);
+        bloomFBO.ResizeBloomAttachment(m_Width, m_Height, 6);
         FrameBuffer::CheckStatus();
         FrameBuffer::UnBind();
 
