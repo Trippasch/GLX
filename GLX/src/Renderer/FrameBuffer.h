@@ -3,8 +3,16 @@
 #include "Core/Log.h"
 
 #include <glad/glad.h>
+#include <glm/glm.hpp>
 
 #include "Renderer/Texture2D.h"
+
+struct BloomMip
+{
+    glm::vec2 size;
+    glm::ivec2 intSize;
+    unsigned int texture;
+};
 
 class FrameBuffer
 {
@@ -13,6 +21,7 @@ private:
     GLuint m_RenderBufferID;
 
     std::vector<GLuint> textures;
+    std::vector<BloomMip> mipChain;
 
 public:
     FrameBuffer();
@@ -26,6 +35,8 @@ public:
 
     void TextureAttachment(GLuint n, GLuint mode, GLenum target, GLint inFormat, GLuint width, GLuint height);
     void ResizeTextureAttachment(GLuint mode, GLenum target, GLint inFormat, GLuint width, GLuint height);
+    void BloomAttachment(GLuint width, GLuint height, GLuint mipChainLength);
+    void ResizeBloomAttachment(GLuint width, GLuint height, GLuint mipChainLength);
     void Blit(FrameBuffer fbo, GLuint width, GLuint height) const;
     void RenderBufferAttachment(GLboolean multisample, GLenum inFormat, GLuint width, GLuint height);
     void ResizeRenderBuffer(GLenum inFormat, GLuint width, GLuint height) const;
@@ -34,4 +45,5 @@ public:
     inline GLuint &GetID() { return m_RendererID; }
     inline GLuint &GetRenderBufferID() { return m_RenderBufferID; }
     inline std::vector<GLuint> &GetTextureAttachments() { return textures; }
+    inline std::vector<BloomMip> &GetMipChain() { return mipChain; }
 };

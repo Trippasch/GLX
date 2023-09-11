@@ -17,6 +17,7 @@ struct PostProcessing {
     bool ridge;
     bool bloom;
     float exposure;
+    float bloomStrength;
 };
 uniform PostProcessing postProcessing;
 
@@ -86,8 +87,10 @@ void main()
     vec3 color = col;
 
     if (postProcessing.bloom) {
+        // vec3 hdrColor = texture(screenTexture, TexCoords).rgb;
         vec3 bloomColor = texture(bloomBlur, TexCoords).rgb;
-        color += bloomColor;
+        color = mix(col, bloomColor, postProcessing.bloomStrength);
+        // color += bloomColor;
     }
 
     if (postProcessing.inversion) {

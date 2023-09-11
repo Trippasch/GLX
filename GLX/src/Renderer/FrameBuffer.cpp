@@ -21,6 +21,8 @@ void FrameBuffer::Destroy() const
     glDeleteFramebuffers(1, &m_RendererID);
     for (size_t i = 0; i < textures.size(); i++)
         glDeleteTextures(1, &textures[i]);
+    for (size_t i = 0; i < mipChain.size(); i++)
+        glDeleteTextures(1, &mipChain[i].texture);
 }
 
 void FrameBuffer::CheckStatus()
@@ -34,6 +36,74 @@ void FrameBuffer::BindTexture(GLenum target, GLuint index) const
     glBindTexture(target, textures[index]);
 }
 
+void FrameBuffer::BloomAttachment(GLuint width, GLuint height, GLuint mipChainLength)
+{
+    glm::vec2 mipSize((float)width, (float)height);
+    glm::ivec2 mipIntSize((int)width, (int)height);
+
+    for (unsigned int i = 0; i < mipChainLength; i++) {
+        BloomMip mip;
+
+        mipSize *= 0.5f;
+        mipIntSize /= 2;
+        mip.size = mipSize;
+        mip.intSize = mipIntSize;
+
+        glGenTextures(1, &mip.texture);
+        glBindTexture(GL_TEXTURE_2D, mip.texture);
+        // we are downscaling an HDR color buffer, so we need a float texture format
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_R11F_G11F_B10F, (int)mipSize.x, (int)mipSize.y, 0, GL_RGB, GL_FLOAT, nullptr);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+        mipChain.emplace_back(mip);
+    }
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, mipChain[0].texture, 0);
+
+    // setup attachments
+    unsigned int attachments[1] = { GL_COLOR_ATTACHMENT0 };
+    glDrawBuffers(1, attachments);
+}
+
+void FrameBuffer::ResizeBloomAttachment(GLuint width, GLuint height, GLuint mipChainLength)
+{
+    glm::vec2 mipSize((float)width, (float)height);
+    glm::ivec2 mipIntSize((int)width, (int)height);
+
+    mipChain.clear();
+
+    for (unsigned int i = 0; i < mipChainLength; i++) {
+        BloomMip mip;
+
+        mipSize *= 0.5f;
+        mipIntSize /= 2;
+        mip.size = mipSize;
+        mip.intSize = mipIntSize;
+
+        glGenTextures(1, &mip.texture);
+        glBindTexture(GL_TEXTURE_2D, mip.texture);
+        // we are downscaling an HDR color buffer, so we need a float texture format
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_R11F_G11F_B10F, (int)mipSize.x, (int)mipSize.y, 0, GL_RGB, GL_FLOAT, nullptr);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+        mipChain.emplace_back(mip);
+    }
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, mipChain[0].texture, 0);
+
+    // setup attachments
+    unsigned int attachments[1] = { GL_COLOR_ATTACHMENT0 };
+    glDrawBuffers(1, attachments);
+}
+
 void FrameBuffer::TextureAttachment(GLuint n, GLuint mode, GLenum target, GLint inFormat, GLuint width, GLuint height)
 {
     GLuint *tex = new GLuint[n];
@@ -44,7 +114,7 @@ void FrameBuffer::TextureAttachment(GLuint n, GLuint mode, GLenum target, GLint 
 
         if (target == GL_TEXTURE_2D) {
             if (mode == 0) {
-                glTexImage2D(target, 0, inFormat, width, height, 0, GL_RGB, GL_FLOAT, NULL);
+                glTexImage2D(target, 0, inFormat, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
                 glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
                 glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
                 glTexParameteri(target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -111,7 +181,7 @@ void FrameBuffer::ResizeTextureAttachment(GLuint mode, GLenum target, GLint inFo
 
         if (target == GL_TEXTURE_2D) {
             if (mode == 0) {
-                glTexImage2D(target, 0, inFormat, width, height, 0, GL_RGB, GL_FLOAT, NULL);
+                glTexImage2D(target, 0, inFormat, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
                 glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
                 glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
                 glTexParameteri(target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);

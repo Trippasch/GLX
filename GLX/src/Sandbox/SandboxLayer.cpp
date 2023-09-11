@@ -227,9 +227,11 @@ void SandboxLayer::OnAttach()
     ResourceManager::LoadShader("assets/shaders/hdrSkyboxVS.glsl", "assets/shaders/hdrSkyboxFS.glsl", nullptr, "hdr_skybox");
     ResourceManager::LoadShader("assets/shaders/brdfVS.glsl", "assets/shaders/brdfFS.glsl", nullptr, "brdf");
     ResourceManager::LoadShader("assets/shaders/blurVS.glsl", "assets/shaders/blurFS.glsl", nullptr, "blur");
-    ResourceManager::LoadShader("assets/shaders/depthQuadVS.glsl", "assets/shaders/depthQuadFS.glsl", nullptr, "depth_quad");
+    ResourceManager::LoadShader("assets/shaders/quadVS.glsl", "assets/shaders/depthQuadFS.glsl", nullptr, "depth_quad");
     ResourceManager::LoadShader("assets/shaders/depthMapVS.glsl", "assets/shaders/depthMapFS.glsl", nullptr, "depth_map");
     ResourceManager::LoadShader("assets/shaders/depthCubeMapVS.glsl", "assets/shaders/depthCubeMapFS.glsl", "assets/shaders/depthCubeMapGS.glsl", "depth_cube_map");
+    ResourceManager::LoadShader("assets/shaders/quadVS.glsl", "assets/shaders/downsampleFS.glsl", nullptr, "downsample");
+    ResourceManager::LoadShader("assets/shaders/quadVS.glsl", "assets/shaders/upsampleFS.glsl", nullptr, "upsample");
 
     // Post Processing - Activate only one per group
     // Kernel effects
@@ -242,6 +244,7 @@ void SandboxLayer::OnAttach()
     ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.inversion", m_UseInversion);
     ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.bloom", m_UseBloom);
     ResourceManager::GetShader("post_proc").Use().SetFloat("postProcessing.exposure", m_Exposure);
+    ResourceManager::GetShader("post_proc").Use().SetFloat("postProcessing.bloomStrength", m_BloomStrength);
 
     // PBR Settings
     ResourceManager::GetShader("pbr_lighting").Use().SetVector3f("material.albedo", m_Albedo);
@@ -285,7 +288,7 @@ void SandboxLayer::OnAttach()
 
     multisampleFBO = FrameBuffer();
     multisampleFBO.Bind();
-    multisampleFBO.TextureAttachment(2, 0, GL_TEXTURE_2D_MULTISAMPLE, GL_RGB16F, m_Width, m_Height);
+    multisampleFBO.TextureAttachment(2, 0, GL_TEXTURE_2D_MULTISAMPLE, GL_RGBA16F, m_Width, m_Height);
     multisampleFBO.RenderBufferAttachment(GL_TRUE, GL_DEPTH24_STENCIL8, m_Width, m_Height);
     // tell OpenGL which color attachments we'll use (of this framebuffer) for rendering
     GLenum attachments[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
@@ -295,14 +298,14 @@ void SandboxLayer::OnAttach()
 
     hdrFBO = FrameBuffer();
     hdrFBO.Bind();
-    hdrFBO.TextureAttachment(2, 0, GL_TEXTURE_2D, GL_RGB16F, m_Width, m_Height);
+    hdrFBO.TextureAttachment(2, 0, GL_TEXTURE_2D, GL_RGBA16F, m_Width, m_Height);
     FrameBuffer::CheckStatus();
     FrameBuffer::UnBind();
 
     for (GLuint i = 0; i < 2; i++) {
         pingpongFBO[i] = FrameBuffer();
         pingpongFBO[i].Bind();
-        pingpongFBO[i].TextureAttachment(1, 0, GL_TEXTURE_2D, GL_RGB16F, m_Width, m_Height);
+        pingpongFBO[i].TextureAttachment(1, 0, GL_TEXTURE_2D, GL_RGBA16F, m_Width, m_Height);
         FrameBuffer::CheckStatus();
         FrameBuffer::UnBind();
     }
@@ -328,6 +331,12 @@ void SandboxLayer::OnAttach()
     depthCubeMapFBO = FrameBuffer();
     depthCubeMapFBO.Bind();
     depthCubeMapFBO.TextureAttachment(1, 2, GL_TEXTURE_CUBE_MAP, GL_DEPTH_COMPONENT, m_ShadowWidth, m_ShadowHeight);
+    FrameBuffer::CheckStatus();
+    FrameBuffer::UnBind();
+
+    bloomFBO = FrameBuffer();
+    bloomFBO.Bind();
+    bloomFBO.BloomAttachment(m_Width, m_Height, 6);
     FrameBuffer::CheckStatus();
     FrameBuffer::UnBind();
 
@@ -693,23 +702,25 @@ void SandboxLayer::OnUpdate()
 
     // Bloom
     if (m_UseBloom) {
-        // blur bright fragments with two-pass Gaussian blur
-        bool horizontal = true, first_iteration = true;
-        GLuint amount = 10;
-        for (GLuint i = 0; i < amount; i++) {
-            pingpongFBO[horizontal].Bind();
-            ResourceManager::GetShader("blur").Use().SetInteger("horizontal", horizontal);
-            glActiveTexture(GL_TEXTURE0);
-            if (first_iteration)
-                hdrFBO.BindTexture(GL_TEXTURE_2D, 1);
-            else
-                pingpongFBO[!horizontal].BindTexture(GL_TEXTURE_2D, 0);
-            renderQuad();
-            horizontal = !horizontal;
-            if (first_iteration)
-                first_iteration = false;
-        }
-        FrameBuffer::UnBind();
+        // // blur bright fragments with two-pass Gaussian blur
+        // bool horizontal = true, first_iteration = true;
+        // GLuint amount = 10;
+        // for (GLuint i = 0; i < amount; i++) {
+        //     pingpongFBO[horizontal].Bind();
+        //     ResourceManager::GetShader("blur").Use().SetInteger("horizontal", horizontal);
+        //     glActiveTexture(GL_TEXTURE0);
+        //     if (first_iteration)
+        //         hdrFBO.BindTexture(GL_TEXTURE_2D, 1);
+        //     else
+        //         pingpongFBO[!horizontal].BindTexture(GL_TEXTURE_2D, 0);
+        //     renderQuad();
+        //     horizontal = !horizontal;
+        //     if (first_iteration)
+        //         first_iteration = false;
+        // }
+        // FrameBuffer::UnBind();
+
+        renderBloomTexture();
     }
 
     multisampleFBO.Blit(hdrFBO, m_Width, m_Height);
@@ -728,13 +739,84 @@ void SandboxLayer::OnUpdate()
         hdrFBO.BindTexture(GL_TEXTURE_2D, 0);
         if (m_UseBloom) {
             glActiveTexture(GL_TEXTURE1);
-            pingpongFBO[0].BindTexture(GL_TEXTURE_2D, 0);
+            // pingpongFBO[0].BindTexture(GL_TEXTURE_2D, 0);
+            glBindTexture(GL_TEXTURE_2D, bloomFBO.GetMipChain()[0].texture);
         }
         ResourceManager::GetShader("post_proc").Use();
     }
     renderQuad();
     Texture2D::UnBind();
     FrameBuffer::UnBind();
+}
+
+void SandboxLayer::renderBloomTexture()
+{
+    bloomFBO.Bind();
+
+    // Render Downsamples
+    ResourceManager::GetShader("downsample").Use().SetVector2f("srcResolution", m_SrcResolution);
+
+    if (m_KarisAverageOnDownsample) {
+        ResourceManager::GetShader("downsample").Use().SetInteger("mipLevel", 0);
+    }
+
+    glActiveTexture(GL_TEXTURE0);
+    hdrFBO.BindTexture(GL_TEXTURE_2D, 1);
+
+    // Progressively downsample through the mip chain
+    for (size_t i = 0; i < bloomFBO.GetMipChain().size(); i++)
+    {
+        const BloomMip& mip = bloomFBO.GetMipChain()[i];
+        glViewport(0, 0, mip.size.x, mip.size.y);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, mip.texture, 0);
+
+        // Render screen-filled quad of resolution of current mip
+        renderQuad();
+
+        // Set current mip resolution as srcResolution for next iteration
+        ResourceManager::GetShader("downsample").Use().SetVector2f("srcResolution", mip.size);
+        // Set current mip as texture input for next iteration
+        glBindTexture(GL_TEXTURE_2D, mip.texture);
+        // Disable Karis average for consequent downsamples
+        if (i == 0) {
+            ResourceManager::GetShader("downsample").Use().SetInteger("mipLevel", 1);
+        }
+    }
+    Texture2D::UnBind();
+
+    // Render Upsamples
+    ResourceManager::GetShader("upsample").Use().SetFloat("filterRadius", m_BloomFilterRadius);
+
+    // Enable additive blending
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_ONE, GL_ONE);
+    glBlendEquation(GL_FUNC_ADD);
+
+    for (size_t i = bloomFBO.GetMipChain().size() - 1; i > 0; i--)
+    {
+        const BloomMip& mip = bloomFBO.GetMipChain()[i];
+        const BloomMip& nextMip = bloomFBO.GetMipChain()[i-1];
+
+        // Bind viewport and texture from where to read
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, mip.texture);
+
+        // Set framebuffer render target (we write to this texture)
+        glViewport(0, 0, nextMip.size.x, nextMip.size.y);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, nextMip.texture, 0);
+
+        // Render screen-filled quad of resolution of current mip
+        renderQuad();
+    }
+
+    // Disable additive blending
+    //glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+    glDisable(GL_BLEND);
+    Texture2D::UnBind();
+
+
+    FrameBuffer::UnBind();
+    glViewport(0, 0, m_Width, m_Height);
 }
 
 void SandboxLayer::renderPlane()
@@ -1062,8 +1144,19 @@ void SandboxLayer::OnImGuiRender()
             ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.greyscale", m_UseGreyscale);
             ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.inversion", m_UseInversion);
         }
-        if (ImGui::Checkbox("Bloom", &m_UseBloom)) {
-            ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.bloom", m_UseBloom);
+        if (ImGui::TreeNodeEx("Bloom", base_flags)) {
+            ImGui::SameLine();
+            if (ImGuiLayer::ToggleButton(" ", &m_UseBloom)) {
+                ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.bloom", m_UseBloom);
+            }
+            if (ImGui::DragFloat("Bloom Intensity", &m_BloomStrength, 0.01f, 0.0f, 1.0f, "%.2f")) {
+                ResourceManager::GetShader("post_proc").Use().SetFloat("postProcessing.bloomStrength", m_BloomStrength);
+            }
+            if (ImGui::SliderFloat("Filter Radius", &m_BloomFilterRadius, 0.0f, 0.05f, "%.3f")) {
+                ResourceManager::GetShader("upsample").Use().SetFloat("filterRadius", m_BloomFilterRadius);
+            }
+
+            ImGui::TreePop();
         }
     }
 
@@ -1115,6 +1208,13 @@ bool SandboxLayer::imGuiResize()
         FrameBuffer::CheckStatus();
         FrameBuffer::UnBind();
 
+        bloomFBO.Bind();
+        bloomFBO.BloomAttachment(m_Width, m_Height, 6);
+        FrameBuffer::CheckStatus();
+        FrameBuffer::UnBind();
+
+        GL_INFO("Resizing Generated Image to : {0} {1}", m_Width, m_Height);
+
         return true;
     }
     return true;
@@ -1138,6 +1238,7 @@ void SandboxLayer::OnDetach()
     captureFBO.Destroy();
     depthMapFBO.Destroy();
     depthCubeMapFBO.Destroy();
+    bloomFBO.Destroy();
 
     m_EnvCubemap.Destroy();
     m_Irradiancemap.Destroy();

@@ -61,6 +61,7 @@ private:
     FrameBuffer captureFBO;
     FrameBuffer depthMapFBO;
     FrameBuffer depthCubeMapFBO;
+    FrameBuffer bloomFBO;
 
     Texture2D m_EnvCubemap;
     GLuint m_EnvCubemapWidth = 2048;
@@ -112,6 +113,12 @@ private:
     bool m_UseBlur = false;
     bool m_UseBloom = true;
     float m_Exposure = 0.5f;
+    float m_BloomFilterRadius = 0.005f;
+    float m_BloomStrength = 0.04f;
+    bool m_KarisAverageOnDownsample = true;
+
+    glm::vec2 m_SrcResolution = glm::vec2((float)m_Width, (float)m_Height);
+
 
     // PBR Material Properties
     glm::vec3 m_Albedo = glm::vec3(0.21f, 0.17f, 0.17f);
@@ -136,6 +143,8 @@ private:
     void renderSphere();
     void renderQuad();
     void renderObject(Shader shader, glm::mat4 model);
+
+    void renderBloomTexture();
 
     bool imGuiResize();
 
