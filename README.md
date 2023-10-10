@@ -1,5 +1,5 @@
 # GLX Engine
-GLX is an early-stage cross-platform OpenGL rendering engine for learning purposes.
+GLX is an early-stage cross-platform OpenGL physical based rendering engine for learning purposes.
 
 ![GLX](https://i.imgur.com/qcN1wqx.png)
 
