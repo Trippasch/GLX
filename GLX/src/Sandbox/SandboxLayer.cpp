@@ -288,7 +288,7 @@ void SandboxLayer::OnAttach()
 
     multisampleFBO = FrameBuffer();
     multisampleFBO.Bind();
-    multisampleFBO.TextureAttachment(2, 0, GL_TEXTURE_2D_MULTISAMPLE, GL_RGBA16F, m_Width, m_Height);
+    multisampleFBO.TextureAttachment(2, 0, GL_TEXTURE_2D_MULTISAMPLE, GL_RGBA, m_Width, m_Height);
     multisampleFBO.RenderBufferAttachment(GL_TRUE, GL_DEPTH24_STENCIL8, m_Width, m_Height);
     // tell OpenGL which color attachments we'll use (of this framebuffer) for rendering
     GLenum attachments[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
@@ -299,16 +299,19 @@ void SandboxLayer::OnAttach()
     hdrFBO = FrameBuffer();
     hdrFBO.Bind();
     hdrFBO.TextureAttachment(2, 0, GL_TEXTURE_2D, GL_RGBA16F, m_Width, m_Height);
+    // hdrFBO.RenderBufferAttachment(GL_FALSE, GL_DEPTH24_STENCIL8, m_Width, m_Height);
+    // GLenum attachments[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+    // glDrawBuffers(2, attachments);
     FrameBuffer::CheckStatus();
     FrameBuffer::UnBind();
 
-    for (GLuint i = 0; i < 2; i++) {
-        pingpongFBO[i] = FrameBuffer();
-        pingpongFBO[i].Bind();
-        pingpongFBO[i].TextureAttachment(1, 0, GL_TEXTURE_2D, GL_RGBA16F, m_Width, m_Height);
-        FrameBuffer::CheckStatus();
-        FrameBuffer::UnBind();
-    }
+    // for (GLuint i = 0; i < 2; i++) {
+    //     pingpongFBO[i] = FrameBuffer();
+    //     pingpongFBO[i].Bind();
+    //     pingpongFBO[i].TextureAttachment(1, 0, GL_TEXTURE_2D, GL_RGBA16F, m_Width, m_Height);
+    //     FrameBuffer::CheckStatus();
+    //     FrameBuffer::UnBind();
+    // }
 
     imguiFBO = FrameBuffer();
     imguiFBO.Bind();
@@ -700,6 +703,10 @@ void SandboxLayer::OnUpdate()
 
     FrameBuffer::UnBind();
 
+    multisampleFBO.Blit(hdrFBO, m_Width, m_Height);
+    FrameBuffer::CheckStatus();
+    FrameBuffer::UnBind();
+
     // Bloom
     if (m_UseBloom) {
         // // blur bright fragments with two-pass Gaussian blur
@@ -723,11 +730,8 @@ void SandboxLayer::OnUpdate()
         renderBloomTexture();
     }
 
-    multisampleFBO.Blit(hdrFBO, m_Width, m_Height);
-    FrameBuffer::UnBind();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glDisable(GL_DEPTH_TEST);
-
     imguiFBO.Bind();
     if (m_DebugDepthMap) {
         glActiveTexture(GL_TEXTURE0);
@@ -1149,7 +1153,7 @@ void SandboxLayer::OnImGuiRender()
             if (ImGuiLayer::ToggleButton(" ", &m_UseBloom)) {
                 ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.bloom", m_UseBloom);
             }
-            if (ImGui::DragFloat("Bloom Intensity", &m_BloomStrength, 0.01f, 0.0f, 1.0f, "%.2f")) {
+            if (ImGui::DragFloat("Bloom Intensity", &m_BloomStrength, 0.01f, 0.0f, 0.5f, "%.2f")) {
                 ResourceManager::GetShader("post_proc").Use().SetFloat("postProcessing.bloomStrength", m_BloomStrength);
             }
             if (ImGui::SliderFloat("Filter Radius", &m_BloomFilterRadius, 0.0f, 0.05f, "%.3f")) {
@@ -1186,22 +1190,23 @@ bool SandboxLayer::imGuiResize()
         glViewport(0, 0, m_Width, m_Height);
 
         multisampleFBO.Bind();
-        multisampleFBO.ResizeTextureAttachment(0, GL_TEXTURE_2D_MULTISAMPLE, GL_RGBA16F, m_Width, m_Height);
+        multisampleFBO.ResizeTextureAttachment(0, GL_TEXTURE_2D_MULTISAMPLE, GL_RGBA, m_Width, m_Height);
         multisampleFBO.ResizeRenderBufferAttachment(GL_TRUE, GL_DEPTH24_STENCIL8, m_Width, m_Height);
         FrameBuffer::CheckStatus();
         FrameBuffer::UnBind();
 
         hdrFBO.Bind();
         hdrFBO.ResizeTextureAttachment(0, GL_TEXTURE_2D, GL_RGBA16F, m_Width, m_Height);
+        // hdrFBO.ResizeRenderBufferAttachment(GL_FALSE, GL_DEPTH24_STENCIL8, m_Width, m_Height);
         FrameBuffer::CheckStatus();
         FrameBuffer::UnBind();
 
-        for (GLuint i = 0; i < 2; i++) {
-            pingpongFBO[i].Bind();
-            pingpongFBO[i].ResizeTextureAttachment(0, GL_TEXTURE_2D, GL_RGBA16F, m_Width, m_Height);
-            FrameBuffer::CheckStatus();
-            FrameBuffer::UnBind();
-        }
+        // for (GLuint i = 0; i < 2; i++) {
+        //     pingpongFBO[i].Bind();
+        //     pingpongFBO[i].ResizeTextureAttachment(0, GL_TEXTURE_2D, GL_RGBA16F, m_Width, m_Height);
+        //     FrameBuffer::CheckStatus();
+        //     FrameBuffer::UnBind();
+        // }
 
         imguiFBO.Bind();
         imguiFBO.ResizeTextureAttachment(0, GL_TEXTURE_2D, GL_RGBA8, m_Width, m_Height);
@@ -1232,8 +1237,8 @@ void SandboxLayer::OnDetach()
 
     multisampleFBO.Destroy();
     hdrFBO.Destroy();
-    for (GLuint i = 0; i < 2; i++)
-        pingpongFBO[i].Destroy();
+    // for (GLuint i = 0; i < 2; i++)
+    //     pingpongFBO[i].Destroy();
     imguiFBO.Destroy();
     captureFBO.Destroy();
     depthMapFBO.Destroy();

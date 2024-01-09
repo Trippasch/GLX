@@ -73,6 +73,7 @@ void Window::Init(const WindowProps& props)
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LEQUAL);
     glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+    glEnable(GL_MULTISAMPLE);
 
     glfwSetWindowUserPointer(m_Window, this);
 
