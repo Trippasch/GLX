@@ -57,6 +57,7 @@ Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene)
     std::vector<Vertex> vertices;
     std::vector<GLuint> indices;
     std::vector<Texture2D> textures;
+    std::vector<glm::vec4> instances;
 
     // walk through each of the mesh's vertices
     for (unsigned int i = 0; i < mesh->mNumVertices; i++)
@@ -99,9 +100,20 @@ Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene)
         else
             vertex.TexCoords = glm::vec2(0.0f, 0.0f);
 
+        // instance vector
+        uint32_t value = glm::packSnorm4x8(glm::vec4(vertex.Normal, 1.0f));
+        float fvalue = *reinterpret_cast<float*>(&value);
+        glm::vec4 vecInstanced = glm::vec4(vertex.Position, fvalue);
+        instances.push_back(vecInstanced);
+
         vertices.push_back(vertex);
     }
-    // now wak through each of the mesh's faces (a face is a mesh its triangle) and retrieve the corresponding vertex indices.
+
+    // generate instanced arrows VBO
+    instancedArrowsSize = instances.size();
+    instancedArrowsVBO = VertexBuffer(&instances[0], instancedArrowsSize * sizeof(glm::vec4), GL_STATIC_DRAW);
+
+    // now walk through each of the mesh's faces (a face is a mesh its triangle) and retrieve the corresponding vertex indices.
     for (unsigned int i = 0; i < mesh->mNumFaces; i++)
     {
         aiFace face = mesh->mFaces[i];

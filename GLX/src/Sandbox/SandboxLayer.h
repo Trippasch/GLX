@@ -50,6 +50,7 @@ private:
     VertexBuffer cubeVBO;
     VertexBuffer sphereVBO;
     VertexBuffer screenQuadVBO;
+    VertexBuffer instancedArrowsVBO;
 
     IndexBuffer sphereEBO;
     GLuint indexCount;
@@ -78,10 +79,6 @@ private:
     Texture2D m_BRDFLUTTexture;
     GLuint m_BRDFLUTTextureWidth = 512;
     GLuint m_BRDFLUTTextureHeight = 512;
-
-    // Light Properties
-    bool m_DebugDepthMap = false;
-    bool m_DebugDepthCubeMap = false;
 
     // Directional light
     bool m_UseDirLight = true;
@@ -119,7 +116,6 @@ private:
 
     glm::vec2 m_SrcResolution = glm::vec2((float)m_Width, (float)m_Height);
 
-
     // PBR Material Properties
     glm::vec3 m_Albedo = glm::vec3(0.21f, 0.17f, 0.17f);
     float m_Metallic = 0.39f;
@@ -135,14 +131,23 @@ private:
     glm::vec3 m_RotationAngles = glm::vec3(m_RotationAngleX, m_RotationAngleY, m_RotationAngleZ);
     float m_EmissiveIntensity = 1.0f;
 
+    // Instancing
+    std::vector<glm::vec4> m_VecInstances;
+
     // Skybox Properties
     std::string m_SkyboxFilename = "assets/textures/hdr-skyboxes/Nature_8K_hdri.jpg";
+
+    // Debug Properties
+    bool m_UsePolygonLines = false;
+    bool m_DebugDepthMap = false;
+    bool m_DebugDepthCubeMap = false;
 
     void renderPlane();
     void renderCube();
     void renderSphere();
     void renderQuad();
     void renderObject(Shader shader, glm::mat4 model);
+    void renderNormalsInstanced(Shader shader, VertexBuffer VBO, glm::mat4 model, size_t matrices_size);
 
     void renderBloomTexture();
 

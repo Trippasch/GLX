@@ -54,6 +54,8 @@ public:
     // render the mesh
     void Draw(const Shader &shader) const;
     void Destroy() const;
+    void Bind() const;
+    void UnBind() const;
 
 private:
     // render data
@@ -62,6 +64,4 @@ private:
 
     // initializes all the buffer objects/arrays
     void setupMesh();
-    void Bind() const;
-    void UnBind() const;
 };

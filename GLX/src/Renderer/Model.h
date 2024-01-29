@@ -30,6 +30,9 @@ public:
     std::string directory;
     bool gammaCorrection;
 
+    VertexBuffer instancedArrowsVBO;
+    size_t instancedArrowsSize;
+
     Model() {}
     // constructor, expects a filepath to a 3D model.
     Model(std::string const &path, bool gamma = false);

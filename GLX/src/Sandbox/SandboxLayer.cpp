@@ -39,7 +39,7 @@ void SandboxLayer::OnAttach()
         -1.0f, -1.0f, -1.0f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f, // bottom-left
         -1.0f, -1.0f, 1.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f,  // bottom-right
         -1.0f, 1.0f, 1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 0.0f,   // top-right
-                                                            // right face
+        // right face
         1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f,     // top-left
         1.0f, -1.0f, -1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f,   // bottom-right
         1.0f, 1.0f, -1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f,    // top-right
@@ -111,25 +111,25 @@ void SandboxLayer::OnAttach()
     }
     indexCount = static_cast<GLuint>(indices.size());
 
-    std::vector<float> data;
+    std::vector<float> sphereData;
     for (size_t i = 0; i < positions.size(); ++i)
     {
-        data.push_back(positions[i].x);
-        data.push_back(positions[i].y);
-        data.push_back(positions[i].z);
+        sphereData.push_back(positions[i].x);
+        sphereData.push_back(positions[i].y);
+        sphereData.push_back(positions[i].z);
         if (normals.size() > 0)
         {
-            data.push_back(normals[i].x);
-            data.push_back(normals[i].y);
-            data.push_back(normals[i].z);
+            sphereData.push_back(normals[i].x);
+            sphereData.push_back(normals[i].y);
+            sphereData.push_back(normals[i].z);
         }
         if (uv.size() > 0)
         {
-            data.push_back(uv[i].x);
-            data.push_back(uv[i].y);
+            sphereData.push_back(uv[i].x);
+            sphereData.push_back(uv[i].y);
         }
     }
-    sphereVBO = VertexBuffer(&data[0], data.size() * sizeof(float), GL_STATIC_DRAW);
+    sphereVBO = VertexBuffer(&sphereData[0], sphereData.size() * sizeof(float), GL_STATIC_DRAW);
     sphereEBO = IndexBuffer(&indices[0], indices.size() * sizeof(GLuint), GL_STATIC_DRAW);
 
     float planeVertices[] = {
@@ -159,6 +159,7 @@ void SandboxLayer::OnAttach()
     // Load Resources
     // Load Models
     ResourceManager::LoadModel("assets/objects/helmet/DamagedHelmet.gltf", "3d_model");
+    ResourceManager::LoadModel("assets/objects/arrow/simple_arrow.gltf", "3d_arrow");
     // Load Textures
     // Rusted Iron
     ResourceManager::LoadTexture("assets/textures/pbr/rusted_iron/albedo.png", "rusted_albedo");
@@ -232,6 +233,7 @@ void SandboxLayer::OnAttach()
     ResourceManager::LoadShader("assets/shaders/depthCubeMapVS.glsl", "assets/shaders/depthCubeMapFS.glsl", "assets/shaders/depthCubeMapGS.glsl", "depth_cube_map");
     ResourceManager::LoadShader("assets/shaders/quadVS.glsl", "assets/shaders/downsampleFS.glsl", nullptr, "downsample");
     ResourceManager::LoadShader("assets/shaders/quadVS.glsl", "assets/shaders/upsampleFS.glsl", nullptr, "upsample");
+    ResourceManager::LoadShader("assets/shaders/instancingNormalsVS.glsl", "assets/shaders/instancingNormalsFS.glsl", nullptr, "instancing_normals");
 
     // Post Processing - Activate only one per group
     // Kernel effects
@@ -345,8 +347,6 @@ void SandboxLayer::OnAttach()
 
     createSkybox();
 
-    // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-
     // generate depth map projection matrix
     float boxLimit = 20.0f;
     float minX = -boxLimit;
@@ -384,6 +384,23 @@ void SandboxLayer::OnAttach()
     ResourceManager::GetShader("depth_cube_map").Use().SetFloat("far_plane", farPlane);
     ResourceManager::GetShader("pbr_lighting").Use().SetFloat("far_plane", farPlane);
     ResourceManager::GetShader("pbr_lighting_textured").Use().SetFloat("far_plane", farPlane);
+
+    // generate instancedArrowsVBO
+    cubeVBO.Bind();
+    float data[sizeof(cubeVertices)];
+    glGetBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(cubeVertices), data);
+    cubeVBO.UnBind();
+
+    for (GLuint i = 0; i < sizeof(cubeVertices) / 4; i = i + 8) {
+        glm::vec3 position = glm::vec3(data[i], data[i+1], data[i+2]);
+        glm::vec3 normal = glm::vec3(data[i+3], data[i+4], data[i+5]);
+
+        uint32_t value = glm::packSnorm4x8(glm::vec4(normal, 1.0f));
+        float fvalue = *reinterpret_cast<float*>(&value);
+        glm::vec4 vecInstanced = glm::vec4(position, fvalue);
+        m_VecInstances.push_back(vecInstanced);
+    }
+    instancedArrowsVBO = VertexBuffer(&m_VecInstances[0], m_VecInstances.size() * sizeof(glm::vec4), GL_STATIC_DRAW);
 }
 
 void SandboxLayer::OnUpdate()
@@ -391,6 +408,7 @@ void SandboxLayer::OnUpdate()
     glm::mat4 projView = m_Camera.Matrix(m_Camera.m_Fov, static_cast<float>(m_Width) / m_Height, m_Camera.m_NearPlane, m_Camera.m_FarPlane);
     ResourceManager::GetShader("light_source").Use().SetMatrix4(0, projView);
     ResourceManager::GetShader("pbr_lighting").Use().SetMatrix4(0, projView);
+    ResourceManager::GetShader("instancing_normals").Use().SetMatrix4(0, projView);
     ResourceManager::GetShader("pbr_lighting").Use().SetVector3f("camPos", m_Camera.m_Position);
     ResourceManager::GetShader("pbr_lighting_textured").Use().SetMatrix4(0, projView);
     ResourceManager::GetShader("pbr_lighting_textured").Use().SetVector3f("camPos", m_Camera.m_Position);
@@ -527,6 +545,9 @@ void SandboxLayer::OnUpdate()
     multisampleFBO.Bind();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    if (m_UsePolygonLines)
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
     // Render Plane
     m_Irradiancemap.BindCubemap(0);
     m_Prefiltermap.BindCubemap(1);
@@ -563,6 +584,7 @@ void SandboxLayer::OnUpdate()
             ResourceManager::GetShader("light_source").Use().SetMatrix4(1, model);
             ResourceManager::GetShader("light_source").Use().SetVector3f("color", m_PointLightColors[i] * m_PointLightIntensities[i]);
             renderCube();
+            // renderNormalsInstanced(ResourceManager::GetShader("instancing_normals"), instancedArrowsVBO, model, m_VecInstances.size());
         }
     }
 
@@ -587,6 +609,7 @@ void SandboxLayer::OnUpdate()
     object_model = glm::rotate(object_model, glm::radians(m_RotationAngleZ), glm::vec3(0.0f, 0.0f, 1.0f));
     object_model = glm::scale(object_model, glm::vec3(1.0f) * m_ObjectScale);
     renderObject(ResourceManager::GetShader("pbr_lighting_textured"), object_model);
+    // renderNormalsInstanced(ResourceManager::GetShader("instancing_normals"), ResourceManager::GetModel("3d_model").instancedArrowsVBO, object_model, ResourceManager::GetModel("3d_model").instancedArrowsSize);
 
     Texture2D::UnBind();
     Texture2D::UnBindCubemap();
@@ -702,6 +725,9 @@ void SandboxLayer::OnUpdate()
     Texture2D::UnBindCubemap();
 
     FrameBuffer::UnBind();
+
+    // Reset polygon mode to fill no matter what
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
     multisampleFBO.Blit(hdrFBO, m_Width, m_Height);
     FrameBuffer::CheckStatus();
@@ -873,6 +899,20 @@ void SandboxLayer::renderObject(Shader shader, glm::mat4 model)
     ResourceManager::GetModel("3d_model").Draw(shader);
 }
 
+void SandboxLayer::renderNormalsInstanced(Shader shader, VertexBuffer VBO, glm::mat4 model, size_t matrices_size)
+{
+    shader.Use().SetMatrix4(1, model);
+    VBO.LinkAttrib(5, 4, GL_FLOAT, sizeof(glm::mat4), (void*)0);
+    glVertexAttribDivisor(5, 1);
+    for (size_t i = 0; i < ResourceManager::GetModel("3d_arrow").meshes.size(); i++) {
+        ResourceManager::GetModel("3d_arrow").meshes[i].Bind();
+        glDrawElementsInstanced(GL_TRIANGLES, ResourceManager::GetModel("3d_arrow").meshes[i].indices.size(), GL_UNSIGNED_INT, 0, matrices_size);
+        ResourceManager::GetModel("3d_arrow").meshes[i].UnBind();
+    }
+    VBO.UnlinkAttrib(5);
+    glVertexAttribDivisor(5, 0);
+}
+
 void SandboxLayer::OnImGuiRender()
 {
     Application& app = Application::Get();
@@ -960,7 +1000,7 @@ void SandboxLayer::OnImGuiRender()
     }
 
     ImGui::Separator();
-    if (ImGui::CollapsingHeader("Light Settings", base_flags)) {
+    if (ImGui::CollapsingHeader("Light", base_flags)) {
         if (ImGui::TreeNodeEx("Directional Light", base_flags)) {
             ImGui::SameLine();
             if (ImGuiLayer::ToggleButton(" ", &m_UseDirLight)) {
@@ -983,9 +1023,7 @@ void SandboxLayer::OnImGuiRender()
                 ResourceManager::GetShader("pbr_lighting").Use().SetInteger("dirLight.shadows", m_UseDirShadows);
                 ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger("dirLight.shadows", m_UseDirShadows);
             }
-            if (ImGui::Checkbox("Debug Depth Map", &m_DebugDepthMap))
-            {}
-
+            ImGui::Checkbox("Debug Depth Map", &m_DebugDepthMap);
             ImGui::TreePop();
         }
 
@@ -1017,7 +1055,6 @@ void SandboxLayer::OnImGuiRender()
                 ResourceManager::GetShader("pbr_lighting").Use().SetInteger("debugDepthCubeMap", m_DebugDepthCubeMap);
                 ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger("debugDepthCubeMap", m_DebugDepthCubeMap);
             }
-
             ImGui::TreePop();
         }
     }
@@ -1089,6 +1126,11 @@ void SandboxLayer::OnImGuiRender()
         }
 
         ImGui::Text("%s", m_SkyboxFilename.c_str());
+    }
+
+    ImGui::Separator();
+    if (ImGui::CollapsingHeader("Debug", base_flags)) {
+        ImGui::Checkbox("Polygon Line Mode", &m_UsePolygonLines);
     }
 
     ImGui::Separator();
