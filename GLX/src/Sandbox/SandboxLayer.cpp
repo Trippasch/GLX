@@ -234,7 +234,6 @@ void SandboxLayer::OnAttach()
     ResourceManager::LoadShader("assets/shaders/quadVS.glsl", "assets/shaders/downsampleFS.glsl", nullptr, "downsample");
     ResourceManager::LoadShader("assets/shaders/quadVS.glsl", "assets/shaders/upsampleFS.glsl", nullptr, "upsample");
     ResourceManager::LoadShader("assets/shaders/instancingNormalsVS.glsl", "assets/shaders/instancingNormalsFS.glsl", nullptr, "instancing_normals");
-    ResourceManager::LoadShader("assets/shaders/geometryNormalsVS.glsl", "assets/shaders/geometryNormalsFS.glsl", "assets/shaders/geometryNormalsGS.glsl", "geometry_normals");
     ResourceManager::LoadShader("assets/shaders/quadVS.glsl", "assets/shaders/debugFS.glsl", nullptr, "debug_quad");
 
     // Post Processing - Activate only one per group
@@ -289,6 +288,9 @@ void SandboxLayer::OnAttach()
     ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger("pointLight.use", m_UsePointLights);
     ResourceManager::GetShader("pbr_lighting").Use().SetInteger("debugDepthCubeMap", m_DebugDepthCubeMap);
     ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger("debugDepthCubeMap", m_DebugDepthCubeMap);
+
+    // Arrow Normals
+    ResourceManager::GetShader("instancing_normals").Use().SetFloat(2, m_ArrowNormalsSize);
 
     multisampleFBO = FrameBuffer();
     multisampleFBO.Bind();
@@ -393,22 +395,22 @@ void SandboxLayer::OnAttach()
     ResourceManager::GetShader("pbr_lighting").Use().SetFloat("far_plane", farPlane);
     ResourceManager::GetShader("pbr_lighting_textured").Use().SetFloat("far_plane", farPlane);
 
-    // generate instancedArrowsVBO
-    cubeVBO.Bind();
-    float data[sizeof(cubeVertices)];
-    glGetBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(cubeVertices), data);
-    cubeVBO.UnBind();
+    // generate instancedArrowsCubeVBO
+    // cubeVBO.Bind();
+    // float cubeData[sizeof(cubeVertices)];
+    // glGetBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(cubeVertices), cubeData);
+    // cubeVBO.UnBind();
 
-    for (GLuint i = 0; i < sizeof(cubeVertices) / 4; i = i + 8) {
-        glm::vec3 position = glm::vec3(data[i], data[i+1], data[i+2]);
-        glm::vec3 normal = glm::vec3(data[i+3], data[i+4], data[i+5]);
+    // for (GLuint i = 0; i < sizeof(cubeVertices) / 4; i = i + 8) {
+    //     glm::vec3 position = glm::vec3(cubeData[i], cubeData[i+1], cubeData[i+2]);
+    //     glm::vec3 normal = glm::vec3(cubeData[i+3], cubeData[i+4], cubeData[i+5]);
 
-        uint32_t value = glm::packSnorm4x8(glm::vec4(normal, 1.0f));
-        float fvalue = *reinterpret_cast<float*>(&value);
-        glm::vec4 vecInstanced = glm::vec4(position, fvalue);
-        m_VecInstances.push_back(vecInstanced);
-    }
-    instancedArrowsVBO = VertexBuffer(&m_VecInstances[0], m_VecInstances.size() * sizeof(glm::vec4), GL_STATIC_DRAW);
+    //     uint32_t value = glm::packSnorm4x8(glm::vec4(normal, 1.0f));
+    //     float fvalue = *reinterpret_cast<float*>(&value);
+    //     glm::vec4 vecInstanced = glm::vec4(position, fvalue);
+    //     m_VecInstancesCube.push_back(vecInstanced);
+    // }
+    // instancedArrowsCubeVBO = VertexBuffer(&m_VecInstancesCube[0], m_VecInstancesCube.size() * sizeof(glm::vec4), GL_STATIC_DRAW);
 }
 
 void SandboxLayer::OnUpdate()
@@ -417,7 +419,6 @@ void SandboxLayer::OnUpdate()
     ResourceManager::GetShader("light_source").Use().SetMatrix4(0, projView);
     ResourceManager::GetShader("pbr_lighting").Use().SetMatrix4(0, projView);
     ResourceManager::GetShader("instancing_normals").Use().SetMatrix4(0, projView);
-    ResourceManager::GetShader("geometry_normals").Use().SetMatrix4(0, projView);
     ResourceManager::GetShader("pbr_lighting").Use().SetVector3f("camPos", m_Camera.m_Position);
     ResourceManager::GetShader("pbr_lighting_textured").Use().SetMatrix4(0, projView);
     ResourceManager::GetShader("pbr_lighting_textured").Use().SetVector3f("camPos", m_Camera.m_Position);
@@ -593,7 +594,7 @@ void SandboxLayer::OnUpdate()
             ResourceManager::GetShader("light_source").Use().SetMatrix4(1, model);
             ResourceManager::GetShader("light_source").Use().SetVector3f("color", m_PointLightColors[i] * m_PointLightIntensities[i]);
             renderCube(GL_TRIANGLES);
-            // renderNormalsInstanced(ResourceManager::GetShader("instancing_normals"), instancedArrowsVBO, model, m_VecInstances.size());
+            // renderNormalsInstanced(ResourceManager::GetShader("instancing_normals"), instancedArrowsCubeVBO, model, m_VecInstancesCube.size());
         }
     }
 
@@ -618,10 +619,8 @@ void SandboxLayer::OnUpdate()
     object_model = glm::rotate(object_model, glm::radians(m_RotationAngleZ), glm::vec3(0.0f, 0.0f, 1.0f));
     object_model = glm::scale(object_model, glm::vec3(1.0f) * m_ObjectScale);
     renderObject(GL_TRIANGLES, ResourceManager::GetShader("pbr_lighting_textured"), object_model);
-    // Render Geometry Normals
     if (m_UseArrowNormals) {
         renderNormalsInstanced(ResourceManager::GetShader("instancing_normals"), ResourceManager::GetModel("3d_model").instancedArrowsVBO, object_model, ResourceManager::GetModel("3d_model").instancedArrowsSize);
-        // renderObject(GL_POINTS, ResourceManager::GetShader("geometry_normals"), object_model);
     }
 
     Texture2D::UnBind();
@@ -1112,7 +1111,10 @@ void SandboxLayer::OnImGuiRender()
         if (ImGui::DragFloat("Emissive", &m_EmissiveIntensity, 0.01f, 0.0f, FLT_MAX, "%.2f")) {
             ResourceManager::GetShader("pbr_lighting_textured").Use().SetFloat("object.emissiveIntensity", m_EmissiveIntensity);
         }
-        ImGui::Checkbox("Show Normals", &m_UseArrowNormals);
+        ImGui::Checkbox("Display Split Normals", &m_UseArrowNormals);
+        if (ImGui::SliderFloat("Arrow Size", (float*)&m_ArrowNormalsSize, 0.001f, 0.1f, "%.3f")) {
+            ResourceManager::GetShader("instancing_normals").Use().SetFloat(2, m_ArrowNormalsSize);
+        }
     }
 
     ImGui::Separator();
@@ -1175,7 +1177,7 @@ void SandboxLayer::OnImGuiRender()
             ResourceManager::GetShader("pbr_lighting").Use().SetInteger("debugNormals", m_UseDebugNormals);
             ResourceManager::GetShader("light_source").Use().SetInteger("debugNormals", m_UseDebugNormals);
         }
-        if (ImGui::Checkbox("Show Normals", &m_UseDebugNormals)) {
+        if (ImGui::Checkbox("Normal Vectors", &m_UseDebugNormals)) {
             m_DebugDepthCubeMap = false;
             ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger("debugNormals", m_UseDebugNormals);
             ResourceManager::GetShader("pbr_lighting").Use().SetInteger("debugNormals", m_UseDebugNormals);

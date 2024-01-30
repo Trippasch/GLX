@@ -14,6 +14,7 @@ out VS_OUT
 
 layout (location = 0) uniform mat4 projView;
 layout (location = 1) uniform mat4 model;
+layout (location = 2) uniform float scale;
 
 void main()
 {
@@ -21,9 +22,9 @@ void main()
     vec3 normal = unpackSnorm4x8(floatBitsToUint(aInstanceVec.w)).xyz;
 
     mat4 instanceMatrix = mat4(
-        vec4(0.01, 0.0, 0.0, 0.0),
-        vec4(0.0, 0.01, 0.0, 0.0),
-        vec4(0.0, 0.0, 0.01, 0.0),
+        vec4(scale, 0.0, 0.0, 0.0),
+        vec4(0.0, scale, 0.0, 0.0),
+        vec4(0.0, 0.0, scale, 0.0),
         vec4(position, 1.0));
 
     vec3 orig = vec3(0.0, 1.0, 0.0);

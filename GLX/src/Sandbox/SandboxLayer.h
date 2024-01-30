@@ -50,7 +50,7 @@ private:
     VertexBuffer cubeVBO;
     VertexBuffer sphereVBO;
     VertexBuffer screenQuadVBO;
-    VertexBuffer instancedArrowsVBO;
+    VertexBuffer instancedArrowsCubeVBO;
 
     IndexBuffer sphereEBO;
     GLuint indexCount;
@@ -132,9 +132,10 @@ private:
     glm::vec3 m_RotationAngles = glm::vec3(m_RotationAngleX, m_RotationAngleY, m_RotationAngleZ);
     float m_EmissiveIntensity = 1.0f;
     bool m_UseArrowNormals = false;
+    float m_ArrowNormalsSize = 0.01f;
 
     // Instancing
-    std::vector<glm::vec4> m_VecInstances;
+    std::vector<glm::vec4> m_VecInstancesCube;
 
     // Skybox Properties
     std::string m_SkyboxFilename = "assets/textures/hdr-skyboxes/Nature_8K_hdri.jpg";
