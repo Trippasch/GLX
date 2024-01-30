@@ -3,18 +3,18 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
-Model::Model(std::string const &path, bool gamma) : gammaCorrection(gamma)
+Model::Model(const std::string &path, bool gamma) : gammaCorrection(gamma)
 {
     loadModel(path);
 }
 
-void Model::Draw(const Shader &shader)
+void Model::Draw(GLenum mode, const Shader &shader)
 {
     for (unsigned int i = 0; i < meshes.size(); i++)
-        meshes[i].Draw(shader);
+        meshes[i].Draw(mode, shader);
 }
 
-void Model::loadModel(std::string const &path)
+void Model::loadModel(const std::string &path)
 {
     // read file via ASSIMP
     Assimp::Importer importer;
@@ -181,7 +181,7 @@ Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene)
     return Mesh(vertices, indices, textures);
 }
 
-std::vector<Texture2D> Model::loadMaterialTextures(aiMaterial *mat, aiTextureType type, std::string typeName)
+std::vector<Texture2D> Model::loadMaterialTextures(aiMaterial *mat, aiTextureType type, const std::string &typeName)
 {
     std::vector<Texture2D> textures;
     for (unsigned int i = 0; i < mat->GetTextureCount(type); i++)

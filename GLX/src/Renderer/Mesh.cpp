@@ -1,7 +1,7 @@
 #include "Renderer/Mesh.h"
 #include <iostream>
 
-Mesh::Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, std::vector<Texture2D> textures)
+Mesh::Mesh(const std::vector<Vertex> &vertices, const std::vector<unsigned int> &indices, const std::vector<Texture2D> &textures)
 {
     this->vertices = vertices;
     this->indices = indices;
@@ -50,14 +50,14 @@ void Mesh::UnBind() const
 }
 
 // render the mesh
-void Mesh::Draw(const Shader &shader) const
+void Mesh::Draw(GLenum mode, const Shader &shader) const
 {
     for (unsigned int i = 0; i < textures.size(); i++)
         textures[i].Bind(i+3);
 
     // draw mesh
     Bind();
-    glDrawElements(GL_TRIANGLES, static_cast<unsigned int>(indices.size()), GL_UNSIGNED_INT, 0);
+    glDrawElements(mode, static_cast<unsigned int>(indices.size()), GL_UNSIGNED_INT, 0);
     UnBind();
 
     // always good practice to set everything back to defaults once configured.

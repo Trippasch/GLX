@@ -13,46 +13,46 @@ std::unordered_map<std::string, Texture2D> ResourceManager::Textures;
 std::unordered_map<std::string, Shader> ResourceManager::Shaders;
 std::unordered_map<std::string, Model> ResourceManager::Models;
 
-Model ResourceManager::LoadModel(const char *file, std::string name)
+Model ResourceManager::LoadModel(const char *file, const std::string &name)
 {
     Models[name] = loadModelFromFile(file);
     return Models[name];
 }
 
-Model& ResourceManager::GetModel(std::string name)
+Model& ResourceManager::GetModel(const std::string &name)
 {
     return Models[name];
 }
 
-Shader ResourceManager::LoadShader(const char *vShaderFile, const char *fShaderFile, const char *gShaderFile, std::string name)
+Shader ResourceManager::LoadShader(const char *vShaderFile, const char *fShaderFile, const char *gShaderFile, const std::string &name)
 {
     Shaders[name] = loadShaderFromFile(vShaderFile, fShaderFile, gShaderFile);
     return Shaders[name];
 }
 
-Shader& ResourceManager::GetShader(std::string name)
+Shader& ResourceManager::GetShader(const std::string &name)
 {
     return Shaders[name];
 }
 
-Texture2D ResourceManager::LoadTexture(const char *file, std::string name, bool gamma)
+Texture2D ResourceManager::LoadTexture(const char *file, const std::string &name, bool gamma)
 {
     Textures[name] = loadTextureFromFile(file, gamma);
     return Textures[name];
 }
 
-Texture2D& ResourceManager::GetTexture(std::string name)
+Texture2D& ResourceManager::GetTexture(const std::string &name)
 {
     return Textures[name];
 }
 
-Texture2D ResourceManager::LoadHDRTexture(const char *file, std::string name)
+Texture2D ResourceManager::LoadHDRTexture(const char *file, const std::string &name)
 {
     Textures[name] = loadHDRTextureFromFile(file);
     return Textures[name];
 }
 
-Texture2D& ResourceManager::GetHDRTexture(std::string name)
+Texture2D& ResourceManager::GetHDRTexture(const std::string &name)
 {
     return Textures[name];
 }

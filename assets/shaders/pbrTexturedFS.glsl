@@ -56,6 +56,7 @@ uniform PointLight pointLight;
 
 uniform vec3 camPos;
 uniform bool debugDepthCubeMap;
+uniform bool debugNormals;
 uniform float far_plane;
 
 struct Object {
@@ -382,8 +383,6 @@ void main()
     if (pointLight.use)
         result += CalcPointLight(N, V, R, F0, albedo, metallic, roughness, ao);
 
-    FragColor = vec4(result + emissive, 1.0);
-
     if (debugDepthCubeMap) {
         // display closestDepth as debug (to visualize depth cubemap)
         vec3 fragToLight = fs_in.FragPos - pointLights[0].position;
@@ -392,6 +391,12 @@ void main()
         // it is currently in linear range between [0,1]. Re-transform back to original value
         closestDepth *= far_plane;
         FragColor = vec4(vec3(closestDepth / far_plane), 1.0);
+    }
+    else if (debugNormals) {
+        FragColor = vec4(N, 1.0);
+    }
+    else {
+        FragColor = vec4(result + emissive, 1.0);
     }
 
     // Debug textures

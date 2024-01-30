@@ -57,6 +57,7 @@ uniform PointLight pointLight;
 
 uniform vec3 camPos;
 uniform bool debugDepthCubeMap;
+uniform bool debugNormals;
 uniform float far_plane;
 
 const float gamma = 2.2;
@@ -341,8 +342,6 @@ void main()
     if (pointLight.use)
         result += CalcPointLight(N, V, R, F0);
 
-    FragColor = vec4(result, 1.0);
-
     if (debugDepthCubeMap) {
         // display closestDepth as debug (to visualize depth cubemap)
         vec3 fragToLight = fs_in.FragPos - pointLights[0].position;
@@ -351,6 +350,12 @@ void main()
         // it is currently in linear range between [0,1]. Re-transform back to original value
         closestDepth *= far_plane;
         FragColor = vec4(vec3(closestDepth / far_plane), 1.0);
+    }
+    else if (debugNormals) {
+        FragColor = vec4(N, 1.0);
+    }
+    else {
+        FragColor = vec4(result, 1.0);
     }
 
     // check whether result is higher than some threshold, if so, output as bloom threshold color

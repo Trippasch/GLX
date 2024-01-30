@@ -219,7 +219,7 @@ void SandboxLayer::OnAttach()
     ResourceManager::LoadHDRTexture(m_SkyboxFilename.c_str(), "skybox_hdr");
     // Load Shaders
     ResourceManager::LoadShader("assets/shaders/lightSourceVS.glsl", "assets/shaders/lightSourceFS.glsl", nullptr, "light_source");
-    ResourceManager::LoadShader("assets/shaders/postProcessingVS.glsl", "assets/shaders/postProcessingFS.glsl", nullptr, "post_proc");
+    ResourceManager::LoadShader("assets/shaders/quadVS.glsl", "assets/shaders/postProcessingFS.glsl", nullptr, "post_proc");
     ResourceManager::LoadShader("assets/shaders/pbrVS.glsl", "assets/shaders/pbrFS.glsl", nullptr, "pbr_lighting");
     ResourceManager::LoadShader("assets/shaders/pbrVS.glsl", "assets/shaders/pbrTexturedFS.glsl", nullptr, "pbr_lighting_textured");
     ResourceManager::LoadShader("assets/shaders/cubemapVS.glsl", "assets/shaders/equirectangularToCubemapFS.glsl", nullptr, "equirectangular_to_cubemap");
@@ -234,6 +234,8 @@ void SandboxLayer::OnAttach()
     ResourceManager::LoadShader("assets/shaders/quadVS.glsl", "assets/shaders/downsampleFS.glsl", nullptr, "downsample");
     ResourceManager::LoadShader("assets/shaders/quadVS.glsl", "assets/shaders/upsampleFS.glsl", nullptr, "upsample");
     ResourceManager::LoadShader("assets/shaders/instancingNormalsVS.glsl", "assets/shaders/instancingNormalsFS.glsl", nullptr, "instancing_normals");
+    ResourceManager::LoadShader("assets/shaders/geometryNormalsVS.glsl", "assets/shaders/geometryNormalsFS.glsl", "assets/shaders/geometryNormalsGS.glsl", "geometry_normals");
+    ResourceManager::LoadShader("assets/shaders/quadVS.glsl", "assets/shaders/debugFS.glsl", nullptr, "debug_quad");
 
     // Post Processing - Activate only one per group
     // Kernel effects
@@ -314,6 +316,12 @@ void SandboxLayer::OnAttach()
     //     FrameBuffer::CheckStatus();
     //     FrameBuffer::UnBind();
     // }
+
+    debugFBO = FrameBuffer();
+    debugFBO.Bind();
+    debugFBO.TextureAttachment(1, 0, GL_TEXTURE_2D, GL_RGBA8, m_Width, m_Height);
+    FrameBuffer::CheckStatus();
+    FrameBuffer::UnBind();
 
     imguiFBO = FrameBuffer();
     imguiFBO.Bind();
@@ -409,6 +417,7 @@ void SandboxLayer::OnUpdate()
     ResourceManager::GetShader("light_source").Use().SetMatrix4(0, projView);
     ResourceManager::GetShader("pbr_lighting").Use().SetMatrix4(0, projView);
     ResourceManager::GetShader("instancing_normals").Use().SetMatrix4(0, projView);
+    ResourceManager::GetShader("geometry_normals").Use().SetMatrix4(0, projView);
     ResourceManager::GetShader("pbr_lighting").Use().SetVector3f("camPos", m_Camera.m_Position);
     ResourceManager::GetShader("pbr_lighting_textured").Use().SetMatrix4(0, projView);
     ResourceManager::GetShader("pbr_lighting_textured").Use().SetVector3f("camPos", m_Camera.m_Position);
@@ -437,7 +446,7 @@ void SandboxLayer::OnUpdate()
         plane_model = glm::translate(plane_model, glm::vec3(0.0f, -0.01f, 0.0f));
         plane_model = glm::scale(plane_model, glm::vec3(1.0f, 1.0f, 1.0f));
         ResourceManager::GetShader("depth_map").Use().SetMatrix4(1, plane_model);
-        renderPlane();
+        renderPlane(GL_TRIANGLES);
 
         if (m_UsePointLights) {
             for (size_t i = 0; i < m_PointLightPositions.size(); i++) {
@@ -445,7 +454,7 @@ void SandboxLayer::OnUpdate()
                 model = glm::translate(model, m_PointLightPositions[i]);
                 model = glm::scale(model, glm::vec3(0.3f, 0.3f, 0.3f));
                 ResourceManager::GetShader("depth_map").Use().SetMatrix4(1, model);
-                renderCube();
+                renderCube(GL_TRIANGLES);
             }
         }
 
@@ -455,7 +464,7 @@ void SandboxLayer::OnUpdate()
         object_model = glm::rotate(object_model, glm::radians(m_RotationAngleY), glm::vec3(0.0f, 1.0f, 0.0f));
         object_model = glm::rotate(object_model, glm::radians(m_RotationAngleZ), glm::vec3(0.0f, 0.0f, 1.0f));
         object_model = glm::scale(object_model, glm::vec3(1.0f) * m_ObjectScale);
-        renderObject(ResourceManager::GetShader("depth_map"), object_model);
+        renderObject(GL_TRIANGLES, ResourceManager::GetShader("depth_map"), object_model);
 
         for (GLuint i = 0; i < 5; i++) {
             for (GLuint j = 0; j < 5; j++) {
@@ -463,7 +472,7 @@ void SandboxLayer::OnUpdate()
                 model = glm::translate(model, glm::vec3(-6.0f + (i*3), 0.5f + (j*3), 0.0f));
                 model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
                 ResourceManager::GetShader("depth_map").Use().SetMatrix4(1, model);
-                renderSphere();
+                renderSphere(GL_TRIANGLE_STRIP);
             }
         }
 
@@ -472,7 +481,7 @@ void SandboxLayer::OnUpdate()
             model = glm::translate(model, glm::vec3(-6.0f + (i*3), 6.0f, 4.0f));
             model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
             ResourceManager::GetShader("depth_map").Use().SetMatrix4(1, model);
-            renderSphere();
+            renderSphere(GL_TRIANGLE_STRIP);
         }
 
         FrameBuffer::UnBind();
@@ -508,7 +517,7 @@ void SandboxLayer::OnUpdate()
         plane_model = glm::translate(plane_model, glm::vec3(0.0f, -0.01f, 0.0f));
         plane_model = glm::scale(plane_model, glm::vec3(1.0f, 1.0f, 1.0f));
         ResourceManager::GetShader("depth_cube_map").Use().SetMatrix4(1, plane_model);
-        renderPlane();
+        renderPlane(GL_TRIANGLES);
 
         glm::mat4 object_model = glm::mat4(1.0f);
         object_model = glm::translate(object_model, m_ObjectPosition);
@@ -516,7 +525,7 @@ void SandboxLayer::OnUpdate()
         object_model = glm::rotate(object_model, glm::radians(m_RotationAngleY), glm::vec3(0.0f, 1.0f, 0.0f));
         object_model = glm::rotate(object_model, glm::radians(m_RotationAngleZ), glm::vec3(0.0f, 0.0f, 1.0f));
         object_model = glm::scale(object_model, glm::vec3(1.0f) * m_ObjectScale);
-        renderObject(ResourceManager::GetShader("depth_cube_map"), object_model);
+        renderObject(GL_TRIANGLES, ResourceManager::GetShader("depth_cube_map"), object_model);
 
         for (GLuint i = 0; i < 5; i++) {
             for (GLuint j = 0; j < 5; j++) {
@@ -524,7 +533,7 @@ void SandboxLayer::OnUpdate()
                 model = glm::translate(model, glm::vec3(-6.0f + (i*3), 0.5f + (j*3), 0.0f));
                 model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
                 ResourceManager::GetShader("depth_cube_map").Use().SetMatrix4(1, model);
-                renderSphere();
+                renderSphere(GL_TRIANGLE_STRIP);
             }
         }
 
@@ -533,7 +542,7 @@ void SandboxLayer::OnUpdate()
             model = glm::translate(model, glm::vec3(-6.0f + (i*3), 6.0f, 4.0f));
             model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
             ResourceManager::GetShader("depth_cube_map").Use().SetMatrix4(1, model);
-            renderSphere();
+            renderSphere(GL_TRIANGLE_STRIP);
         }
 
         FrameBuffer::UnBind();
@@ -571,7 +580,7 @@ void SandboxLayer::OnUpdate()
     plane_model = glm::translate(plane_model, glm::vec3(0.0f, 0.0f, 0.0f));
     plane_model = glm::scale(plane_model, glm::vec3(1.0f, 1.0f, 1.0f));
     ResourceManager::GetShader("pbr_lighting_textured").Use().SetMatrix4(1, plane_model);
-    renderPlane();
+    renderPlane(GL_TRIANGLES);
     Texture2D::UnBind();
     Texture2D::UnBindCubemap();
 
@@ -583,7 +592,7 @@ void SandboxLayer::OnUpdate()
             model = glm::scale(model, glm::vec3(0.1f));
             ResourceManager::GetShader("light_source").Use().SetMatrix4(1, model);
             ResourceManager::GetShader("light_source").Use().SetVector3f("color", m_PointLightColors[i] * m_PointLightIntensities[i]);
-            renderCube();
+            renderCube(GL_TRIANGLES);
             // renderNormalsInstanced(ResourceManager::GetShader("instancing_normals"), instancedArrowsVBO, model, m_VecInstances.size());
         }
     }
@@ -608,8 +617,12 @@ void SandboxLayer::OnUpdate()
     object_model = glm::rotate(object_model, glm::radians(m_RotationAngleY), glm::vec3(0.0f, 1.0f, 0.0f));
     object_model = glm::rotate(object_model, glm::radians(m_RotationAngleZ), glm::vec3(0.0f, 0.0f, 1.0f));
     object_model = glm::scale(object_model, glm::vec3(1.0f) * m_ObjectScale);
-    renderObject(ResourceManager::GetShader("pbr_lighting_textured"), object_model);
-    // renderNormalsInstanced(ResourceManager::GetShader("instancing_normals"), ResourceManager::GetModel("3d_model").instancedArrowsVBO, object_model, ResourceManager::GetModel("3d_model").instancedArrowsSize);
+    renderObject(GL_TRIANGLES, ResourceManager::GetShader("pbr_lighting_textured"), object_model);
+    // Render Geometry Normals
+    if (m_UseArrowNormals) {
+        renderNormalsInstanced(ResourceManager::GetShader("instancing_normals"), ResourceManager::GetModel("3d_model").instancedArrowsVBO, object_model, ResourceManager::GetModel("3d_model").instancedArrowsSize);
+        // renderObject(GL_POINTS, ResourceManager::GetShader("geometry_normals"), object_model);
+    }
 
     Texture2D::UnBind();
     Texture2D::UnBindCubemap();
@@ -633,7 +646,7 @@ void SandboxLayer::OnUpdate()
             model = glm::translate(model, glm::vec3(-6.0f + (i*3), 0.5f + (j*3), 0.0f));
             model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
             ResourceManager::GetShader("pbr_lighting").Use().SetMatrix4(1, model);
-            renderSphere();
+            renderSphere(GL_TRIANGLE_STRIP);
         }
     }
     Texture2D::UnBind();
@@ -666,7 +679,7 @@ void SandboxLayer::OnUpdate()
         model = glm::translate(model, glm::vec3(-6.0f, 6.0f, 4.0f));
         model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
         ResourceManager::GetShader("pbr_lighting_textured").Use().SetMatrix4(1, model);
-        renderSphere();
+        renderSphere(GL_TRIANGLE_STRIP);
 
         ResourceManager::GetTexture("plastic_albedo").Bind(3);
         ResourceManager::GetTexture("plastic_normal").Bind(4);
@@ -677,7 +690,7 @@ void SandboxLayer::OnUpdate()
         model = glm::translate(model, glm::vec3(-6.0f + 3, 6.0f, 4.0f));
         model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
         ResourceManager::GetShader("pbr_lighting_textured").Use().SetMatrix4(1, model);
-        renderSphere();
+        renderSphere(GL_TRIANGLE_STRIP);
 
         ResourceManager::GetTexture("grass_albedo").Bind(3);
         ResourceManager::GetTexture("grass_normal").Bind(4);
@@ -688,7 +701,7 @@ void SandboxLayer::OnUpdate()
         model = glm::translate(model, glm::vec3(-6.0f + 6, 6.0f, 4.0f));
         model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
         ResourceManager::GetShader("pbr_lighting_textured").Use().SetMatrix4(1, model);
-        renderSphere();
+        renderSphere(GL_TRIANGLE_STRIP);
 
         ResourceManager::GetTexture("gold_albedo").Bind(3);
         ResourceManager::GetTexture("gold_normal").Bind(4);
@@ -699,7 +712,7 @@ void SandboxLayer::OnUpdate()
         model = glm::translate(model, glm::vec3(-6.0f + 9, 6.0f, 4.0f));
         model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
         ResourceManager::GetShader("pbr_lighting_textured").Use().SetMatrix4(1, model);
-        renderSphere();
+        renderSphere(GL_TRIANGLE_STRIP);
 
         ResourceManager::GetTexture("rusted_albedo").Bind(3);
         ResourceManager::GetTexture("rusted_normal").Bind(4);
@@ -710,7 +723,7 @@ void SandboxLayer::OnUpdate()
         model = glm::translate(model, glm::vec3(-6.0f + 12, 6.0f, 4.0f));
         model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
         ResourceManager::GetShader("pbr_lighting_textured").Use().SetMatrix4(1, model);
-        renderSphere();
+        renderSphere(GL_TRIANGLE_STRIP);
     }
 
     Texture2D::UnBind();
@@ -721,7 +734,7 @@ void SandboxLayer::OnUpdate()
     // m_Irradiancemap.BindCubemap(0);
     // m_Prefiltermap.BindCubemap(0);
     ResourceManager::GetShader("hdr_skybox").Use();
-    renderCube();
+    renderCube(GL_TRIANGLES);
     Texture2D::UnBindCubemap();
 
     FrameBuffer::UnBind();
@@ -756,9 +769,26 @@ void SandboxLayer::OnUpdate()
         renderBloomTexture();
     }
 
+    // Generate Image
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glDisable(GL_DEPTH_TEST);
     imguiFBO.Bind();
+    glActiveTexture(GL_TEXTURE0);
+    hdrFBO.BindTexture(GL_TEXTURE_2D, 0);
+    if (m_UseBloom) {
+        glActiveTexture(GL_TEXTURE1);
+        // pingpongFBO[0].BindTexture(GL_TEXTURE_2D, 0);
+        glBindTexture(GL_TEXTURE_2D, bloomFBO.GetMipChain()[0].texture);
+    }
+    ResourceManager::GetShader("post_proc").Use();
+    renderQuad(GL_TRIANGLES);
+    Texture2D::UnBind();
+    FrameBuffer::UnBind();
+
+    // Debug Image
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glDisable(GL_DEPTH_TEST);
+    debugFBO.Bind();
     if (m_DebugDepthMap) {
         glActiveTexture(GL_TEXTURE0);
         depthMapFBO.BindTexture(GL_TEXTURE_2D, 0);
@@ -767,14 +797,9 @@ void SandboxLayer::OnUpdate()
     else {
         glActiveTexture(GL_TEXTURE0);
         hdrFBO.BindTexture(GL_TEXTURE_2D, 0);
-        if (m_UseBloom) {
-            glActiveTexture(GL_TEXTURE1);
-            // pingpongFBO[0].BindTexture(GL_TEXTURE_2D, 0);
-            glBindTexture(GL_TEXTURE_2D, bloomFBO.GetMipChain()[0].texture);
-        }
-        ResourceManager::GetShader("post_proc").Use();
+        ResourceManager::GetShader("debug_quad").Use();
     }
-    renderQuad();
+    renderQuad(GL_TRIANGLES);
     Texture2D::UnBind();
     FrameBuffer::UnBind();
 }
@@ -801,7 +826,7 @@ void SandboxLayer::renderBloomTexture()
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, mip.texture, 0);
 
         // Render screen-filled quad of resolution of current mip
-        renderQuad();
+        renderQuad(GL_TRIANGLES);
 
         // Set current mip resolution as srcResolution for next iteration
         ResourceManager::GetShader("downsample").Use().SetVector2f("srcResolution", mip.size);
@@ -836,7 +861,7 @@ void SandboxLayer::renderBloomTexture()
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, nextMip.texture, 0);
 
         // Render screen-filled quad of resolution of current mip
-        renderQuad();
+        renderQuad(GL_TRIANGLES);
     }
 
     // Disable additive blending
@@ -849,60 +874,60 @@ void SandboxLayer::renderBloomTexture()
     glViewport(0, 0, m_Width, m_Height);
 }
 
-void SandboxLayer::renderPlane()
+void SandboxLayer::renderPlane(GLenum mode)
 {
     planeVBO.LinkAttrib(0, 3, GL_FLOAT, 8 * sizeof(float), (void*)0);
     planeVBO.LinkAttrib(1, 3, GL_FLOAT, 8 * sizeof(float), (void*)(3 * sizeof(float)));
     planeVBO.LinkAttrib(2, 2, GL_FLOAT, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-    glDrawArrays(GL_TRIANGLES, 0, 6);
+    glDrawArrays(mode, 0, 6);
     planeVBO.UnlinkAttrib(0);
     planeVBO.UnlinkAttrib(1);
     planeVBO.UnlinkAttrib(2);
 }
 
-void SandboxLayer::renderCube()
+void SandboxLayer::renderCube(GLenum mode)
 {
     cubeVBO.LinkAttrib(0, 3, GL_FLOAT, 8 * sizeof(float), (void*)0);
     cubeVBO.LinkAttrib(1, 3, GL_FLOAT, 8 * sizeof(float), (void*)(3 * sizeof(float)));
     cubeVBO.LinkAttrib(2, 2, GL_FLOAT, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-    glDrawArrays(GL_TRIANGLES, 0, 36);
+    glDrawArrays(mode, 0, 36);
     cubeVBO.UnlinkAttrib(0);
     cubeVBO.UnlinkAttrib(1);
     cubeVBO.UnlinkAttrib(2);
 }
 
-void SandboxLayer::renderSphere()
+void SandboxLayer::renderSphere(GLenum mode)
 {
     sphereEBO.Bind();
     sphereVBO.LinkAttrib(0, 3, GL_FLOAT, 8 * sizeof(float), (void*)0);
     sphereVBO.LinkAttrib(1, 3, GL_FLOAT, 8 * sizeof(float), (void*)(3 * sizeof(float)));
     sphereVBO.LinkAttrib(2, 2, GL_FLOAT, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-    glDrawElements(GL_TRIANGLE_STRIP, indexCount, GL_UNSIGNED_INT, 0);
+    glDrawElements(mode, indexCount, GL_UNSIGNED_INT, 0);
     sphereVBO.UnlinkAttrib(0);
     sphereVBO.UnlinkAttrib(1);
     sphereVBO.UnlinkAttrib(2);
     sphereEBO.UnBind();
 }
 
-void SandboxLayer::renderQuad()
+void SandboxLayer::renderQuad(GLenum mode)
 {
     screenQuadVBO.LinkAttrib(0, 2, GL_FLOAT, 4 * sizeof(float), (void*)0);
     screenQuadVBO.LinkAttrib(1, 2, GL_FLOAT, 4 * sizeof(float), (void*)(2 * sizeof(float)));
-    glDrawArrays(GL_TRIANGLES, 0, 6);
+    glDrawArrays(mode, 0, 6);
     screenQuadVBO.UnlinkAttrib(0);
     screenQuadVBO.UnlinkAttrib(1);
 }
 
-void SandboxLayer::renderObject(Shader shader, glm::mat4 model)
+void SandboxLayer::renderObject(GLenum mode, Shader shader, glm::mat4 model)
 {
     shader.Use().SetMatrix4(1, model);
-    ResourceManager::GetModel("3d_model").Draw(shader);
+    ResourceManager::GetModel("3d_model").Draw(mode, shader);
 }
 
-void SandboxLayer::renderNormalsInstanced(Shader shader, VertexBuffer VBO, glm::mat4 model, size_t matrices_size)
+void SandboxLayer::renderNormalsInstanced(Shader shader, const VertexBuffer &VBO, glm::mat4 model, size_t matrices_size)
 {
     shader.Use().SetMatrix4(1, model);
-    VBO.LinkAttrib(5, 4, GL_FLOAT, sizeof(glm::mat4), (void*)0);
+    VBO.LinkAttrib(5, 4, GL_FLOAT, sizeof(glm::vec4), (void*)0);
     glVertexAttribDivisor(5, 1);
     for (size_t i = 0; i < ResourceManager::GetModel("3d_arrow").meshes.size(); i++) {
         ResourceManager::GetModel("3d_arrow").meshes[i].Bind();
@@ -920,6 +945,14 @@ void SandboxLayer::OnImGuiRender()
     float currentFrame = static_cast<float>(glfwGetTime());
     deltaTime = currentFrame - lastFrame;
     lastFrame = currentFrame;
+
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+    ImGui::Begin("Debug Image");
+
+    ImGui::ImageButton((void*)(intptr_t)debugFBO.GetTextureAttachments().at(0), ImVec2(m_Width, m_Height), ImVec2(0, 1), ImVec2(1, 0), 0);
+    ImGui::PopStyleVar();
+
+    ImGui::End();
 
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
     ImGui::Begin("Generated Image");
@@ -1023,7 +1056,6 @@ void SandboxLayer::OnImGuiRender()
                 ResourceManager::GetShader("pbr_lighting").Use().SetInteger("dirLight.shadows", m_UseDirShadows);
                 ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger("dirLight.shadows", m_UseDirShadows);
             }
-            ImGui::Checkbox("Debug Depth Map", &m_DebugDepthMap);
             ImGui::TreePop();
         }
 
@@ -1050,10 +1082,6 @@ void SandboxLayer::OnImGuiRender()
                     ResourceManager::GetShader("pbr_lighting").Use().SetInteger(("pointLights[" + std::to_string(i) + "].shadows").c_str(), m_UsePointShadows);
                     ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger(("pointLights[" + std::to_string(i) + "].shadows").c_str(), m_UsePointShadows);
                 }
-            }
-            if (ImGui::Checkbox("Debug Depth Cube Map", &m_DebugDepthCubeMap)) {
-                ResourceManager::GetShader("pbr_lighting").Use().SetInteger("debugDepthCubeMap", m_DebugDepthCubeMap);
-                ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger("debugDepthCubeMap", m_DebugDepthCubeMap);
             }
             ImGui::TreePop();
         }
@@ -1084,6 +1112,7 @@ void SandboxLayer::OnImGuiRender()
         if (ImGui::DragFloat("Emissive", &m_EmissiveIntensity, 0.01f, 0.0f, FLT_MAX, "%.2f")) {
             ResourceManager::GetShader("pbr_lighting_textured").Use().SetFloat("object.emissiveIntensity", m_EmissiveIntensity);
         }
+        ImGui::Checkbox("Show Normals", &m_UseArrowNormals);
     }
 
     ImGui::Separator();
@@ -1130,7 +1159,31 @@ void SandboxLayer::OnImGuiRender()
 
     ImGui::Separator();
     if (ImGui::CollapsingHeader("Debug", base_flags)) {
+
+        if (ImGui::TreeNodeEx("Debug Image Window", base_flags)) {
+            ImGui::Checkbox("Depth Map (Directional Light)", &m_DebugDepthMap);
+            ImGui::TreePop();
+        }
+
         ImGui::Checkbox("Polygon Line Mode", &m_UsePolygonLines);
+        if (ImGui::Checkbox("Depth Cube Map (Point Light)", &m_DebugDepthCubeMap)) {
+            m_UseDebugNormals = false;
+            ResourceManager::GetShader("pbr_lighting").Use().SetInteger("debugDepthCubeMap", m_DebugDepthCubeMap);
+            ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger("debugDepthCubeMap", m_DebugDepthCubeMap);
+
+            ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger("debugNormals", m_UseDebugNormals);
+            ResourceManager::GetShader("pbr_lighting").Use().SetInteger("debugNormals", m_UseDebugNormals);
+            ResourceManager::GetShader("light_source").Use().SetInteger("debugNormals", m_UseDebugNormals);
+        }
+        if (ImGui::Checkbox("Show Normals", &m_UseDebugNormals)) {
+            m_DebugDepthCubeMap = false;
+            ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger("debugNormals", m_UseDebugNormals);
+            ResourceManager::GetShader("pbr_lighting").Use().SetInteger("debugNormals", m_UseDebugNormals);
+            ResourceManager::GetShader("light_source").Use().SetInteger("debugNormals", m_UseDebugNormals);
+
+            ResourceManager::GetShader("pbr_lighting").Use().SetInteger("debugDepthCubeMap", m_DebugDepthCubeMap);
+            ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger("debugDepthCubeMap", m_DebugDepthCubeMap);
+        }
     }
 
     ImGui::Separator();
@@ -1255,6 +1308,11 @@ bool SandboxLayer::imGuiResize()
         FrameBuffer::CheckStatus();
         FrameBuffer::UnBind();
 
+        debugFBO.Bind();
+        debugFBO.ResizeTextureAttachment(0, GL_TEXTURE_2D, GL_RGBA8, m_Width, m_Height);
+        FrameBuffer::CheckStatus();
+        FrameBuffer::UnBind();
+
         bloomFBO.Bind();
         bloomFBO.ResizeBloomAttachment(m_Width, m_Height, 6);
         FrameBuffer::CheckStatus();
@@ -1282,6 +1340,7 @@ void SandboxLayer::OnDetach()
     // for (GLuint i = 0; i < 2; i++)
     //     pingpongFBO[i].Destroy();
     imguiFBO.Destroy();
+    debugFBO.Destroy();
     captureFBO.Destroy();
     depthMapFBO.Destroy();
     depthCubeMapFBO.Destroy();
@@ -1327,7 +1386,7 @@ void SandboxLayer::createSkybox()
         ResourceManager::GetShader("equirectangular_to_cubemap").Use().SetMatrix4(1, captureViews[i]);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, m_EnvCubemap.ID, 0);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        renderCube();
+        renderCube(GL_TRIANGLES);
     }
     FrameBuffer::UnBind();
     Texture2D::UnBind();
@@ -1357,7 +1416,7 @@ void SandboxLayer::createSkybox()
         ResourceManager::GetShader("irradiance").Use().SetMatrix4(1, captureViews[i]);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, m_Irradiancemap.ID, 0);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        renderCube();
+        renderCube(GL_TRIANGLES);
     }
     FrameBuffer::UnBind();
     Texture2D::UnBindCubemap();
@@ -1395,7 +1454,7 @@ void SandboxLayer::createSkybox()
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
                                    GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, m_Prefiltermap.ID, mip);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            renderCube();
+            renderCube(GL_TRIANGLES);
         }
     }
     FrameBuffer::UnBind();
@@ -1419,7 +1478,7 @@ void SandboxLayer::createSkybox()
     glViewport(0, 0, m_BRDFLUTTextureWidth, m_BRDFLUTTextureHeight);
     ResourceManager::GetShader("brdf").Use();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    renderQuad();
+    renderQuad(GL_TRIANGLES);
     FrameBuffer::UnBind();
 
     glViewport(0, 0, m_Width, m_Height);

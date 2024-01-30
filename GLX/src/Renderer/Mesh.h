@@ -49,10 +49,10 @@ public:
     std::vector<Texture2D> textures;
 
     // constructor
-    Mesh(std::vector<Vertex> vertices, std::vector<GLuint> indices, std::vector<Texture2D> textures);
+    Mesh(const std::vector<Vertex> &vertices, const std::vector<GLuint> &indices, const std::vector<Texture2D> &textures);
 
     // render the mesh
-    void Draw(const Shader &shader) const;
+    void Draw(GLenum mode, const Shader &shader) const;
     void Destroy() const;
     void Bind() const;
     void UnBind() const;

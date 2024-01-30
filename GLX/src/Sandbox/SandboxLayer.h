@@ -59,6 +59,7 @@ private:
     FrameBuffer hdrFBO;
     FrameBuffer pingpongFBO[2];
     FrameBuffer imguiFBO;
+    FrameBuffer debugFBO;
     FrameBuffer captureFBO;
     FrameBuffer depthMapFBO;
     FrameBuffer depthCubeMapFBO;
@@ -130,6 +131,7 @@ private:
     float m_RotationAngleZ = 0.0f;
     glm::vec3 m_RotationAngles = glm::vec3(m_RotationAngleX, m_RotationAngleY, m_RotationAngleZ);
     float m_EmissiveIntensity = 1.0f;
+    bool m_UseArrowNormals = false;
 
     // Instancing
     std::vector<glm::vec4> m_VecInstances;
@@ -139,15 +141,16 @@ private:
 
     // Debug Properties
     bool m_UsePolygonLines = false;
-    bool m_DebugDepthMap = false;
+    bool m_DebugDepthMap = true;
     bool m_DebugDepthCubeMap = false;
+    bool m_UseDebugNormals = false;
 
-    void renderPlane();
-    void renderCube();
-    void renderSphere();
-    void renderQuad();
-    void renderObject(Shader shader, glm::mat4 model);
-    void renderNormalsInstanced(Shader shader, VertexBuffer VBO, glm::mat4 model, size_t matrices_size);
+    void renderPlane(GLenum mode);
+    void renderCube(GLenum mode);
+    void renderSphere(GLenum mode);
+    void renderQuad(GLenum mode);
+    void renderObject(GLenum mode, Shader shader, glm::mat4 model);
+    void renderNormalsInstanced(Shader shader, const VertexBuffer &VBO, glm::mat4 model, size_t matrices_size);
 
     void renderBloomTexture();
 

@@ -21,9 +21,9 @@ void main()
     vec3 normal = unpackSnorm4x8(floatBitsToUint(aInstanceVec.w)).xyz;
 
     mat4 instanceMatrix = mat4(
-        vec4(0.1, 0.0, 0.0, 0.0),
-        vec4(0.0, 0.1, 0.0, 0.0),
-        vec4(0.0, 0.0, 0.1, 0.0),
+        vec4(0.01, 0.0, 0.0, 0.0),
+        vec4(0.0, 0.01, 0.0, 0.0),
+        vec4(0.0, 0.0, 0.01, 0.0),
         vec4(position, 1.0));
 
     vec3 orig = vec3(0.0, 1.0, 0.0);

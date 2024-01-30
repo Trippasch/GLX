@@ -4,10 +4,23 @@ layout (location = 0) out vec4 FragColor;
 layout (location = 1) out vec4 BrightColor;
 
 uniform vec3 color;
+uniform bool debugNormals;
+
+in VS_OUT
+{
+    vec3 Normal;
+} fs_in;
 
 void main()
 {
-    FragColor = vec4(color, 1.0);
+    vec3 N = normalize(fs_in.Normal);
+
+    if (debugNormals) {
+        FragColor = vec4(N, 1.0);
+    }
+    else {
+        FragColor = vec4(color, 1.0);
+    }
 
     float brightness = dot(FragColor.rgb, vec3(0.2126, 0.7152, 0.0722));
     if (brightness > 1.0)
