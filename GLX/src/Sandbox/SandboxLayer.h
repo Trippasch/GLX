@@ -50,14 +50,12 @@ private:
     VertexBuffer cubeVBO;
     VertexBuffer sphereVBO;
     VertexBuffer screenQuadVBO;
-    VertexBuffer instancedArrowsCubeVBO;
 
     IndexBuffer sphereEBO;
     GLuint indexCount;
 
     FrameBuffer multisampleFBO;
     FrameBuffer hdrFBO;
-    FrameBuffer pingpongFBO[2];
     FrameBuffer imguiFBO;
     FrameBuffer debugFBO;
     FrameBuffer captureFBO;
@@ -131,11 +129,13 @@ private:
     float m_RotationAngleZ = 0.0f;
     glm::vec3 m_RotationAngles = glm::vec3(m_RotationAngleX, m_RotationAngleY, m_RotationAngleZ);
     float m_EmissiveIntensity = 1.0f;
+
+    // Gizmo Properties
+    bool m_UseObjectHighlighting = false;
     bool m_UseArrowNormals = false;
     float m_ArrowNormalsSize = 0.01f;
-
-    // Instancing
-    std::vector<glm::vec4> m_VecInstancesCube;
+    bool m_UseTransGizmo = true;
+    float m_GizmoSize = 0.1f;
 
     // Skybox Properties
     std::string m_SkyboxFilename = "assets/textures/hdr-skyboxes/Nature_8K_hdri.jpg";
@@ -150,7 +150,9 @@ private:
     void renderCube(GLenum mode);
     void renderSphere(GLenum mode);
     void renderQuad(GLenum mode);
-    void renderObject(GLenum mode, Shader shader, glm::mat4 model);
+    void renderObject(GLenum mode, Shader shader, Model model_3d, glm::mat4 model);
+    void highlightRenderObject(GLenum mode, Shader shader, Shader highlight_shader, Model model_3d, glm::mat4 model);
+    void renderTranslationGizmo(GLenum mode, Shader shader, glm::vec3 pos);
     void renderNormalsInstanced(Shader shader, const VertexBuffer &VBO, glm::mat4 model, size_t matrices_size);
 
     void renderBloomTexture();
