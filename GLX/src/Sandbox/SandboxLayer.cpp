@@ -421,7 +421,9 @@ void SandboxLayer::OnUpdate()
         plane_model = glm::translate(plane_model, glm::vec3(0.0f, -0.01f, 0.0f));
         plane_model = glm::scale(plane_model, glm::vec3(1.0f, 1.0f, 1.0f));
         ResourceManager::GetShader("depth_map").Use().SetMatrix4(1, plane_model);
+        glDisable(GL_CULL_FACE);
         renderPlane(GL_TRIANGLES);
+        glEnable(GL_CULL_FACE);
 
         if (m_UsePointLights) {
             for (size_t i = 0; i < m_PointLightPositions.size(); i++) {
@@ -492,7 +494,9 @@ void SandboxLayer::OnUpdate()
         plane_model = glm::translate(plane_model, glm::vec3(0.0f, -0.01f, 0.0f));
         plane_model = glm::scale(plane_model, glm::vec3(1.0f, 1.0f, 1.0f));
         ResourceManager::GetShader("depth_cube_map").Use().SetMatrix4(1, plane_model);
+        glDisable(GL_CULL_FACE);
         renderPlane(GL_TRIANGLES);
+        glEnable(GL_CULL_FACE);
 
         glm::mat4 object_model = glm::mat4(1.0f);
         object_model = glm::translate(object_model, m_ObjectPosition);
@@ -555,7 +559,9 @@ void SandboxLayer::OnUpdate()
     plane_model = glm::translate(plane_model, glm::vec3(0.0f, 0.0f, 0.0f));
     plane_model = glm::scale(plane_model, glm::vec3(1.0f, 1.0f, 1.0f));
     ResourceManager::GetShader("pbr_lighting_textured").Use().SetMatrix4(1, plane_model);
+    glDisable(GL_CULL_FACE);
     renderPlane(GL_TRIANGLES);
+    glEnable(GL_CULL_FACE);
     Texture2D::UnBind();
     Texture2D::UnBindCubemap();
 
@@ -718,7 +724,9 @@ void SandboxLayer::OnUpdate()
     // m_Irradiancemap.BindCubemap(0);
     // m_Prefiltermap.BindCubemap(0);
     ResourceManager::GetShader("hdr_skybox").Use();
+    glCullFace(GL_FRONT);
     renderCube(GL_TRIANGLES);
+    glCullFace(GL_BACK);
     Texture2D::UnBindCubemap();
 
     FrameBuffer::UnBind();
@@ -751,21 +759,23 @@ void SandboxLayer::OnUpdate()
     FrameBuffer::UnBind();
 
     // Debug Image
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    debugFBO.Bind();
-    if (m_DebugDepthMap) {
-        glActiveTexture(GL_TEXTURE0);
-        depthMapFBO.BindTexture(GL_TEXTURE_2D, 0);
-        ResourceManager::GetShader("depth_quad").Use();
+    if (m_UseDebugWindow) {
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        debugFBO.Bind();
+        if (m_DebugDepthMap) {
+            glActiveTexture(GL_TEXTURE0);
+            depthMapFBO.BindTexture(GL_TEXTURE_2D, 0);
+            ResourceManager::GetShader("depth_quad").Use();
+        }
+        else {
+            glActiveTexture(GL_TEXTURE0);
+            hdrFBO.BindTexture(GL_TEXTURE_2D, 0);
+            ResourceManager::GetShader("debug_quad").Use();
+        }
+        renderQuad(GL_TRIANGLES);
+        Texture2D::UnBind();
+        FrameBuffer::UnBind();
     }
-    else {
-        glActiveTexture(GL_TEXTURE0);
-        hdrFBO.BindTexture(GL_TEXTURE_2D, 0);
-        ResourceManager::GetShader("debug_quad").Use();
-    }
-    renderQuad(GL_TRIANGLES);
-    Texture2D::UnBind();
-    FrameBuffer::UnBind();
     glEnable(GL_DEPTH_TEST);
 }
 
@@ -958,13 +968,15 @@ void SandboxLayer::OnImGuiRender()
     deltaTime = currentFrame - lastFrame;
     lastFrame = currentFrame;
 
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-    ImGui::Begin("Debug Image");
+    if (m_UseDebugWindow) {
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+        ImGui::Begin("Debug Image");
 
-    ImGui::ImageButton((void*)(intptr_t)debugFBO.GetTextureAttachments().at(0), ImVec2(m_Width, m_Height), ImVec2(0, 1), ImVec2(1, 0), 0);
-    ImGui::PopStyleVar();
+        ImGui::ImageButton((void*)(intptr_t)debugFBO.GetTextureAttachments().at(0), ImVec2(m_Width, m_Height), ImVec2(0, 1), ImVec2(1, 0), 0);
+        ImGui::PopStyleVar();
 
-    ImGui::End();
+        ImGui::End();
+    }
 
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
     ImGui::Begin("Generated Image");
@@ -1189,9 +1201,12 @@ void SandboxLayer::OnImGuiRender()
 
     ImGui::Separator();
     if (ImGui::CollapsingHeader("Debug", base_flags)) {
-
         if (ImGui::TreeNodeEx("Debug Image Window", base_flags)) {
-            ImGui::Checkbox("Depth Map (Directional Light)", &m_DebugDepthMap);
+            ImGui::SameLine();
+            ImGuiLayer::ToggleButton(" ", &m_UseDebugWindow);
+            if (m_UseDebugWindow) {
+                ImGui::Checkbox("Depth Map (Directional Light)", &m_DebugDepthMap);
+            }
             ImGui::TreePop();
         }
 
@@ -1375,6 +1390,7 @@ void SandboxLayer::OnDetach()
 
 void SandboxLayer::createSkybox()
 {
+    glDisable(GL_CULL_FACE);
     // create environment cubemap
     m_EnvCubemap.Internal_Format = GL_RGB16F;
     m_EnvCubemap.Image_Format = GL_RGB;
@@ -1503,4 +1519,5 @@ void SandboxLayer::createSkybox()
     FrameBuffer::UnBind();
 
     glViewport(0, 0, m_Width, m_Height);
+    glEnable(GL_CULL_FACE);
 }

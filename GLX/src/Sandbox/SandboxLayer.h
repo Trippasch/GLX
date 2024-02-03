@@ -141,6 +141,7 @@ private:
     std::string m_SkyboxFilename = "assets/textures/hdr-skyboxes/Nature_8K_hdri.jpg";
 
     // Debug Properties
+    bool m_UseDebugWindow = false;
     bool m_UsePolygonLines = false;
     bool m_DebugDepthMap = true;
     bool m_DebugDepthCubeMap = false;
