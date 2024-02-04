@@ -18,6 +18,7 @@
 #include "Renderer/IndexBuffer.h"
 #include "Renderer/FrameBuffer.h"
 #include "Renderer/Camera.h"
+#include "Renderer/Entity.h"
 
 class SandboxLayer : public Layer
 {
@@ -147,11 +148,14 @@ private:
     bool m_DebugDepthCubeMap = false;
     bool m_UseDebugNormals = false;
 
+    Entity my_entity;
+
     void renderPlane(GLenum mode);
     void renderCube(GLenum mode);
     void renderSphere(GLenum mode);
     void renderQuad(GLenum mode);
     void renderObject(GLenum mode, Shader shader, Model model_3d, glm::mat4 model);
+    void renderSceneGraph(GLenum mode, Shader shader, Entity* entity);
     void highlightRenderObject(GLenum mode, Shader shader, Shader highlight_shader, Model model_3d, glm::mat4 model);
     void renderTranslationGizmo(GLenum mode, Shader shader, glm::vec3 pos);
     void renderNormalsInstanced(Shader shader, const VertexBuffer &VBO, glm::mat4 model, size_t matrices_size);

@@ -385,6 +385,24 @@ void SandboxLayer::OnAttach()
     ResourceManager::GetShader("depth_cube_map").Use().SetFloat("far_plane", farPlane);
     ResourceManager::GetShader("pbr_lighting").Use().SetFloat("far_plane", farPlane);
     ResourceManager::GetShader("pbr_lighting_textured").Use().SetFloat("far_plane", farPlane);
+
+    my_entity = Entity(ResourceManager::GetModel("helmet"));
+    my_entity.transform.setLocalPosition({0, 2, 5});
+    const float scale = 0.75f;
+    my_entity.transform.setLocalScale({scale, scale, scale});
+    {
+        Entity* lastEntity = &my_entity;
+
+        for (unsigned int i = 0; i < 10; i++) {
+            lastEntity->addChild(ResourceManager::GetModel("helmet"));
+            lastEntity = lastEntity->children.back().get();
+
+            // Set transform values
+            lastEntity->transform.setLocalPosition({0, 2, 5});
+            lastEntity->transform.setLocalScale({scale, scale, scale});
+        }
+    }
+    my_entity.updateSelfAndChild();
 }
 
 void SandboxLayer::OnUpdate()
@@ -442,6 +460,7 @@ void SandboxLayer::OnUpdate()
         object_model = glm::rotate(object_model, glm::radians(m_RotationAngleZ), glm::vec3(0.0f, 0.0f, 1.0f));
         object_model = glm::scale(object_model, glm::vec3(1.0f) * m_ObjectScale);
         renderObject(GL_TRIANGLES, ResourceManager::GetShader("depth_map"), ResourceManager::GetModel("helmet"), object_model);
+        renderSceneGraph(GL_TRIANGLES, ResourceManager::GetShader("depth_map"), &my_entity);
 
         for (GLuint i = 0; i < 5; i++) {
             for (GLuint j = 0; j < 5; j++) {
@@ -505,6 +524,7 @@ void SandboxLayer::OnUpdate()
         object_model = glm::rotate(object_model, glm::radians(m_RotationAngleZ), glm::vec3(0.0f, 0.0f, 1.0f));
         object_model = glm::scale(object_model, glm::vec3(1.0f) * m_ObjectScale);
         renderObject(GL_TRIANGLES, ResourceManager::GetShader("depth_cube_map"), ResourceManager::GetModel("helmet"), object_model);
+        renderSceneGraph(GL_TRIANGLES, ResourceManager::GetShader("depth_cube_map"), &my_entity);
 
         for (GLuint i = 0; i < 5; i++) {
             for (GLuint j = 0; j < 5; j++) {
@@ -709,6 +729,7 @@ void SandboxLayer::OnUpdate()
     }
     else {
         renderObject(GL_TRIANGLES, ResourceManager::GetShader("pbr_lighting_textured"), ResourceManager::GetModel("helmet"), object_model);
+        renderSceneGraph(GL_TRIANGLES, ResourceManager::GetShader("pbr_lighting_textured"), &my_entity);
     }
 
     if (m_UseArrowNormals) {
@@ -897,6 +918,18 @@ void SandboxLayer::renderObject(GLenum mode, Shader shader, Model model_3d, glm:
 {
     shader.Use().SetMatrix4(1, model);
     model_3d.Draw(mode, shader);
+}
+
+void SandboxLayer::renderSceneGraph(GLenum mode, Shader shader, Entity* entity)
+{
+    while(entity->children.size()) {
+        shader.Use().SetMatrix4(1, entity->transform.getModelMatrix());
+        entity->pModel->Draw(mode, shader);
+        entity = entity->children.back().get();
+    }
+
+    my_entity.transform.setLocalRotation({0.0f, my_entity.transform.getLocalRotation().y + 20 * deltaTime, 0.0f});
+    my_entity.updateSelfAndChild();
 }
 
 void SandboxLayer::highlightRenderObject(GLenum mode, Shader shader, Shader highlight_shader, Model model_3d, glm::mat4 model)
