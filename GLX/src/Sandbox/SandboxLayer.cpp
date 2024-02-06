@@ -387,19 +387,21 @@ void SandboxLayer::OnAttach()
     ResourceManager::GetShader("pbr_lighting_textured").Use().SetFloat("far_plane", farPlane);
 
     my_entity = Entity(ResourceManager::GetModel("helmet"));
-    my_entity.transform.setLocalPosition({0, 2, 5});
-    const float scale = 0.75f;
-    my_entity.transform.setLocalScale({scale, scale, scale});
+    my_entity.transform.setLocalPosition(m_ObjectPosition);
+    // my_entity.transform.setLocalRotation(m_RotationAngles);
+    my_entity.transform.setLocalScale(glm::vec3(m_ObjectScale));
     {
         Entity* lastEntity = &my_entity;
+        for (unsigned int i = 0; i < 20; i++) {
+            for (unsigned int j = 0; j < 20; j++) {
+                my_entity.addChild(ResourceManager::GetModel("helmet"));
+                lastEntity = my_entity.children.back().get();
 
-        for (unsigned int i = 0; i < 10; i++) {
-            lastEntity->addChild(ResourceManager::GetModel("helmet"));
-            lastEntity = lastEntity->children.back().get();
-
-            // Set transform values
-            lastEntity->transform.setLocalPosition({0, 2, 5});
-            lastEntity->transform.setLocalScale({scale, scale, scale});
+                // Set transform values
+                lastEntity->transform.setLocalPosition({ i * 10.0f - 100.0f, 2.0f, j * 10.0f - 100.0f });
+                lastEntity->transform.setLocalRotation(m_RotationAngles);
+                lastEntity->transform.setLocalScale(glm::vec3(m_ObjectScale));
+            }
         }
     }
     my_entity.updateSelfAndChild();
@@ -408,6 +410,7 @@ void SandboxLayer::OnAttach()
 void SandboxLayer::OnUpdate()
 {
     glm::mat4 projView = m_Camera.Matrix(m_Camera.m_Fov, static_cast<float>(m_Width) / m_Height, m_Camera.m_NearPlane, m_Camera.m_FarPlane);
+    m_CamFrustum = m_Camera.CreateFrustumFromCamera(static_cast<float>(m_Width) / m_Height, glm::radians(m_Camera.m_Fov), m_Camera.m_NearPlane, m_Camera.m_FarPlane);
     ResourceManager::GetShader("light_source").Use().SetMatrix4(0, projView);
     ResourceManager::GetShader("pbr_lighting").Use().SetMatrix4(0, projView);
     ResourceManager::GetShader("instancing_normals").Use().SetMatrix4(0, projView);
@@ -435,13 +438,13 @@ void SandboxLayer::OnUpdate()
         depthMapFBO.Bind();
         glClear(GL_DEPTH_BUFFER_BIT);
 
-        glm::mat4 plane_model = glm::mat4(1.0f);
-        plane_model = glm::translate(plane_model, glm::vec3(0.0f, -0.01f, 0.0f));
-        plane_model = glm::scale(plane_model, glm::vec3(1.0f, 1.0f, 1.0f));
-        ResourceManager::GetShader("depth_map").Use().SetMatrix4(1, plane_model);
-        glDisable(GL_CULL_FACE);
-        renderPlane(GL_TRIANGLES);
-        glEnable(GL_CULL_FACE);
+        // glm::mat4 plane_model = glm::mat4(1.0f);
+        // plane_model = glm::translate(plane_model, glm::vec3(0.0f, -0.01f, 0.0f));
+        // plane_model = glm::scale(plane_model, glm::vec3(1.0f, 1.0f, 1.0f));
+        // ResourceManager::GetShader("depth_map").Use().SetMatrix4(1, plane_model);
+        // glDisable(GL_CULL_FACE);
+        // renderPlane(GL_TRIANGLES);
+        // glEnable(GL_CULL_FACE);
 
         if (m_UsePointLights) {
             for (size_t i = 0; i < m_PointLightPositions.size(); i++) {
@@ -453,32 +456,32 @@ void SandboxLayer::OnUpdate()
             }
         }
 
-        glm::mat4 object_model = glm::mat4(1.0f);
-        object_model = glm::translate(object_model, m_ObjectPosition);
-        object_model = glm::rotate(object_model, glm::radians(m_RotationAngleX), glm::vec3(1.0f, 0.0f, 0.0f));
-        object_model = glm::rotate(object_model, glm::radians(m_RotationAngleY), glm::vec3(0.0f, 1.0f, 0.0f));
-        object_model = glm::rotate(object_model, glm::radians(m_RotationAngleZ), glm::vec3(0.0f, 0.0f, 1.0f));
-        object_model = glm::scale(object_model, glm::vec3(1.0f) * m_ObjectScale);
-        renderObject(GL_TRIANGLES, ResourceManager::GetShader("depth_map"), ResourceManager::GetModel("helmet"), object_model);
-        renderSceneGraph(GL_TRIANGLES, ResourceManager::GetShader("depth_map"), &my_entity);
+        // glm::mat4 object_model = glm::mat4(1.0f);
+        // object_model = glm::translate(object_model, m_ObjectPosition);
+        // object_model = glm::rotate(object_model, glm::radians(m_RotationAngleX), glm::vec3(1.0f, 0.0f, 0.0f));
+        // object_model = glm::rotate(object_model, glm::radians(m_RotationAngleY), glm::vec3(0.0f, 1.0f, 0.0f));
+        // object_model = glm::rotate(object_model, glm::radians(m_RotationAngleZ), glm::vec3(0.0f, 0.0f, 1.0f));
+        // object_model = glm::scale(object_model, glm::vec3(1.0f) * m_ObjectScale);
+        // renderObject(GL_TRIANGLES, ResourceManager::GetShader("depth_map"), ResourceManager::GetModel("helmet"), object_model);
+        renderSceneGraph(GL_TRIANGLES, ResourceManager::GetShader("depth_map"));
 
-        for (GLuint i = 0; i < 5; i++) {
-            for (GLuint j = 0; j < 5; j++) {
-                glm::mat4 model = glm::mat4(1.0f);
-                model = glm::translate(model, glm::vec3(-6.0f + (i*3), 0.5f + (j*3), 0.0f));
-                model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
-                ResourceManager::GetShader("depth_map").Use().SetMatrix4(1, model);
-                renderSphere(GL_TRIANGLE_STRIP);
-            }
-        }
+        // for (GLuint i = 0; i < 5; i++) {
+        //     for (GLuint j = 0; j < 5; j++) {
+        //         glm::mat4 model = glm::mat4(1.0f);
+        //         model = glm::translate(model, glm::vec3(-6.0f + (i*3), 0.5f + (j*3), 0.0f));
+        //         model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
+        //         ResourceManager::GetShader("depth_map").Use().SetMatrix4(1, model);
+        //         renderSphere(GL_TRIANGLE_STRIP);
+        //     }
+        // }
 
-        for (GLuint i = 0; i < 5; i++) {
-            glm::mat4 model = glm::mat4(1.0f);
-            model = glm::translate(model, glm::vec3(-6.0f + (i*3), 6.0f, 4.0f));
-            model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
-            ResourceManager::GetShader("depth_map").Use().SetMatrix4(1, model);
-            renderSphere(GL_TRIANGLE_STRIP);
-        }
+        // for (GLuint i = 0; i < 5; i++) {
+        //     glm::mat4 model = glm::mat4(1.0f);
+        //     model = glm::translate(model, glm::vec3(-6.0f + (i*3), 6.0f, 4.0f));
+        //     model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
+        //     ResourceManager::GetShader("depth_map").Use().SetMatrix4(1, model);
+        //     renderSphere(GL_TRIANGLE_STRIP);
+        // }
 
         FrameBuffer::UnBind();
 
@@ -509,40 +512,40 @@ void SandboxLayer::OnUpdate()
         depthCubeMapFBO.Bind();
         glClear(GL_DEPTH_BUFFER_BIT);
 
-        glm::mat4 plane_model = glm::mat4(1.0f);
-        plane_model = glm::translate(plane_model, glm::vec3(0.0f, -0.01f, 0.0f));
-        plane_model = glm::scale(plane_model, glm::vec3(1.0f, 1.0f, 1.0f));
-        ResourceManager::GetShader("depth_cube_map").Use().SetMatrix4(1, plane_model);
-        glDisable(GL_CULL_FACE);
-        renderPlane(GL_TRIANGLES);
-        glEnable(GL_CULL_FACE);
+        // glm::mat4 plane_model = glm::mat4(1.0f);
+        // plane_model = glm::translate(plane_model, glm::vec3(0.0f, -0.01f, 0.0f));
+        // plane_model = glm::scale(plane_model, glm::vec3(1.0f, 1.0f, 1.0f));
+        // ResourceManager::GetShader("depth_cube_map").Use().SetMatrix4(1, plane_model);
+        // glDisable(GL_CULL_FACE);
+        // renderPlane(GL_TRIANGLES);
+        // glEnable(GL_CULL_FACE);
 
-        glm::mat4 object_model = glm::mat4(1.0f);
-        object_model = glm::translate(object_model, m_ObjectPosition);
-        object_model = glm::rotate(object_model, glm::radians(m_RotationAngleX), glm::vec3(1.0f, 0.0f, 0.0f));
-        object_model = glm::rotate(object_model, glm::radians(m_RotationAngleY), glm::vec3(0.0f, 1.0f, 0.0f));
-        object_model = glm::rotate(object_model, glm::radians(m_RotationAngleZ), glm::vec3(0.0f, 0.0f, 1.0f));
-        object_model = glm::scale(object_model, glm::vec3(1.0f) * m_ObjectScale);
-        renderObject(GL_TRIANGLES, ResourceManager::GetShader("depth_cube_map"), ResourceManager::GetModel("helmet"), object_model);
-        renderSceneGraph(GL_TRIANGLES, ResourceManager::GetShader("depth_cube_map"), &my_entity);
+        // glm::mat4 object_model = glm::mat4(1.0f);
+        // object_model = glm::translate(object_model, m_ObjectPosition);
+        // object_model = glm::rotate(object_model, glm::radians(m_RotationAngleX), glm::vec3(1.0f, 0.0f, 0.0f));
+        // object_model = glm::rotate(object_model, glm::radians(m_RotationAngleY), glm::vec3(0.0f, 1.0f, 0.0f));
+        // object_model = glm::rotate(object_model, glm::radians(m_RotationAngleZ), glm::vec3(0.0f, 0.0f, 1.0f));
+        // object_model = glm::scale(object_model, glm::vec3(1.0f) * m_ObjectScale);
+        // renderObject(GL_TRIANGLES, ResourceManager::GetShader("depth_cube_map"), ResourceManager::GetModel("helmet"), object_model);
+        renderSceneGraph(GL_TRIANGLES, ResourceManager::GetShader("depth_cube_map"));
 
-        for (GLuint i = 0; i < 5; i++) {
-            for (GLuint j = 0; j < 5; j++) {
-                glm::mat4 model = glm::mat4(1.0f);
-                model = glm::translate(model, glm::vec3(-6.0f + (i*3), 0.5f + (j*3), 0.0f));
-                model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
-                ResourceManager::GetShader("depth_cube_map").Use().SetMatrix4(1, model);
-                renderSphere(GL_TRIANGLE_STRIP);
-            }
-        }
+        // for (GLuint i = 0; i < 5; i++) {
+        //     for (GLuint j = 0; j < 5; j++) {
+        //         glm::mat4 model = glm::mat4(1.0f);
+        //         model = glm::translate(model, glm::vec3(-6.0f + (i*3), 0.5f + (j*3), 0.0f));
+        //         model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
+        //         ResourceManager::GetShader("depth_cube_map").Use().SetMatrix4(1, model);
+        //         renderSphere(GL_TRIANGLE_STRIP);
+        //     }
+        // }
 
-        for (GLuint i = 0; i < 5; i++) {
-            glm::mat4 model = glm::mat4(1.0f);
-            model = glm::translate(model, glm::vec3(-6.0f + (i*3), 6.0f, 4.0f));
-            model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
-            ResourceManager::GetShader("depth_cube_map").Use().SetMatrix4(1, model);
-            renderSphere(GL_TRIANGLE_STRIP);
-        }
+        // for (GLuint i = 0; i < 5; i++) {
+        //     glm::mat4 model = glm::mat4(1.0f);
+        //     model = glm::translate(model, glm::vec3(-6.0f + (i*3), 6.0f, 4.0f));
+        //     model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
+        //     ResourceManager::GetShader("depth_cube_map").Use().SetMatrix4(1, model);
+        //     renderSphere(GL_TRIANGLE_STRIP);
+        // }
 
         FrameBuffer::UnBind();
 
@@ -557,33 +560,33 @@ void SandboxLayer::OnUpdate()
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     // Render Plane
-    m_Irradiancemap.BindCubemap(0);
-    m_Prefiltermap.BindCubemap(1);
-    m_BRDFLUTTexture.Bind(2);
-    ResourceManager::GetTexture("alley_albedo").Bind(3);
-    ResourceManager::GetTexture("alley_normal").Bind(4);
-    ResourceManager::GetTexture("alley_metallic").Bind(5);
-    ResourceManager::GetTexture("alley_roughness").Bind(6);
-    ResourceManager::GetTexture("alley_ao").Bind(7);
-    glActiveTexture(GL_TEXTURE8);
-    glBindTexture(GL_TEXTURE_2D, 0);
-    if (m_UseDirShadows && m_UseDirLight) {
-        glActiveTexture(GL_TEXTURE9);
-        depthMapFBO.BindTexture(GL_TEXTURE_2D, 0);
-    }
-    if (m_UsePointShadows && m_UsePointLights) {
-        glActiveTexture(GL_TEXTURE10);
-        depthCubeMapFBO.BindTexture(GL_TEXTURE_CUBE_MAP, 0);
-    }
-    glm::mat4 plane_model = glm::mat4(1.0f);
-    plane_model = glm::translate(plane_model, glm::vec3(0.0f, 0.0f, 0.0f));
-    plane_model = glm::scale(plane_model, glm::vec3(1.0f, 1.0f, 1.0f));
-    ResourceManager::GetShader("pbr_lighting_textured").Use().SetMatrix4(1, plane_model);
-    glDisable(GL_CULL_FACE);
-    renderPlane(GL_TRIANGLES);
-    glEnable(GL_CULL_FACE);
-    Texture2D::UnBind();
-    Texture2D::UnBindCubemap();
+    // m_Irradiancemap.BindCubemap(0);
+    // m_Prefiltermap.BindCubemap(1);
+    // m_BRDFLUTTexture.Bind(2);
+    // ResourceManager::GetTexture("alley_albedo").Bind(3);
+    // ResourceManager::GetTexture("alley_normal").Bind(4);
+    // ResourceManager::GetTexture("alley_metallic").Bind(5);
+    // ResourceManager::GetTexture("alley_roughness").Bind(6);
+    // ResourceManager::GetTexture("alley_ao").Bind(7);
+    // glActiveTexture(GL_TEXTURE8);
+    // glBindTexture(GL_TEXTURE_2D, 0);
+    // if (m_UseDirShadows && m_UseDirLight) {
+    //     glActiveTexture(GL_TEXTURE9);
+    //     depthMapFBO.BindTexture(GL_TEXTURE_2D, 0);
+    // }
+    // if (m_UsePointShadows && m_UsePointLights) {
+    //     glActiveTexture(GL_TEXTURE10);
+    //     depthCubeMapFBO.BindTexture(GL_TEXTURE_CUBE_MAP, 0);
+    // }
+    // glm::mat4 plane_model = glm::mat4(1.0f);
+    // plane_model = glm::translate(plane_model, glm::vec3(0.0f, 0.0f, 0.0f));
+    // plane_model = glm::scale(plane_model, glm::vec3(1.0f, 1.0f, 1.0f));
+    // ResourceManager::GetShader("pbr_lighting_textured").Use().SetMatrix4(1, plane_model);
+    // glDisable(GL_CULL_FACE);
+    // renderPlane(GL_TRIANGLES);
+    // glEnable(GL_CULL_FACE);
+    // Texture2D::UnBind();
+    // Texture2D::UnBindCubemap();
 
     // Render Light Cubes
     if (m_UsePointLights) {
@@ -598,105 +601,105 @@ void SandboxLayer::OnUpdate()
     }
 
     // Render Spheres
-    m_Irradiancemap.BindCubemap(0);
-    m_Prefiltermap.BindCubemap(1);
-    m_BRDFLUTTexture.Bind(2);
-    if (m_UseDirShadows && m_UseDirLight) {
-        glActiveTexture(GL_TEXTURE8);
-        depthMapFBO.BindTexture(GL_TEXTURE_2D, 0);
-    }
-    if (m_UsePointShadows && m_UsePointLights) {
-        glActiveTexture(GL_TEXTURE9);
-        depthCubeMapFBO.BindTexture(GL_TEXTURE_CUBE_MAP, 0);
-    }
-    for (GLuint i = 0; i < 5; i++) {
-        for (GLuint j = 0; j < 5; j++) {
-            glm::mat4 model = glm::mat4(1.0f);
-            model = glm::translate(model, glm::vec3(-6.0f + (i*3), 0.5f + (j*3), 0.0f));
-            model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
-            ResourceManager::GetShader("pbr_lighting").Use().SetMatrix4(1, model);
-            renderSphere(GL_TRIANGLE_STRIP);
-        }
-    }
-    Texture2D::UnBind();
-    Texture2D::UnBindCubemap();
+    // m_Irradiancemap.BindCubemap(0);
+    // m_Prefiltermap.BindCubemap(1);
+    // m_BRDFLUTTexture.Bind(2);
+    // if (m_UseDirShadows && m_UseDirLight) {
+    //     glActiveTexture(GL_TEXTURE8);
+    //     depthMapFBO.BindTexture(GL_TEXTURE_2D, 0);
+    // }
+    // if (m_UsePointShadows && m_UsePointLights) {
+    //     glActiveTexture(GL_TEXTURE9);
+    //     depthCubeMapFBO.BindTexture(GL_TEXTURE_CUBE_MAP, 0);
+    // }
+    // for (GLuint i = 0; i < 5; i++) {
+    //     for (GLuint j = 0; j < 5; j++) {
+    //         glm::mat4 model = glm::mat4(1.0f);
+    //         model = glm::translate(model, glm::vec3(-6.0f + (i*3), 0.5f + (j*3), 0.0f));
+    //         model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
+    //         ResourceManager::GetShader("pbr_lighting").Use().SetMatrix4(1, model);
+    //         renderSphere(GL_TRIANGLE_STRIP);
+    //     }
+    // }
+    // Texture2D::UnBind();
+    // Texture2D::UnBindCubemap();
 
     // Render Textured Spheres
-    m_Irradiancemap.BindCubemap(0);
-    m_Prefiltermap.BindCubemap(1);
-    m_BRDFLUTTexture.Bind(2);
+    // m_Irradiancemap.BindCubemap(0);
+    // m_Prefiltermap.BindCubemap(1);
+    // m_BRDFLUTTexture.Bind(2);
 
-    glActiveTexture(GL_TEXTURE8);
-    glBindTexture(GL_TEXTURE_2D, 0);
+    // glActiveTexture(GL_TEXTURE8);
+    // glBindTexture(GL_TEXTURE_2D, 0);
 
-    if (m_UseDirShadows && m_UseDirLight) {
-        glActiveTexture(GL_TEXTURE9);
-        depthMapFBO.BindTexture(GL_TEXTURE_2D, 0);
-    }
-    if (m_UsePointShadows && m_UsePointLights) {
-        glActiveTexture(GL_TEXTURE10);
-        depthCubeMapFBO.BindTexture(GL_TEXTURE_CUBE_MAP, 0);
-    }
+    // if (m_UseDirShadows && m_UseDirLight) {
+    //     glActiveTexture(GL_TEXTURE9);
+    //     depthMapFBO.BindTexture(GL_TEXTURE_2D, 0);
+    // }
+    // if (m_UsePointShadows && m_UsePointLights) {
+    //     glActiveTexture(GL_TEXTURE10);
+    //     depthCubeMapFBO.BindTexture(GL_TEXTURE_CUBE_MAP, 0);
+    // }
 
-    {
-        ResourceManager::GetTexture("wall_albedo").Bind(3);
-        ResourceManager::GetTexture("wall_normal").Bind(4);
-        ResourceManager::GetTexture("wall_metallic").Bind(5);
-        ResourceManager::GetTexture("wall_roughness").Bind(6);
-        ResourceManager::GetTexture("wall_ao").Bind(7);
-        glm::mat4 model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(-6.0f, 6.0f, 4.0f));
-        model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
-        ResourceManager::GetShader("pbr_lighting_textured").Use().SetMatrix4(1, model);
-        renderSphere(GL_TRIANGLE_STRIP);
+    // {
+    //     ResourceManager::GetTexture("wall_albedo").Bind(3);
+    //     ResourceManager::GetTexture("wall_normal").Bind(4);
+    //     ResourceManager::GetTexture("wall_metallic").Bind(5);
+    //     ResourceManager::GetTexture("wall_roughness").Bind(6);
+    //     ResourceManager::GetTexture("wall_ao").Bind(7);
+    //     glm::mat4 model = glm::mat4(1.0f);
+    //     model = glm::translate(model, glm::vec3(-6.0f, 6.0f, 4.0f));
+    //     model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
+    //     ResourceManager::GetShader("pbr_lighting_textured").Use().SetMatrix4(1, model);
+    //     renderSphere(GL_TRIANGLE_STRIP);
 
-        ResourceManager::GetTexture("plastic_albedo").Bind(3);
-        ResourceManager::GetTexture("plastic_normal").Bind(4);
-        ResourceManager::GetTexture("plastic_metallic").Bind(5);
-        ResourceManager::GetTexture("plastic_roughness").Bind(6);
-        ResourceManager::GetTexture("plastic_ao").Bind(7);
-        model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(-6.0f + 3, 6.0f, 4.0f));
-        model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
-        ResourceManager::GetShader("pbr_lighting_textured").Use().SetMatrix4(1, model);
-        renderSphere(GL_TRIANGLE_STRIP);
+    //     ResourceManager::GetTexture("plastic_albedo").Bind(3);
+    //     ResourceManager::GetTexture("plastic_normal").Bind(4);
+    //     ResourceManager::GetTexture("plastic_metallic").Bind(5);
+    //     ResourceManager::GetTexture("plastic_roughness").Bind(6);
+    //     ResourceManager::GetTexture("plastic_ao").Bind(7);
+    //     model = glm::mat4(1.0f);
+    //     model = glm::translate(model, glm::vec3(-6.0f + 3, 6.0f, 4.0f));
+    //     model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
+    //     ResourceManager::GetShader("pbr_lighting_textured").Use().SetMatrix4(1, model);
+    //     renderSphere(GL_TRIANGLE_STRIP);
 
-        ResourceManager::GetTexture("grass_albedo").Bind(3);
-        ResourceManager::GetTexture("grass_normal").Bind(4);
-        ResourceManager::GetTexture("grass_metallic").Bind(5);
-        ResourceManager::GetTexture("grass_roughness").Bind(6);
-        ResourceManager::GetTexture("grass_ao").Bind(7);
-        model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(-6.0f + 6, 6.0f, 4.0f));
-        model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
-        ResourceManager::GetShader("pbr_lighting_textured").Use().SetMatrix4(1, model);
-        renderSphere(GL_TRIANGLE_STRIP);
+    //     ResourceManager::GetTexture("grass_albedo").Bind(3);
+    //     ResourceManager::GetTexture("grass_normal").Bind(4);
+    //     ResourceManager::GetTexture("grass_metallic").Bind(5);
+    //     ResourceManager::GetTexture("grass_roughness").Bind(6);
+    //     ResourceManager::GetTexture("grass_ao").Bind(7);
+    //     model = glm::mat4(1.0f);
+    //     model = glm::translate(model, glm::vec3(-6.0f + 6, 6.0f, 4.0f));
+    //     model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
+    //     ResourceManager::GetShader("pbr_lighting_textured").Use().SetMatrix4(1, model);
+    //     renderSphere(GL_TRIANGLE_STRIP);
 
-        ResourceManager::GetTexture("gold_albedo").Bind(3);
-        ResourceManager::GetTexture("gold_normal").Bind(4);
-        ResourceManager::GetTexture("gold_metallic").Bind(5);
-        ResourceManager::GetTexture("gold_roughness").Bind(6);
-        ResourceManager::GetTexture("gold_ao").Bind(7);
-        model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(-6.0f + 9, 6.0f, 4.0f));
-        model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
-        ResourceManager::GetShader("pbr_lighting_textured").Use().SetMatrix4(1, model);
-        renderSphere(GL_TRIANGLE_STRIP);
+    //     ResourceManager::GetTexture("gold_albedo").Bind(3);
+    //     ResourceManager::GetTexture("gold_normal").Bind(4);
+    //     ResourceManager::GetTexture("gold_metallic").Bind(5);
+    //     ResourceManager::GetTexture("gold_roughness").Bind(6);
+    //     ResourceManager::GetTexture("gold_ao").Bind(7);
+    //     model = glm::mat4(1.0f);
+    //     model = glm::translate(model, glm::vec3(-6.0f + 9, 6.0f, 4.0f));
+    //     model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
+    //     ResourceManager::GetShader("pbr_lighting_textured").Use().SetMatrix4(1, model);
+    //     renderSphere(GL_TRIANGLE_STRIP);
 
-        ResourceManager::GetTexture("rusted_albedo").Bind(3);
-        ResourceManager::GetTexture("rusted_normal").Bind(4);
-        ResourceManager::GetTexture("rusted_metallic").Bind(5);
-        ResourceManager::GetTexture("rusted_roughness").Bind(6);
-        ResourceManager::GetTexture("rusted_ao").Bind(7);
-        model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(-6.0f + 12, 6.0f, 4.0f));
-        model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
-        ResourceManager::GetShader("pbr_lighting_textured").Use().SetMatrix4(1, model);
-        renderSphere(GL_TRIANGLE_STRIP);
-    }
+    //     ResourceManager::GetTexture("rusted_albedo").Bind(3);
+    //     ResourceManager::GetTexture("rusted_normal").Bind(4);
+    //     ResourceManager::GetTexture("rusted_metallic").Bind(5);
+    //     ResourceManager::GetTexture("rusted_roughness").Bind(6);
+    //     ResourceManager::GetTexture("rusted_ao").Bind(7);
+    //     model = glm::mat4(1.0f);
+    //     model = glm::translate(model, glm::vec3(-6.0f + 12, 6.0f, 4.0f));
+    //     model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
+    //     ResourceManager::GetShader("pbr_lighting_textured").Use().SetMatrix4(1, model);
+    //     renderSphere(GL_TRIANGLE_STRIP);
+    // }
 
-    Texture2D::UnBind();
-    Texture2D::UnBindCubemap();
+    // Texture2D::UnBind();
+    // Texture2D::UnBindCubemap();
 
     // Render Models
     ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger("object.isGLTF", 1);
@@ -712,29 +715,33 @@ void SandboxLayer::OnUpdate()
         depthCubeMapFBO.BindTexture(GL_TEXTURE_CUBE_MAP, 0);
     }
 
-    glm::mat4 object_model = glm::mat4(1.0f);
-    object_model = glm::translate(object_model, m_ObjectPosition);
-    object_model = glm::rotate(object_model, glm::radians(m_RotationAngleX), glm::vec3(1.0f, 0.0f, 0.0f));
-    object_model = glm::rotate(object_model, glm::radians(m_RotationAngleY), glm::vec3(0.0f, 1.0f, 0.0f));
-    object_model = glm::rotate(object_model, glm::radians(m_RotationAngleZ), glm::vec3(0.0f, 0.0f, 1.0f));
-    object_model = glm::scale(object_model, glm::vec3(1.0f) * m_ObjectScale);
+    // glm::mat4 object_model = glm::mat4(1.0f);
+    // object_model = glm::translate(object_model, m_ObjectPosition);
+    // object_model = glm::rotate(object_model, glm::radians(m_RotationAngleX), glm::vec3(1.0f, 0.0f, 0.0f));
+    // object_model = glm::rotate(object_model, glm::radians(m_RotationAngleY), glm::vec3(0.0f, 1.0f, 0.0f));
+    // object_model = glm::rotate(object_model, glm::radians(m_RotationAngleZ), glm::vec3(0.0f, 0.0f, 1.0f));
+    // object_model = glm::scale(object_model, glm::vec3(1.0f) * m_ObjectScale);
 
-    if (m_UseObjectHighlighting) {
-        highlightRenderObject(GL_TRIANGLES, ResourceManager::GetShader("pbr_lighting_textured"), ResourceManager::GetShader("stencil_highlighting"), ResourceManager::GetModel("helmet"), object_model);
-        if (m_UseTransGizmo) {
-            glDepthFunc(GL_ALWAYS);
-            renderTranslationGizmo(GL_TRIANGLES, ResourceManager::GetShader("trans_gizmo"), m_ObjectPosition);
-            glDepthFunc(GL_LEQUAL);
-        }
-    }
-    else {
-        renderObject(GL_TRIANGLES, ResourceManager::GetShader("pbr_lighting_textured"), ResourceManager::GetModel("helmet"), object_model);
-        renderSceneGraph(GL_TRIANGLES, ResourceManager::GetShader("pbr_lighting_textured"), &my_entity);
-    }
+    // my_entity.transform.setLocalPosition(m_ObjectPosition);
+    // my_entity.transform.setLocalRotation(m_RotationAngles);
+    // my_entity.transform.setLocalScale(glm::vec3(1.0f) * m_ObjectScale);
 
-    if (m_UseArrowNormals) {
-        renderNormalsInstanced(ResourceManager::GetShader("instancing_normals"), ResourceManager::GetModel("helmet").instancedArrowsVBO, object_model, ResourceManager::GetModel("helmet").instancedArrowsSize);
-    }
+    // if (m_UseObjectHighlighting) {
+        // highlightRenderObject(GL_TRIANGLES, ResourceManager::GetShader("pbr_lighting_textured"), ResourceManager::GetShader("stencil_highlighting"), ResourceManager::GetModel("helmet"), object_model);
+        // if (m_UseTransGizmo) {
+        //     glDepthFunc(GL_ALWAYS);
+        //     renderTranslationGizmo(GL_TRIANGLES, ResourceManager::GetShader("trans_gizmo"), m_ObjectPosition);
+        //     glDepthFunc(GL_LEQUAL);
+        // }
+    // }
+    // else {
+        // renderObject(GL_TRIANGLES, ResourceManager::GetShader("pbr_lighting_textured"), ResourceManager::GetModel("helmet"), object_model);
+        renderSceneGraph(GL_TRIANGLES, ResourceManager::GetShader("pbr_lighting_textured"));
+    // }
+
+    // if (m_UseArrowNormals) {
+    //     renderNormalsInstanced(ResourceManager::GetShader("instancing_normals"), ResourceManager::GetModel("helmet").instancedArrowsVBO, object_model, ResourceManager::GetModel("helmet").instancedArrowsSize);
+    // }
 
     Texture2D::UnBind();
     Texture2D::UnBindCubemap();
@@ -920,15 +927,12 @@ void SandboxLayer::renderObject(GLenum mode, Shader shader, Model model_3d, glm:
     model_3d.Draw(mode, shader);
 }
 
-void SandboxLayer::renderSceneGraph(GLenum mode, Shader shader, Entity* entity)
+void SandboxLayer::renderSceneGraph(GLenum mode, Shader shader)
 {
-    while(entity->children.size()) {
-        shader.Use().SetMatrix4(1, entity->transform.getModelMatrix());
-        entity->pModel->Draw(mode, shader);
-        entity = entity->children.back().get();
-    }
+    unsigned int total = 0, display = 0;
+    my_entity.drawSelfAndChild(mode, m_CamFrustum, shader, display, total);
+    GL_INFO("Total process in CPU : {0} / Total send to GPU : {1}", total, display);
 
-    my_entity.transform.setLocalRotation({0.0f, my_entity.transform.getLocalRotation().y + 20 * deltaTime, 0.0f});
     my_entity.updateSelfAndChild();
 }
 
@@ -1163,30 +1167,35 @@ void SandboxLayer::OnImGuiRender()
 
     ImGui::Separator();
     if (ImGui::CollapsingHeader("3D Object", base_flags)) {
-        if (ImGui::TreeNodeEx("Edit Object")) {
-            m_UseObjectHighlighting = true;
-            ImGui::Checkbox("Display Translation Gizmo", &m_UseTransGizmo);
-            if (m_UseTransGizmo) {
-                ImGui::SliderFloat("Gizmo Size", (float*)&m_GizmoSize, 0.01f, 1.0f, "%.2f");
+        for (unsigned int i = 0; i < my_entity.children.size(); i++) {
+            if (ImGui::TreeNodeEx(("Edit Object " + std::to_string(i)).c_str())) {
+                m_UseObjectHighlighting = true;
+                ImGui::Checkbox("Display Translation Gizmo", &m_UseTransGizmo);
+                if (m_UseTransGizmo) {
+                    ImGui::SliderFloat("Gizmo Size", (float*)&m_GizmoSize, 0.01f, 1.0f, "%.2f");
+                }
+
+                if (ImGui::DragFloat3("Position", (float*)&my_entity.children[i].get()->transform.getLocalPosition(), 0.01f, -FLT_MAX, FLT_MAX, "%.2f")) {
+                    my_entity.children[i].get()->transform.setLocalPosition(my_entity.children[i].get()->transform.getLocalPosition());
+                }
+                if (ImGui::DragFloat3("Rotation", (float*)&my_entity.children[i].get()->transform.getLocalRotation(), 0.01f, -180.0f, 180.0f, "%.2f")) {
+                    my_entity.children[i].get()->transform.setLocalRotation(my_entity.children[i].get()->transform.getLocalRotation());
+                }
+                if (ImGui::DragFloat3("Scale", (float*)&my_entity.children[i].get()->transform.getLocalScale(), 0.01f, 0.0f, FLT_MAX, "%.2f")) {
+                    my_entity.children[i].get()->transform.setLocalScale(my_entity.children[i].get()->transform.getLocalScale());
+                }
+                if (ImGui::DragFloat("Emissive", &m_EmissiveIntensity, 0.01f, 0.0f, FLT_MAX, "%.2f")) {
+                    ResourceManager::GetShader("pbr_lighting_textured").Use().SetFloat("object.emissiveIntensity", m_EmissiveIntensity);
+                }
+                ImGui::Checkbox("Display Split Normals", &m_UseArrowNormals);
+                if (m_UseArrowNormals && ImGui::SliderFloat("Normals Arrow Size", (float*)&m_ArrowNormalsSize, 0.001f, 0.1f, "%.3f")) {
+                    ResourceManager::GetShader("instancing_normals").Use().SetFloat(2, m_ArrowNormalsSize);
+                }
+                ImGui::TreePop();
             }
-            ImGui::DragFloat3("Position", (float*)&m_ObjectPosition, 0.01f, -FLT_MAX, FLT_MAX, "%.2f");
-            if (ImGui::DragFloat3("Rotation", (float*)&m_RotationAngles, 0.01f, -180.0f, 180.0f, "%.2f")) {
-                m_RotationAngleX = m_RotationAngles.x;
-                m_RotationAngleY = m_RotationAngles.y;
-                m_RotationAngleZ = m_RotationAngles.z;
+            else {
+                m_UseObjectHighlighting = false;
             }
-            ImGui::DragFloat("Scale", &m_ObjectScale, 0.01f, 0.0f, FLT_MAX, "%.2f");
-            if (ImGui::DragFloat("Emissive", &m_EmissiveIntensity, 0.01f, 0.0f, FLT_MAX, "%.2f")) {
-                ResourceManager::GetShader("pbr_lighting_textured").Use().SetFloat("object.emissiveIntensity", m_EmissiveIntensity);
-            }
-            ImGui::Checkbox("Display Split Normals", &m_UseArrowNormals);
-            if (m_UseArrowNormals && ImGui::SliderFloat("Normals Arrow Size", (float*)&m_ArrowNormalsSize, 0.001f, 0.1f, "%.3f")) {
-                ResourceManager::GetShader("instancing_normals").Use().SetFloat(2, m_ArrowNormalsSize);
-            }
-            ImGui::TreePop();
-        }
-        else {
-            m_UseObjectHighlighting = false;
         }
     }
 

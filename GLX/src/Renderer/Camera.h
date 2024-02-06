@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Renderer/Frustum.h"
+
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 
@@ -22,6 +24,9 @@ public:
 
     // Handles camera inputs
     void Inputs(GLFWwindow* window, float deltaTime);
+
+    // Create a frustum from the camera
+    Frustum CreateFrustumFromCamera(float aspect_ratio, float fovY, float zNear, float zFar);
 
 public:
     glm::vec3 m_Position;

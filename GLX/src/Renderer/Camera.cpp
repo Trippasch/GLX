@@ -124,3 +124,22 @@ void Camera::Inputs(GLFWwindow* window, float deltaTime)
         m_FirstClick = true;
     }
 }
+
+Frustum Camera::CreateFrustumFromCamera(float aspect_ratio, float fovY, float zNear, float zFar)
+{
+    Frustum frustum;
+    const float halfVSide = zFar * tanf(fovY * .5f);
+    const float halfHSide = halfVSide * aspect_ratio;
+    const glm::vec3 frontMultFar = zFar * m_Orientation;
+
+    glm::vec3 camRight = glm::normalize(glm::cross(m_Orientation, glm::vec3(0.0f, 1.0f, 0.0f)));
+    glm::vec3 camUp = glm::normalize(glm::cross(camRight, m_Orientation));
+
+    frustum.nearFace = { m_Position + zNear * m_Orientation, m_Orientation };
+    frustum.farFace = { m_Position + frontMultFar, -m_Orientation };
+    frustum.rightFace = { m_Position, glm::cross(frontMultFar - camRight * halfHSide, camUp) };
+    frustum.leftFace = { m_Position, glm::cross(camUp, frontMultFar + camRight * halfHSide) };
+    frustum.topFace = { m_Position, glm::cross(camRight, frontMultFar - camUp * halfVSide) };
+    frustum.bottomFace = { m_Position, glm::cross(frontMultFar + camUp * halfVSide, camRight) };
+    return frustum;
+}
