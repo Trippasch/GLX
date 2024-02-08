@@ -2,7 +2,17 @@
 
 #include "Core/Layer.h"
 #include "Core/Log.h"
-#include "Core/ResourceManager.h"
+
+#include "Resources/ResourceManager.h"
+#include "Resources/VertexBuffer.h"
+#include "Resources/IndexBuffer.h"
+#include "Resources/FrameBuffer.h"
+
+#include "Camera/Camera.h"
+#include "Mesh/Plane.h"
+#include "Mesh/Sphere.h"
+#include "Mesh/Cube.h"
+#include "Mesh/ModelEntity.h"
 
 #include <imgui.h>
 #include <backends/imgui_impl_glfw.h>
@@ -13,12 +23,6 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include <glad/glad.h>
-
-#include "Renderer/VertexBuffer.h"
-#include "Renderer/IndexBuffer.h"
-#include "Renderer/FrameBuffer.h"
-#include "Renderer/Camera.h"
-#include "Renderer/Entity.h"
 
 class SandboxLayer : public Layer
 {
@@ -47,8 +51,6 @@ private:
     float lastFrame = 0.0f;
     Camera m_Camera;
     Frustum m_CamFrustum;
-
-    Entity my_entity;
 
     VertexBuffer planeVBO;
     VertexBuffer cubeVBO;
@@ -125,6 +127,12 @@ private:
     float m_Roughness = 0.23f;
     float m_AO = 1.0f;
 
+    // Entities
+    Plane m_Planes;
+    Cube m_Cubes;
+    Sphere m_Spheres;
+    ModelEntity m_Models;
+
     // Object Properties
     glm::vec3 m_ObjectPosition = glm::vec3(0.0f, 2.0f, 4.0f);
     float m_ObjectScale = 1.0f;
@@ -143,6 +151,7 @@ private:
 
     // Skybox Properties
     std::string m_SkyboxFilename = "assets/textures/hdr-skyboxes/Nature_8K_hdri.jpg";
+    bool m_UseSkybox = true;
 
     // Debug Properties
     bool m_UseDebugWindow = false;
@@ -156,7 +165,6 @@ private:
     void renderSphere(GLenum mode);
     void renderQuad(GLenum mode);
     void renderObject(GLenum mode, Shader shader, Model model_3d, glm::mat4 model);
-    void renderSceneGraph(GLenum mode, Shader shader);
     void highlightRenderObject(GLenum mode, Shader shader, Shader highlight_shader, Model model_3d, glm::mat4 model);
     void renderTranslationGizmo(GLenum mode, Shader shader, glm::vec3 pos);
     void renderNormalsInstanced(Shader shader, const VertexBuffer &VBO, glm::mat4 model, size_t matrices_size);

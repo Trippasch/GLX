@@ -21,9 +21,17 @@ layout (binding = 0) uniform samplerCube irradianceMap;
 layout (binding = 1) uniform samplerCube prefilterMap;
 layout (binding = 2) uniform sampler2D brdfLUT;
 
+// material parameters
+layout (binding = 3) uniform sampler2D albedoMap;
+layout (binding = 4) uniform sampler2D normalMap;
+layout (binding = 5) uniform sampler2D metallicMap;
+layout (binding = 6) uniform sampler2D roughnessMap;
+layout (binding = 7) uniform sampler2D aoMap;
+layout (binding = 8) uniform sampler2D emissiveMap;
+
 // shadows
-layout (binding = 8) uniform sampler2D depthMap;
-layout (binding = 9) uniform samplerCube depthCubeMap;
+layout (binding = 9) uniform sampler2D depthMap;
+layout (binding = 10) uniform samplerCube depthCubeMap;
 
 // material parameters
 struct Material {
@@ -60,7 +68,32 @@ uniform bool debugDepthCubeMap;
 uniform bool debugNormals;
 uniform float far_plane;
 
+struct Object {
+    bool isTextured;
+    bool isGLTF;
+    bool useIBL;
+    float emissiveIntensity;
+};
+uniform Object object;
+
 const float gamma = 2.2;
+
+vec3 getNormalFromMap()
+{
+    vec3 tangentNormal = texture(normalMap, fs_in.TexCoords).xyz * 2.0 - 1.0;
+
+    vec3 Q1  = dFdx(fs_in.WorldPos);
+    vec3 Q2  = dFdy(fs_in.WorldPos);
+    vec2 st1 = dFdx(fs_in.TexCoords);
+    vec2 st2 = dFdy(fs_in.TexCoords);
+
+    vec3 N   = normalize(fs_in.Normal);
+    vec3 T  = normalize(Q1*st2.t - Q2*st1.t);
+    vec3 B  = -normalize(cross(N, T));
+    mat3 TBN = mat3(T, B, N);
+
+    return normalize(TBN * tangentNormal);
+}
 
 float DistributionGGX(vec3 N, vec3 H, float roughness)
 {
@@ -194,7 +227,7 @@ float PointShadowsCalculation(vec3 lightPos)
     return shadow;
 }
 
-vec3 CalcDirLight(vec3 N, vec3 V, vec3 R, vec3 F0)
+vec3 CalcDirLight(vec3 N, vec3 V, vec3 R, vec3 F0, vec3 albedo, float metallic, float roughness, float ao)
 {
     // reflectance equation
     vec3 Lo = vec3(0.0);
@@ -204,8 +237,8 @@ vec3 CalcDirLight(vec3 N, vec3 V, vec3 R, vec3 F0)
     vec3 radiance = dirLight.color;
 
     // Cook-Torrance BRDF
-    float NDF = DistributionGGX(N, H, material.roughness);
-    float G = GeometrySmith(N, V, L, material.roughness);
+    float NDF = DistributionGGX(N, H, roughness);
+    float G = GeometrySmith(N, V, L, roughness);
     vec3 FI = FresnelSchlick(max(dot(H, V), 0.0), F0);
 
     vec3 numerator = NDF * G * FI;
@@ -222,7 +255,7 @@ vec3 CalcDirLight(vec3 N, vec3 V, vec3 R, vec3 F0)
     // multiply kD by the inverse metalness such that only non-metals
     // have diffuse lighting, or a linear blend if partly metal (pure
     // metals have no diffuse light).
-    kDI *= 1.0 - material.metallic;
+    kDI *= 1.0 - metallic;
 
     // scale light by N dot L
     float NdotL = max(dot(N, L), 0.0);
@@ -232,32 +265,38 @@ vec3 CalcDirLight(vec3 N, vec3 V, vec3 R, vec3 F0)
         shadow = DirShadowsCalculation(fs_in.FragPosLightSpace, dirLight.direction);
 
     // add to outgoing radiance Lo
-    Lo += (1.0 - shadow) * (kDI * material.albedo / M_PI + specularI) * radiance * NdotL;
+    Lo += (1.0 - shadow) * (kDI * albedo / M_PI + specularI) * radiance * NdotL;
     // note that we already multiplied the BRDF by the Fresnel (kS) so we won't multiply by kS again
 
-    // ambien lighting (we now use IBL as the ambient term)
-    vec3 F = FresnelSchlickRoughness(max(dot(N, V), 0.0), F0, material.roughness);
+    vec3 ambient = vec3(0.0);
+    if (object.useIBL) {
+        // ambien lighting (we now use IBL as the ambient term)
+        vec3 F = FresnelSchlickRoughness(max(dot(N, V), 0.0), F0, roughness);
 
-    vec3 kS = F;
-    vec3 kD = 1.0 - kS;
-    kD *= 1.0 - material.metallic;
+        vec3 kS = F;
+        vec3 kD = 1.0 - kS;
+        kD *= 1.0 - metallic;
 
-    vec3 irradiance = texture(irradianceMap, N).rgb;
-    vec3 diffuse = irradiance * material.albedo;
+        vec3 irradiance = texture(irradianceMap, N).rgb;
+        vec3 diffuse = irradiance * albedo;
 
-    // sample both the pre-filter map and the BRDF lut and combine them together
-    // as per the split-sum approximation to get the IBL specular part.
-    const float MAX_REFLECTION_LOD = 4.0;
-    vec3 prefilteredColor = textureLod(prefilterMap, R, material.roughness * MAX_REFLECTION_LOD).rgb;
-    vec2 envBRDF = texture(brdfLUT, vec2(max(dot(N, V), 0.0), material.roughness)).rg;
-    vec3 specular = prefilteredColor * (F * envBRDF.x + envBRDF.y);
+        // sample both the pre-filter map and the BRDF lut and combine them together
+        // as per the split-sum approximation to get the IBL specular part.
+        const float MAX_REFLECTION_LOD = 4.0;
+        vec3 prefilteredColor = textureLod(prefilterMap, R, roughness * MAX_REFLECTION_LOD).rgb;
+        vec2 envBRDF = texture(brdfLUT, vec2(max(dot(N, V), 0.0), roughness)).rg;
+        vec3 specular = prefilteredColor * (F * envBRDF.x + envBRDF.y);
 
-    vec3 ambient = (kD * diffuse + specular) * material.ao;
+        ambient = (kD * diffuse + specular) * ao;
+    }
+    else {
+        ambient = vec3(0.03) * albedo * ao;
+    }
 
     return (ambient + Lo);
 }
 
-vec3 CalcPointLight(vec3 N, vec3 V, vec3 R, vec3 F0)
+vec3 CalcPointLight(vec3 N, vec3 V, vec3 R, vec3 F0, vec3 albedo, float metallic, float roughness, float ao)
 {
     // reflectance equation
     vec3 Lo = vec3(0.0);
@@ -270,8 +309,8 @@ vec3 CalcPointLight(vec3 N, vec3 V, vec3 R, vec3 F0)
         vec3 radiance = pointLights[i].color * attenuation;
 
         // Cook-Torrance BRDF
-        float NDF = DistributionGGX(N, H, material.roughness);
-        float G = GeometrySmith(N, V, L, material.roughness);
+        float NDF = DistributionGGX(N, H, roughness);
+        float G = GeometrySmith(N, V, L, roughness);
         vec3 F = FresnelSchlick(max(dot(H, V), 0.0), F0);
 
         vec3 numerator = NDF * G * F;
@@ -288,7 +327,7 @@ vec3 CalcPointLight(vec3 N, vec3 V, vec3 R, vec3 F0)
         // multiply kD by the inverse metalness such that only non-metals
         // have diffuse lighting, or a linear blend if partly metal (pure
         // metals have no diffuse light).
-        kD *= 1.0 - material.metallic;
+        kD *= 1.0 - metallic;
 
         // scale light by N dot L
         float NdotL = max(dot(N, L), 0.0);
@@ -298,28 +337,35 @@ vec3 CalcPointLight(vec3 N, vec3 V, vec3 R, vec3 F0)
             shadow = PointShadowsCalculation(pointLights[i].position);
 
         // add to outgoing radiance Lo
-        Lo += (1.0 - shadow) * (kD * material.albedo / M_PI + specular) * radiance * NdotL;
+        Lo += (1.0 - shadow) * (kD * albedo / M_PI + specular) * radiance * NdotL;
         // note that we already multiplied the BRDF by the Fresnel (kS) so we won't multiply by kS again
     }
 
-    // ambien lighting (we now use IBL as the ambient term)
-    vec3 F = FresnelSchlickRoughness(max(dot(N, V), 0.0), F0, material.roughness);
+    vec3 ambient = vec3(0.0);
+    if (object.useIBL) {
+        // ambien lighting (we now use IBL as the ambient term)
+        vec3 F = FresnelSchlickRoughness(max(dot(N, V), 0.0), F0, roughness);
 
-    vec3 kS = F;
-    vec3 kD = 1.0 - kS;
-    kD *= 1.0 - material.metallic;
+        vec3 kS = F;
+        vec3 kD = 1.0 - kS;
+        kD *= 1.0 - metallic;
 
-    vec3 irradiance = texture(irradianceMap, N).rgb;
-    vec3 diffuse = irradiance * material.albedo;
+        vec3 irradiance = texture(irradianceMap, N).rgb;
+        vec3 diffuse = irradiance * albedo;
 
-    // sample both the pre-filter map and the BRDF lut and combine them together
-    // as per the split-sum approximation to get the IBL specular part.
-    const float MAX_REFLECTION_LOD = 4.0;
-    vec3 prefilteredColor = textureLod(prefilterMap, R, material.roughness * MAX_REFLECTION_LOD).rgb;
-    vec2 envBRDF = texture(brdfLUT, vec2(max(dot(N, V), 0.0), material.roughness)).rg;
-    vec3 specular = prefilteredColor * (F * envBRDF.x + envBRDF.y);
+        // sample both the pre-filter map and the BRDF lut and combine them together
+        // as per the split-sum approximation to get the IBL specular part.
+        const float MAX_REFLECTION_LOD = 4.0;
+        vec3 prefilteredColor = textureLod(prefilterMap, R, roughness * MAX_REFLECTION_LOD).rgb;
+        vec2 envBRDF = texture(brdfLUT, vec2(max(dot(N, V), 0.0), roughness)).rg;
+        vec3 specular = prefilteredColor * (F * envBRDF.x + envBRDF.y);
 
-    vec3 ambient = (kD * diffuse + specular) * material.ao;
+        ambient = (kD * diffuse + specular) * ao;
+
+    }
+    else {
+        ambient = vec3(0.03) * albedo * ao;
+    }
 
     return (ambient + Lo);
 }
@@ -330,22 +376,56 @@ void main()
     // calculate reflectance at normal incidence; if dia-electric (like plastic) use F0 of 0.04 and if it's a metal, use the albedo color as F0 (metallic workflow)
     vec3 F0 = vec3(0.04);
 
-    vec3 N = normalize(fs_in.Normal);
+    vec3 albedo;
+    float metallic;
+    float roughness;
+    float ao;
+    vec3 N;
+
+    if (object.isTextured) {
+        albedo = pow(texture(albedoMap, fs_in.TexCoords).rgb, vec3(gamma));
+        if (!object.isGLTF) {
+            metallic = texture(metallicMap, fs_in.TexCoords).r;
+            roughness = texture(roughnessMap, fs_in.TexCoords).r;
+        }
+        else {
+            metallic = texture(metallicMap, fs_in.TexCoords).b;
+            roughness = texture(roughnessMap, fs_in.TexCoords).g;
+        }
+        ao = texture(aoMap, fs_in.TexCoords).r;
+        N = getNormalFromMap();
+
+        albedo = albedo * material.albedo;
+        metallic = metallic * material.metallic;
+        roughness = roughness * material.roughness;
+        ao = ao * material.ao;
+    }
+    else {
+        albedo = material.albedo;
+        metallic = material.metallic;
+        roughness = material.roughness;
+        ao = material.ao;
+        N = normalize(fs_in.Normal);
+    }
+
+    vec3 emissive = texture(emissiveMap, fs_in.TexCoords).rgb;
+    emissive = emissive * object.emissiveIntensity;
+
     vec3 V = normalize(camPos - fs_in.WorldPos);
     vec3 R = reflect(-V, N);
 
-    F0 = mix(F0, material.albedo, material.metallic);
+    F0 = mix(F0, albedo, metallic);
 
     if (dirLight.use)
-        result += CalcDirLight(N, V, R, F0);
+        result += CalcDirLight(N, V, R, F0, albedo, metallic, roughness, ao);
 
     if (pointLight.use)
-        result += CalcPointLight(N, V, R, F0);
+        result += CalcPointLight(N, V, R, F0, albedo, metallic, roughness, ao);
 
     if (debugDepthCubeMap) {
         // display closestDepth as debug (to visualize depth cubemap)
         vec3 fragToLight = fs_in.FragPos - pointLights[0].position;
-        // use the light to fragment vector to sample from the depth map    
+        // use the light to fragment vector to sample from the depth map
         float closestDepth = texture(depthCubeMap, fragToLight).r;
         // it is currently in linear range between [0,1]. Re-transform back to original value
         closestDepth *= far_plane;
@@ -355,8 +435,15 @@ void main()
         FragColor = vec4(N, 1.0);
     }
     else {
-        FragColor = vec4(result, 1.0);
+        FragColor = vec4(result + emissive, 1.0);
     }
+
+    // Debug textures
+    // FragColor = vec4(albedo, 1.0);
+    // FragColor = vec4(texture(emissiveMap, fs_in.TexCoords).rgb, 1.0);
+    // FragColor = vec4(texture(metallicMap, fs_in.TexCoords).bbb, 1.0);
+    // FragColor = vec4(texture(roughnessMap, fs_in.TexCoords).ggg, 1.0);
+    // FragColor = vec4(texture(aoMap, fs_in.TexCoords).rrr, 1.0);
 
     // check whether result is higher than some threshold, if so, output as bloom threshold color
     float brightness = dot(FragColor.rgb, vec3(0.2126, 0.7152, 0.0722));
