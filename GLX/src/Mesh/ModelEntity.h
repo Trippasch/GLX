@@ -56,6 +56,7 @@ public:
     void drawSelfAndChild(GLenum& mode, const Frustum& frustum, Shader& shader, unsigned int& display, unsigned int& total) override
     {
         if (!children.empty()) {
+            total++;
             for (auto&& child : children) {
                 child->drawSelfAndChild(mode, frustum, shader, display, total);
             }
@@ -67,9 +68,8 @@ public:
             shader.Use().SetFloat("material.ao", material.getAO());
             shader.Use().SetMatrix4(1, transform.getModelMatrix());
             pModel->Draw(mode, shader);
-            boundingVolume.get()->drawAABB(shader, transform.getModelMatrix());
+            boundingVolume.get()->drawAABB(transform.getModelMatrix());
             display++;
         }
-        total++;
     }
 };

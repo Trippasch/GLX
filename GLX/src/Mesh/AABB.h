@@ -16,9 +16,9 @@ private:
     IndexBuffer ebo;
 
     std::array<int, 24> edges = {
-        0, 1, 2, 3, 4, 5, 6, 7,  // Front and back face edges
-        0, 2, 1, 3, 4, 6, 5, 7,  // Top and bottom face edges
-        0, 4, 1, 5, 2, 6, 3, 7   // Vertical edges
+        0, 1, 1, 3, 3, 2, 2, 0,  // Back face edges
+        4, 5, 5, 7, 7, 6, 6, 4,  // Front face edges
+        0, 4, 1, 5, 3, 7, 2, 6   // Edges connecting front and back faces
     };
 
 public:
@@ -33,29 +33,34 @@ public:
         : BoundingVolume{}, center{ inCenter }, extents{ iI, iJ, iK }
     {}
 
-    std::array<glm::vec3, 8> getVertice() const
+    ~AABB()
+    {
+        vbo.Destroy();
+        ebo.Destroy();
+    }
+
+    std::array<glm::vec3, 8> getVertices() const
     {
         std::array<glm::vec3, 8> vertice;
-        vertice[0] = { center.x - extents.x, center.y - extents.y, center.z - extents.z };
-        vertice[1] = { center.x + extents.x, center.y - extents.y, center.z - extents.z };
-        vertice[2] = { center.x - extents.x, center.y + extents.y, center.z - extents.z };
-        vertice[3] = { center.x + extents.x, center.y + extents.y, center.z - extents.z };
-        vertice[4] = { center.x - extents.x, center.y - extents.y, center.z + extents.z };
-        vertice[5] = { center.x + extents.x, center.y - extents.y, center.z + extents.z };
-        vertice[6] = { center.x - extents.x, center.y + extents.y, center.z + extents.z };
-        vertice[7] = { center.x + extents.x, center.y + extents.y, center.z + extents.z };
+        vertice[0] = { center.x - extents.x, center.y - extents.y, center.z - extents.z }; // Bottom-left-back
+        vertice[1] = { center.x + extents.x, center.y - extents.y, center.z - extents.z }; // Bottom-right-back
+        vertice[2] = { center.x - extents.x, center.y + extents.y, center.z - extents.z }; // Top-left-back
+        vertice[3] = { center.x + extents.x, center.y + extents.y, center.z - extents.z }; // Top-right-back
+        vertice[4] = { center.x - extents.x, center.y - extents.y, center.z + extents.z }; // Bottom-left-front
+        vertice[5] = { center.x + extents.x, center.y - extents.y, center.z + extents.z }; // Bottom-right-front
+        vertice[6] = { center.x - extents.x, center.y + extents.y, center.z + extents.z }; // Top-left-front
+        vertice[7] = { center.x + extents.x, center.y + extents.y, center.z + extents.z }; // Top-right-front
         return vertice;
     }
 
     void drawAABBSetup() {
-        std::array<glm::vec3, 8> vertices = getVertice();
+        std::array<glm::vec3, 8> vertices = getVertices();
         vbo = VertexBuffer(&vertices, sizeof(vertices), GL_STATIC_DRAW);
         ebo = IndexBuffer(&edges, sizeof(edges), GL_STATIC_DRAW);
     }
 
-    void drawAABB(Shader& shader, glm::mat4 modelMatrix) {
-        std::array<glm::vec3, 8> vertices = getVertice();
-        shader.Use().SetMatrix4(1, modelMatrix);
+    void drawAABB(glm::mat4 modelMatrix) {
+        ResourceManager::GetShader("gizmo").Use().SetMatrix4(1, modelMatrix);
         ebo.Bind();
         vbo.LinkAttrib(0, 3, GL_FLOAT, 3 * sizeof(float), (void*)0);
         glDrawElements(GL_LINES, 24, GL_UNSIGNED_INT, 0);

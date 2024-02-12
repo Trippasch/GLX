@@ -3,20 +3,9 @@
 
 out vec4 FragColor;
 
-uniform int axis;
+uniform vec3 color;
 
 void main()
 {
-    if (axis == 0) {
-        FragColor = vec4(1.0, 0.0, 0.0, 1.0);
-    }
-    else if (axis == 1) {
-        FragColor = vec4(0.0, 1.0, 0.0, 1.0);
-    }
-    else if (axis == 2) {
-        FragColor = vec4(0.0, 0.0, 1.0, 1.0);
-    }
-    else {
-        FragColor = vec4(1.0, 1.0, 1.0, 1.0);
-    }
+    FragColor = vec4(color, 1.0);
 }

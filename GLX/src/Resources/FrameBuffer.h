@@ -17,8 +17,8 @@ struct BloomMip
 class FrameBuffer
 {
 private:
-    GLuint m_RendererID;
-    GLuint m_RenderBufferID;
+    GLuint m_RendererID = 0;
+    GLuint m_RenderBufferID = 0;
 
     std::vector<GLuint> textures;
     std::vector<BloomMip> mipChain;

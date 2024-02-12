@@ -17,12 +17,18 @@ void FrameBuffer::UnBind()
 
 void FrameBuffer::Destroy() const
 {
-    glDeleteRenderbuffers(1, &m_RenderBufferID);
-    glDeleteFramebuffers(1, &m_RendererID);
-    for (size_t i = 0; i < textures.size(); i++)
-        glDeleteTextures(1, &textures[i]);
-    for (size_t i = 0; i < mipChain.size(); i++)
-        glDeleteTextures(1, &mipChain[i].texture);
+    if (m_RenderBufferID != 0)
+        glDeleteRenderbuffers(1, &m_RenderBufferID);
+    if (m_RendererID != 0)
+        glDeleteFramebuffers(1, &m_RendererID);
+    for (size_t i = 0; i < textures.size(); i++) {
+        if (textures[i] != 0)
+            glDeleteTextures(1, &textures[i]);
+    }
+    for (size_t i = 0; i < mipChain.size(); i++) {
+        if (mipChain[i].texture != 0)
+            glDeleteTextures(1, &mipChain[i].texture);
+    }
 }
 
 void FrameBuffer::CheckStatus()

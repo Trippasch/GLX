@@ -168,7 +168,6 @@ private:
     void highlightRenderObject(GLenum mode, Shader shader, Shader highlight_shader, Model model_3d, glm::mat4 model);
     void renderTranslationGizmo(GLenum mode, Shader shader, glm::vec3 pos);
     void renderNormalsInstanced(Shader shader, const VertexBuffer &VBO, glm::mat4 model, size_t matrices_size);
-
     void renderBloomTexture();
 
     bool imGuiResize();

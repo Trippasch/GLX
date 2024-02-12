@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Resources/Model.h"
+#include "Resources/ResourceManager.h"
 #include "Mesh/Transform.h"
 #include "Mesh/Material.h"
 #include "Mesh/AABB.h"
@@ -46,11 +47,9 @@ public:
 
     virtual void drawSelfAndChild(GLenum& mode, const Frustum& frustum, Shader& shader, unsigned int& display, unsigned int& total) = 0;
 
-    void renderSceneGraph(GLenum mode, Shader shader, const Frustum& camFrustum)
+    void renderSceneGraph(GLenum mode, Shader shader, const Frustum& camFrustum, unsigned int& display, unsigned int& total)
     {
-        unsigned int total = 0, display = 0;
         drawSelfAndChild(mode, camFrustum, shader, display, total);
-        GL_INFO("Total process in CPU : {0} / Total send to GPU : {1}", total, display);
         updateSelfAndChild();
     }
 };

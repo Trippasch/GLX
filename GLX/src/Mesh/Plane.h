@@ -23,7 +23,7 @@ public:
 
         // Each vertex consists of 8 values (3 for position, 3 for normals, 2 for texcoords)
         // So we step 8 values at a time
-        for (int i = 0; i < size / sizeof(float); i += 8) {
+        for (int i = 0; i < size; i += 8) {
             glm::vec3 vertexPosition = glm::vec3(vertices[i], vertices[i + 1], vertices[i + 2]);
 
             minAABB.x = std::min(minAABB.x, vertexPosition.x);
@@ -40,6 +40,7 @@ public:
     void drawSelfAndChild(GLenum& mode, const Frustum& frustum, Shader& shader, unsigned int& display, unsigned int& total) override
     {
         if (!children.empty()) {
+            total++;
             for (auto&& child : children) {
                 child->drawSelfAndChild(mode, frustum, shader, display, total);
             }
@@ -59,10 +60,9 @@ public:
             pVBO->UnlinkAttrib(1);
             pVBO->UnlinkAttrib(2);
             glEnable(GL_CULL_FACE);
-            boundingVolume.get()->drawAABB(shader, transform.getModelMatrix());
+            boundingVolume.get()->drawAABB(transform.getModelMatrix());
 
             display++;
         }
-        total++;
     }
 };

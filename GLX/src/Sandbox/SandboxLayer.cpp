@@ -2,8 +2,8 @@
 
 #include "Core/Application.h"
 
-#include "Utils/glfw_tools.h"
-#include "Utils/gl_tools.h"
+// #include "Utils/glfw_tools.h"
+// #include "Utils/gl_tools.h"
 
 #include "ImGui/ImGuiFileDialog.h"
 
@@ -374,7 +374,7 @@ void SandboxLayer::OnAttach()
 
     // Create Planes Entity
     m_Planes = Plane();
-    Entity* lastEntity = &m_Models;
+    Entity* lastEntity = &m_Planes;
     // Add child
     m_Planes.addChild<Plane>(planeVBO, planeVertices, sizeof(planeVertices));
     lastEntity = m_Planes.children.back().get();
@@ -466,6 +466,8 @@ void SandboxLayer::OnUpdate()
     ResourceManager::GetShader("hdr_skybox").Use().SetMatrix4(0, m_Camera.GetProjectionMatrix());
     ResourceManager::GetShader("hdr_skybox").Use().SetMatrix4(1, m_Camera.GetViewMatrix());
 
+    unsigned int total = 0, display = 0;
+
     // Directional Light and Shadows
     if (m_UseDirShadows && m_UseDirLight) {
         // generate the depth map for directional shadows
@@ -482,13 +484,13 @@ void SandboxLayer::OnUpdate()
         depthMapFBO.Bind();
         glClear(GL_DEPTH_BUFFER_BIT);
 
-        m_Planes.renderSceneGraph(GL_TRIANGLES, ResourceManager::GetShader("depth_map"), m_CamFrustum);
+        m_Planes.renderSceneGraph(GL_TRIANGLES, ResourceManager::GetShader("depth_map"), m_CamFrustum, display, total);
 
-        m_Spheres.renderSceneGraph(GL_TRIANGLE_STRIP, ResourceManager::GetShader("depth_map"), m_CamFrustum);
+        m_Spheres.renderSceneGraph(GL_TRIANGLE_STRIP, ResourceManager::GetShader("depth_map"), m_CamFrustum, display, total);
 
-        m_Cubes.renderSceneGraph(GL_TRIANGLES, ResourceManager::GetShader("depth_map"), m_CamFrustum);
+        m_Cubes.renderSceneGraph(GL_TRIANGLES, ResourceManager::GetShader("depth_map"), m_CamFrustum, display, total);
 
-        m_Models.renderSceneGraph(GL_TRIANGLES, ResourceManager::GetShader("depth_map"), m_CamFrustum);
+        m_Models.renderSceneGraph(GL_TRIANGLES, ResourceManager::GetShader("depth_map"), m_CamFrustum, display, total);
 
         FrameBuffer::UnBind();
 
@@ -519,13 +521,13 @@ void SandboxLayer::OnUpdate()
         depthCubeMapFBO.Bind();
         glClear(GL_DEPTH_BUFFER_BIT);
 
-        m_Planes.renderSceneGraph(GL_TRIANGLES, ResourceManager::GetShader("depth_cube_map"), m_CamFrustum);
+        m_Planes.renderSceneGraph(GL_TRIANGLES, ResourceManager::GetShader("depth_cube_map"), m_CamFrustum, display, total);
 
-        m_Spheres.renderSceneGraph(GL_TRIANGLE_STRIP, ResourceManager::GetShader("depth_cube_map"), m_CamFrustum);
+        m_Spheres.renderSceneGraph(GL_TRIANGLE_STRIP, ResourceManager::GetShader("depth_cube_map"), m_CamFrustum, display, total);
 
-        m_Cubes.renderSceneGraph(GL_TRIANGLES, ResourceManager::GetShader("depth_cube_map"), m_CamFrustum);
+        m_Cubes.renderSceneGraph(GL_TRIANGLES, ResourceManager::GetShader("depth_cube_map"), m_CamFrustum, display, total);
 
-        m_Models.renderSceneGraph(GL_TRIANGLES, ResourceManager::GetShader("depth_cube_map"), m_CamFrustum);
+        m_Models.renderSceneGraph(GL_TRIANGLES, ResourceManager::GetShader("depth_cube_map"), m_CamFrustum, display, total);
 
         FrameBuffer::UnBind();
 
@@ -556,7 +558,7 @@ void SandboxLayer::OnUpdate()
         glActiveTexture(GL_TEXTURE10);
         depthCubeMapFBO.BindTexture(GL_TEXTURE_CUBE_MAP, 0);
     }
-    m_Planes.renderSceneGraph(GL_TRIANGLES, ResourceManager::GetShader("pbr_lighting"), m_CamFrustum);
+    m_Planes.renderSceneGraph(GL_TRIANGLES, ResourceManager::GetShader("pbr_lighting"), m_CamFrustum, display, total);
     Texture2D::UnBind();
     Texture2D::UnBindCubemap();
 
@@ -576,7 +578,7 @@ void SandboxLayer::OnUpdate()
         glActiveTexture(GL_TEXTURE10);
         depthCubeMapFBO.BindTexture(GL_TEXTURE_CUBE_MAP, 0);
     }
-    m_Cubes.renderSceneGraph(GL_TRIANGLES, ResourceManager::GetShader("pbr_lighting"), m_CamFrustum);
+    m_Cubes.renderSceneGraph(GL_TRIANGLES, ResourceManager::GetShader("pbr_lighting"), m_CamFrustum, display, total);
     Texture2D::UnBind();
     Texture2D::UnBindCubemap();
 
@@ -596,7 +598,7 @@ void SandboxLayer::OnUpdate()
         glActiveTexture(GL_TEXTURE10);
         depthCubeMapFBO.BindTexture(GL_TEXTURE_CUBE_MAP, 0);
     }
-    m_Spheres.renderSceneGraph(GL_TRIANGLE_STRIP, ResourceManager::GetShader("pbr_lighting"), m_CamFrustum);
+    m_Spheres.renderSceneGraph(GL_TRIANGLE_STRIP, ResourceManager::GetShader("pbr_lighting"), m_CamFrustum, display, total);
     Texture2D::UnBind();
     Texture2D::UnBindCubemap();
 
@@ -711,7 +713,7 @@ void SandboxLayer::OnUpdate()
     // else {
         // renderObject(GL_TRIANGLES, ResourceManager::GetShader("pbr_lighting_textured"), ResourceManager::GetModel("helmet"), object_model);
 
-        m_Models.renderSceneGraph(GL_TRIANGLES, ResourceManager::GetShader("pbr_lighting"), m_CamFrustum);
+        m_Models.renderSceneGraph(GL_TRIANGLES, ResourceManager::GetShader("pbr_lighting"), m_CamFrustum, display, total);
     // }
 
     // if (m_UseTransGizmo) {
@@ -1053,9 +1055,9 @@ void SandboxLayer::OnImGuiRender()
 
     ImGui::Begin("Application Info");
 
-    printGLInfo();
+    // printGLInfo();
     ImGui::Separator();
-    printGLFWInfo(m_Window);
+    // printGLFWInfo(m_Window);
     ImGui::Separator();
     ImGui::Text("Dear ImGui %s", ImGui::GetVersion());
 

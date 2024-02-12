@@ -21,8 +21,11 @@ Application::Application()
     m_ImGuiLayer = new ImGuiLayer();
     PushOverlay(m_ImGuiLayer);
 
-    m_SandboxLayer = new SandboxLayer();
-    PushOverlay(m_SandboxLayer);
+    m_RendererLayer = new RendererLayer();
+    PushOverlay(m_RendererLayer);
+
+    // m_SandboxLayer = new SandboxLayer();
+    // PushOverlay(m_SandboxLayer);
 }
 
 Application::~Application()
