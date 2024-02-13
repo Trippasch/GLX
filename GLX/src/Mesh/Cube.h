@@ -37,6 +37,25 @@ public:
         return AABB(minAABB, maxAABB);
     }
 
+    void drawSelfAndChildSimple(GLenum& mode, Shader& shader) override
+    {
+        if (!children.empty()) {
+            for (auto&& child : children) {
+                child->drawSelfAndChildSimple(mode, shader);
+            }
+        }
+        else {
+            shader.Use().SetMatrix4(1, transform.getModelMatrix());
+            pVBO->LinkAttrib(0, 3, GL_FLOAT, 8 * sizeof(float), (void*)0);
+            pVBO->LinkAttrib(1, 3, GL_FLOAT, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+            pVBO->LinkAttrib(2, 2, GL_FLOAT, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+            glDrawArrays(mode, 0, 36);
+            pVBO->UnlinkAttrib(0);
+            pVBO->UnlinkAttrib(1);
+            pVBO->UnlinkAttrib(2);
+        }
+    }
+
     void drawSelfAndChild(GLenum& mode, const Frustum& frustum, Shader& shader, unsigned int& display, unsigned int& total) override
     {
         if (!children.empty()) {

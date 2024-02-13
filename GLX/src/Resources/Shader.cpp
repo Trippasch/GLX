@@ -103,6 +103,14 @@ void Shader::SetMatrix4(const char *name, const glm::mat4 &matrix, bool useShade
     glUniformMatrix4fv(glGetUniformLocation(this->ID, name), 1, false, glm::value_ptr(matrix));
 }
 
+
+void Shader::SetBlockIndex(const char *name, int location, bool useShader)
+{
+    if (useShader)
+        this->Use();
+    glUniformBlockBinding(this->ID, glGetUniformBlockIndex(this->ID, name), location);
+}
+
 // Explicit uniform location
 void Shader::SetFloat(int location, float value, bool useShader)
 {

@@ -14,7 +14,11 @@ out VS_OUT
     vec4 FragPosLightSpace;
 } vs_out;
 
-layout (location = 0) uniform mat4 projView;
+layout (std140) uniform Matrices
+{
+    mat4 projView;
+};
+
 layout (location = 1) uniform mat4 model;
 layout (location = 2) uniform mat4 lightSpaceMatrix;
 

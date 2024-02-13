@@ -29,6 +29,8 @@ public:
     void SetVector4f(const char *name, const glm::vec4 &value, bool useShader = false);
     void SetMatrix4(const char *name, const glm::mat4 &matrix, bool useShader = false);
 
+    void SetBlockIndex(const char* name, int location, bool useShader = false);
+
     // utility functions with explicit uniform location
     void SetFloat(int location, float value, bool useShader = false);
     void SetInteger(int location, int value, bool useShader = false);

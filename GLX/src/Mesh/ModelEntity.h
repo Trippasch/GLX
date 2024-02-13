@@ -53,6 +53,19 @@ public:
         return SphereBV((maxAABB + minAABB) * 0.5f, glm::length(minAABB - maxAABB));
     }
 
+    void drawSelfAndChildSimple(GLenum& mode, Shader& shader) override
+    {
+        if (!children.empty()) {
+            for (auto&& child : children) {
+                child->drawSelfAndChildSimple(mode, shader);
+            }
+        }
+        else {
+            shader.Use().SetMatrix4(1, transform.getModelMatrix());
+            pModel->Draw(mode, shader);
+        }
+    }
+
     void drawSelfAndChild(GLenum& mode, const Frustum& frustum, Shader& shader, unsigned int& display, unsigned int& total) override
     {
         if (!children.empty()) {

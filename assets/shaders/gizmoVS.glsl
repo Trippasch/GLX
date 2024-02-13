@@ -3,7 +3,11 @@
 
 layout (location = 0) in vec3 aPos;
 
-layout (location = 0) uniform mat4 projView;
+layout (std140) uniform Matrices
+{
+    mat4 projView;
+};
+
 layout (location = 1) uniform mat4 model;
 
 void main()

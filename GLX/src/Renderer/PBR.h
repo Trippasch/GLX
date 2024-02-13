@@ -33,7 +33,7 @@ private:
     GLuint m_BRDFLUTTextureWidth = 512;
     GLuint m_BRDFLUTTextureHeight = 512;
 
-    std::string m_SkyboxFilename = "assets/textures/hdr-skyboxes/Nature_8K_hdri.jpg";
+    std::string m_SkyboxFilename = "assets/textures/hdr-skyboxes/industrial_sunset_puresky_8K.jpg";
 
 public:
     PBR(RendererLayer* renderer);

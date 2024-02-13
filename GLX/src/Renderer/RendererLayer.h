@@ -6,6 +6,8 @@
 #include "Camera/Camera.h"
 
 #include "Resources/FrameBuffer.h"
+#include "Resources/UniformBuffer.h"
+
 #include "Mesh/ModelEntity.h"
 #include "Mesh/Cube.h"
 #include "Mesh/Sphere.h"
@@ -32,6 +34,7 @@
 #include <glad/glad.h>
 
 class PBR;
+class PointLight;
 class PostProcessor;
 
 class RendererLayer : public Layer
@@ -87,6 +90,9 @@ private:
     // FrameBuffers
     FrameBuffer m_MultisampleFBO;
     FrameBuffer m_ImGUIFBO;
+
+    // UniformBuffers
+    UniformBuffer m_MatricesUBO;
 
     // Mesh Entities
     Plane m_Planes;

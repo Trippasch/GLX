@@ -45,7 +45,15 @@ public:
     //Force update of transform even if local space don't change
     void forceUpdateSelfAndChild();
 
+    virtual void drawSelfAndChildSimple(GLenum& mode, Shader& shader) = 0;
+
     virtual void drawSelfAndChild(GLenum& mode, const Frustum& frustum, Shader& shader, unsigned int& display, unsigned int& total) = 0;
+
+    void renderSceneGraphSimple(GLenum mode, Shader shader)
+    {
+        drawSelfAndChildSimple(mode, shader);
+        updateSelfAndChild();
+    }
 
     void renderSceneGraph(GLenum mode, Shader shader, const Frustum& camFrustum, unsigned int& display, unsigned int& total)
     {

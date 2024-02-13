@@ -21,6 +21,12 @@ layout (binding = 0) uniform samplerCube irradianceMap;
 layout (binding = 1) uniform samplerCube prefilterMap;
 layout (binding = 2) uniform sampler2D brdfLUT;
 
+// material parameters
+layout (binding = 3) uniform sampler2D albedoMap;
+layout (binding = 4) uniform sampler2D normalMap;
+layout (binding = 5) uniform sampler2D metallicMap;
+layout (binding = 6) uniform sampler2D roughnessMap;
+layout (binding = 7) uniform sampler2D aoMap;
 layout (binding = 8) uniform sampler2D emissiveMap;
 
 // shadows
@@ -67,6 +73,23 @@ struct Object {
 uniform Object object;
 
 const float gamma = 2.2;
+
+vec3 getNormalFromMap()
+{
+    vec3 tangentNormal = texture(normalMap, fs_in.TexCoords).xyz * 2.0 - 1.0;
+
+    vec3 Q1  = dFdx(fs_in.WorldPos);
+    vec3 Q2  = dFdy(fs_in.WorldPos);
+    vec2 st1 = dFdx(fs_in.TexCoords);
+    vec2 st2 = dFdy(fs_in.TexCoords);
+
+    vec3 N   = normalize(fs_in.Normal);
+    vec3 T  = normalize(Q1*st2.t - Q2*st1.t);
+    vec3 B  = -normalize(cross(N, T));
+    mat3 TBN = mat3(T, B, N);
+
+    return normalize(TBN * tangentNormal);
+}
 
 float DistributionGGX(vec3 N, vec3 H, float roughness)
 {
@@ -349,11 +372,22 @@ void main()
     // calculate reflectance at normal incidence; if dia-electric (like plastic) use F0 of 0.04 and if it's a metal, use the albedo color as F0 (metallic workflow)
     vec3 F0 = vec3(0.04);
 
-    vec3 albedo = material.albedo;
-    float metallic = material.metallic;
-    float roughness = material.roughness;
-    float ao = material.ao;
-    vec3 N = normalize(fs_in.Normal);
+    vec3 albedo = pow(texture(albedoMap, fs_in.TexCoords).rgb, vec3(gamma));
+
+    float metallic = texture(metallicMap, fs_in.TexCoords).b;
+    float roughness = texture(roughnessMap, fs_in.TexCoords).g;
+
+    // If object is not GLTF, use the below
+    // float metallic = texture(metallicMap, fs_in.TexCoords).r;
+    // float roughness = texture(roughnessMap, fs_in.TexCoords).r;
+
+    float ao = texture(aoMap, fs_in.TexCoords).r;
+    vec3 N = getNormalFromMap();
+
+    albedo = albedo * material.albedo;
+    metallic = metallic * material.metallic;
+    roughness = roughness * material.roughness;
+    ao = ao * material.ao;
 
     vec3 emissive = texture(emissiveMap, fs_in.TexCoords).rgb;
     emissive = emissive * object.emissiveIntensity;
@@ -371,10 +405,13 @@ void main()
 
     FragColor = vec4(result + emissive, 1.0);
 
-    // Debug
+    // Debug textures
     // FragColor = vec4(N, 1.0);
     // FragColor = vec4(albedo, 1.0);
     // FragColor = vec4(texture(emissiveMap, fs_in.TexCoords).rgb, 1.0);
+    // FragColor = vec4(texture(metallicMap, fs_in.TexCoords).bbb, 1.0);
+    // FragColor = vec4(texture(roughnessMap, fs_in.TexCoords).ggg, 1.0);
+    // FragColor = vec4(texture(aoMap, fs_in.TexCoords).rrr, 1.0);
 
     // check whether result is higher than some threshold, if so, output as bloom threshold color
     float brightness = dot(FragColor.rgb, vec3(0.2126, 0.7152, 0.0722));
