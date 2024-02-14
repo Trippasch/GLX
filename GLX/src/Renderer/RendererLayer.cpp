@@ -233,7 +233,7 @@ void RendererLayer::OnUpdate()
         m_DirectionalLights[i]->m_DepthMapFBO.BindTexture(GL_TEXTURE_2D, 0);
     }
     for (size_t i = 0; i < m_PointLights.size(); i++) {
-        glActiveTexture(GL_TEXTURE11 + i);
+        glActiveTexture(GL_TEXTURE19 + i);
         m_PointLights[i]->m_DepthCubeMapFBO.BindTexture(GL_TEXTURE_CUBE_MAP, 0);
     }
     m_Planes.renderSceneGraph(GL_TRIANGLES, m_PBRShader, m_CamFrustum, display, total);
@@ -252,7 +252,7 @@ void RendererLayer::OnUpdate()
         m_DirectionalLights[i]->m_DepthMapFBO.BindTexture(GL_TEXTURE_2D, 0);
     }
     for (size_t i = 0; i < m_PointLights.size(); i++) {
-        glActiveTexture(GL_TEXTURE11 + i);
+        glActiveTexture(GL_TEXTURE19 + i);
         m_PointLights[i]->m_DepthCubeMapFBO.BindTexture(GL_TEXTURE_CUBE_MAP, 0);
     }
     m_Cubes.renderSceneGraph(GL_TRIANGLES, m_PBRShader, m_CamFrustum, display, total);
@@ -271,7 +271,7 @@ void RendererLayer::OnUpdate()
         m_DirectionalLights[i]->m_DepthMapFBO.BindTexture(GL_TEXTURE_2D, 0);
     }
     for (size_t i = 0; i < m_PointLights.size(); i++) {
-        glActiveTexture(GL_TEXTURE11 + i);
+        glActiveTexture(GL_TEXTURE19 + i);
         m_PointLights[i]->m_DepthCubeMapFBO.BindTexture(GL_TEXTURE_CUBE_MAP, 0);
     }
     m_Spheres.renderSceneGraph(GL_TRIANGLE_STRIP, m_PBRShader, m_CamFrustum, display, total);
@@ -288,7 +288,7 @@ void RendererLayer::OnUpdate()
         m_DirectionalLights[i]->m_DepthMapFBO.BindTexture(GL_TEXTURE_2D, 0);
     }
     for (size_t i = 0; i < m_PointLights.size(); i++) {
-        glActiveTexture(GL_TEXTURE11 + i);
+        glActiveTexture(GL_TEXTURE19 + i);
         m_PointLights[i]->m_DepthCubeMapFBO.BindTexture(GL_TEXTURE_CUBE_MAP, 0);
     }
     m_Models.renderSceneGraph(GL_TRIANGLES, m_PBRShaderTextured, m_CamFrustum, display, total);
@@ -593,11 +593,15 @@ void RendererLayer::AddLight(DirectionalLight* light)
 {
     m_DirectionalLights.push_back(light);
     ResourceManager::GetShader("pbr_lighting").Use().SetInteger("dirLight.use", 1);
+    ResourceManager::GetShader("pbr_lighting").Use().SetInteger("nrDirLights", m_DirectionalLights.size());
+
     ResourceManager::GetShader("pbr_lighting").Use().SetVector3f(("dirLights[" + std::to_string(m_DirectionalLights.size()-1) + "].direction").c_str(), light->m_Direction);
     ResourceManager::GetShader("pbr_lighting").Use().SetVector3f(("dirLights[" + std::to_string(m_DirectionalLights.size()-1) + "].color").c_str(), light->m_Color * light->m_Intensity);
     ResourceManager::GetShader("pbr_lighting").Use().SetInteger(("dirLights[" + std::to_string(m_DirectionalLights.size()-1) + "].shadows").c_str(), light->m_CastShadows);
 
     ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger("dirLight.use", 1);
+    ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger("nrDirLights", m_DirectionalLights.size());
+
     ResourceManager::GetShader("pbr_lighting_textured").Use().SetVector3f(("dirLights[" + std::to_string(m_DirectionalLights.size()-1) + "].direction").c_str(), light->m_Direction);
     ResourceManager::GetShader("pbr_lighting_textured").Use().SetVector3f(("dirLights[" + std::to_string(m_DirectionalLights.size()-1) + "].color").c_str(), light->m_Color * light->m_Intensity);
     ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger(("dirLights[" + std::to_string(m_DirectionalLights.size()-1) + "].shadows").c_str(), light->m_CastShadows);
@@ -608,13 +612,18 @@ void RendererLayer::AddLight(PointLight* light)
 {
     m_PointLights.push_back(light);
     ResourceManager::GetShader("pbr_lighting").Use().SetInteger("pointLight.use", 1);
+    ResourceManager::GetShader("pbr_lighting").Use().SetInteger("nrPointLights", m_PointLights.size());
+
     ResourceManager::GetShader("pbr_lighting").Use().SetVector3f(("pointLights[" + std::to_string(m_PointLights.size()-1) + "].position").c_str(), light->m_Position);
     ResourceManager::GetShader("pbr_lighting").Use().SetVector3f(("pointLights[" + std::to_string(m_PointLights.size()-1) + "].color").c_str(), light->m_Color * light->m_Intensity);
     ResourceManager::GetShader("pbr_lighting").Use().SetInteger(("pointLights[" + std::to_string(m_PointLights.size()-1) + "].shadows").c_str(), light->m_CastShadows);
 
+    ResourceManager::GetShader("debug_depth_cube_map").Use().SetInteger("nrPointLights", m_PointLights.size());
     ResourceManager::GetShader("debug_depth_cube_map").Use().SetVector3f(("pointLights[" + std::to_string(m_PointLights.size()-1) + "].position").c_str(), light->m_Position);
 
     ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger("pointLight.use", 1);
+    ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger("nrPointLights", m_PointLights.size());
+
     ResourceManager::GetShader("pbr_lighting_textured").Use().SetVector3f(("pointLights[" + std::to_string(m_PointLights.size()-1) + "].position").c_str(), light->m_Position);
     ResourceManager::GetShader("pbr_lighting_textured").Use().SetVector3f(("pointLights[" + std::to_string(m_PointLights.size()-1) + "].color").c_str(), light->m_Color * light->m_Intensity);
     ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger(("pointLights[" + std::to_string(m_PointLights.size()-1) + "].shadows").c_str(), light->m_CastShadows);

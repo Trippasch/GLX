@@ -7,13 +7,16 @@
 layout (location = 0) out vec4 FragColor;
 layout (location = 1) out vec4 BrightColor;
 
+#define MAX_DIR_LIGHTS 10
+#define MAX_POINT_LIGHTS 10
+
 in VS_OUT
 {
     vec2 TexCoords;
     vec3 WorldPos;
     vec3 Normal;
     vec3 FragPos;
-    vec4 FragPosLightSpaces[2];
+    vec4 FragPosLightSpaces[MAX_DIR_LIGHTS];
 } fs_in;
 
 // IBL
@@ -30,8 +33,8 @@ layout (binding = 7) uniform sampler2D aoMap;
 layout (binding = 8) uniform sampler2D emissiveMap;
 
 // shadows
-layout (binding = 9) uniform sampler2D depthMaps[2];
-layout (binding = 11) uniform samplerCube depthCubeMaps[2];
+layout (binding = 9) uniform sampler2D depthMaps[MAX_DIR_LIGHTS];
+layout (binding = 19) uniform samplerCube depthCubeMaps[MAX_POINT_LIGHTS];
 
 // material parameters
 struct Material {
@@ -42,7 +45,8 @@ struct Material {
 };
 uniform Material material;
 
-#define NR_LIGHTS 2
+uniform int nrDirLights;
+uniform int nrPointLights;
 
 // directional light
 struct DirLight {
@@ -51,16 +55,17 @@ struct DirLight {
     vec3 direction;
     vec3 color;
 };
-uniform DirLight dirLights[NR_LIGHTS];
+uniform DirLight dirLights[MAX_DIR_LIGHTS];
 uniform DirLight dirLight;
 
+// point light
 struct PointLight {
     bool shadows;
     bool use;
     vec3 position;
     vec3 color;
 };
-uniform PointLight pointLights[NR_LIGHTS];
+uniform PointLight pointLights[MAX_POINT_LIGHTS];
 uniform PointLight pointLight;
 
 uniform vec3 camPos;
@@ -227,7 +232,7 @@ vec3 CalcDirLight(vec3 N, vec3 V, vec3 R, vec3 F0, vec3 albedo, float metallic, 
 {
     // reflectance equation
     vec3 Lo = vec3(0.0);
-    for (int i = 0; i < NR_LIGHTS; i++) {
+    for (int i = 0; i < nrDirLights; i++) {
         // calculate per-light radiance
         vec3 L = normalize(-dirLights[i].direction);
         vec3 H = normalize(V + L);
@@ -298,7 +303,7 @@ vec3 CalcPointLight(vec3 N, vec3 V, vec3 R, vec3 F0, vec3 albedo, float metallic
 {
     // reflectance equation
     vec3 Lo = vec3(0.0);
-    for (int i = 0; i < NR_LIGHTS; i++) {
+    for (int i = 0; i < nrPointLights; i++) {
         // calculate per-light radiance
         vec3 L = normalize(pointLights[i].position - fs_in.WorldPos);
         vec3 H = normalize(V + L);

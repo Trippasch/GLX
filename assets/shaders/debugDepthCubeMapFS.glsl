@@ -4,26 +4,28 @@
 
 layout (location = 0) out vec4 FragColor;
 
+#define MAX_POINT_LIGHTS 10
+
 in VS_OUT
 {
     vec3 FragPos;
 } fs_in;
 
-layout (binding = 11) uniform samplerCube depthCubeMaps[2];
+layout (binding = 19) uniform samplerCube depthCubeMaps[MAX_POINT_LIGHTS];
 
-#define NR_LIGHTS 2
+uniform int nrPointLights;
 
 struct PointLight {
     vec3 position;
 };
-uniform PointLight pointLights[NR_LIGHTS];
+uniform PointLight pointLights[MAX_POINT_LIGHTS];
 
 uniform float far_plane;
 
 void main()
 {
     vec3 res = vec3(0.0);
-    for (int i = 0; i < NR_LIGHTS; i++) {
+    for (int i = 0; i < nrPointLights; i++) {
         // display closestDepth as debug (to visualize depth cubemap)
         vec3 fragToLight = fs_in.FragPos - pointLights[i].position;
         // use the light to fragment vector to sample from the depth map
