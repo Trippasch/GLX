@@ -7,6 +7,8 @@
 #include "Mesh/AABB.h"
 #include "Mesh/SphereBV.h"
 
+#include <imgui.h>
+
 #include <vector>
 #include <memory>
 
@@ -26,6 +28,9 @@ public:
     //Bounding volume
     std::shared_ptr<AABB> boundingVolume;
 
+    bool drawAABB = false;
+
+    Entity();
     virtual ~Entity() = default;
 
     AABB getGlobalAABB();
@@ -48,6 +53,8 @@ public:
     virtual void drawSelfAndChildSimple(GLenum& mode, Shader& shader) = 0;
 
     virtual void drawSelfAndChild(GLenum& mode, const Frustum& frustum, Shader& shader, unsigned int& display, unsigned int& total) = 0;
+
+    virtual void renderGUI(int i) = 0;
 
     void renderSceneGraphSimple(GLenum mode, Shader shader)
     {

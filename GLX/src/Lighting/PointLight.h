@@ -20,6 +20,7 @@ public:
     float m_Intensity = 20.0f;
 
     bool m_CastShadows = true;
+    bool m_RenderMesh = true;
     GLuint m_ShadowWidth = 1024;
     GLuint m_ShadowHeight = 1024;
     glm::mat4 m_PointLightProjection;
@@ -31,4 +32,5 @@ public:
 
     void PointLightProjectionMatrix();
     void RenderMesh();
+    void RenderGUI(int i);
 };

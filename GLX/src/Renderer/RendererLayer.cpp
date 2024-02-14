@@ -33,9 +33,8 @@ void RendererLayer::OnAttach()
 
     // Load Model
     ResourceManager::LoadModel("assets/objects/helmet/DamagedHelmet.gltf", "helmet");
-
-    ResourceManager::LoadShader("assets/shaders/gizmoVS.glsl", "assets/shaders/gizmoFS.glsl", nullptr, "gizmo");
-    ResourceManager::GetShader("gizmo").Use().SetVector3f("color", glm::vec3(1.0f, 1.0f, 1.0f));
+    // Load Debug Shader
+    ResourceManager::LoadShader("assets/shaders/quadVS.glsl", "assets/shaders/debugFS.glsl", nullptr, "debug_quad");
 
     // Initialize Framebuffers
     m_MultisampleFBO.Bind();
@@ -52,6 +51,11 @@ void RendererLayer::OnAttach()
     FrameBuffer::CheckStatus();
     FrameBuffer::UnBind();
 
+    m_DebugFBO.Bind();
+    m_DebugFBO.TextureAttachment(1, 0, GL_TEXTURE_2D, GL_RGBA8, m_Width, m_Height);
+    FrameBuffer::CheckStatus();
+    FrameBuffer::UnBind();
+
     // Uniform Buffers
     m_MatricesUBO = UniformBuffer(0, 0, sizeof(glm::mat4), GL_STATIC_DRAW);
 
@@ -63,17 +67,19 @@ void RendererLayer::OnAttach()
     if (m_UseSkybox) {
         m_PBR->CreateSkybox();
     }
+    m_PBRShader = ResourceManager::GetShader("pbr_lighting");
+    m_PBRShaderTextured = ResourceManager::GetShader("pbr_lighting_textured");
 
     // PostProcessor
     m_PostProcessor = new PostProcessor(this);
 
-    ResourceManager::GetShader("gizmo").Use().SetBlockIndex("Matrices", 0);
-
     // Lights
-    DirectionalLight* dirLight = new DirectionalLight();
+    DirectionalLight* dirLight = new DirectionalLight(this);
     AddLight(dirLight);
     PointLight* pointLight = new PointLight(this);
     AddLight(pointLight);
+    PointLight* pointLight1 = new PointLight(this);
+    AddLight(pointLight1);
 
     Entity* lastEntity;
     // Create Models
@@ -128,72 +134,87 @@ void RendererLayer::OnUpdate()
     ResourceManager::GetShader("pbr_lighting").Use().SetVector3f("camPos", m_Camera.m_Position);
     ResourceManager::GetShader("pbr_lighting_textured").Use().SetVector3f("camPos", m_Camera.m_Position);
 
+    // Render Directional Lights Shadows
     for (size_t i = 0; i < m_DirectionalLights.size(); i++) {
-        // generate the depth map for directional shadows
-        glm::mat4 depthMapView = glm::lookAt(m_DirectionalLights[i]->m_DepthMapOrig, m_DirectionalLights[i]->m_DepthMapOrig + m_DirectionalLights[i]->m_Direction, glm::vec3(0.0f, 1.0f, 0.0f));
-        glm::mat4 depthMapLightSpaceMatrix = m_DirectionalLights[i]->m_DepthMapProjection * depthMapView;
+        if (m_DirectionalLights[i]->m_CastShadows) {
+            // generate the depth map for directional shadows
+            glm::mat4 depthMapView = glm::lookAt(m_DirectionalLights[i]->m_DepthMapOrig, m_DirectionalLights[i]->m_DepthMapOrig + m_DirectionalLights[i]->m_Direction, glm::vec3(0.0f, 1.0f, 0.0f));
+            glm::mat4 depthMapLightSpaceMatrix = m_DirectionalLights[i]->m_DepthMapProjection * depthMapView;
 
-        ResourceManager::GetShader("depth_map").Use().SetMatrix4(0, depthMapLightSpaceMatrix);
-        ResourceManager::GetShader("pbr_lighting").Use().SetMatrix4(2, depthMapLightSpaceMatrix);
-        ResourceManager::GetShader("pbr_lighting_textured").Use().SetMatrix4(2, depthMapLightSpaceMatrix);
+            ResourceManager::GetShader("depth_map").Use().SetMatrix4(0, depthMapLightSpaceMatrix);
+            ResourceManager::GetShader("pbr_lighting").Use().SetMatrix4(2, depthMapLightSpaceMatrix);
+            ResourceManager::GetShader("pbr_lighting_textured").Use().SetMatrix4(2, depthMapLightSpaceMatrix);
 
-        // shadow mapping
-        glViewport(0, 0, m_DirectionalLights[i]->m_ShadowWidth, m_DirectionalLights[i]->m_ShadowHeight);
+            // shadow mapping
+            glViewport(0, 0, m_DirectionalLights[i]->m_ShadowWidth, m_DirectionalLights[i]->m_ShadowHeight);
 
-        // directional shadows
-        m_DirectionalLights[i]->m_DepthMapFBO.Bind();
-        glClear(GL_DEPTH_BUFFER_BIT);
+            // directional shadows
+            m_DirectionalLights[i]->m_DepthMapFBO.Bind();
+            glClear(GL_DEPTH_BUFFER_BIT);
 
-        m_Planes.renderSceneGraphSimple(GL_TRIANGLES, ResourceManager::GetShader("depth_map"));
-        m_Spheres.renderSceneGraphSimple(GL_TRIANGLE_STRIP, ResourceManager::GetShader("depth_map"));
-        m_Cubes.renderSceneGraphSimple(GL_TRIANGLES, ResourceManager::GetShader("depth_map"));
-        m_Models.renderSceneGraphSimple(GL_TRIANGLES, ResourceManager::GetShader("depth_map"));
+            m_Planes.renderSceneGraphSimple(GL_TRIANGLES, ResourceManager::GetShader("depth_map"));
+            m_Spheres.renderSceneGraphSimple(GL_TRIANGLE_STRIP, ResourceManager::GetShader("depth_map"));
+            m_Cubes.renderSceneGraphSimple(GL_TRIANGLES, ResourceManager::GetShader("depth_map"));
+            m_Models.renderSceneGraphSimple(GL_TRIANGLES, ResourceManager::GetShader("depth_map"));
 
-        FrameBuffer::UnBind();
+            FrameBuffer::UnBind();
 
-        glViewport(0, 0, m_Width, m_Height);
+            glViewport(0, 0, m_Width, m_Height);
+        }
     }
 
+    // Render Point Lights Shadows
     for (size_t i = 0; i < m_PointLights.size(); i++) {
-        // generate depth cube map
-        std::vector<glm::mat4> pointLightMatrices;
-        pointLightMatrices.push_back(m_PointLights[i]->m_PointLightProjection * glm::lookAt(m_PointLights[i]->m_Position, m_PointLights[i]->m_Position + glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
-        pointLightMatrices.push_back(m_PointLights[i]->m_PointLightProjection * glm::lookAt(m_PointLights[i]->m_Position, m_PointLights[i]->m_Position + glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
-        pointLightMatrices.push_back(m_PointLights[i]->m_PointLightProjection * glm::lookAt(m_PointLights[i]->m_Position, m_PointLights[i]->m_Position + glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)));
-        pointLightMatrices.push_back(m_PointLights[i]->m_PointLightProjection * glm::lookAt(m_PointLights[i]->m_Position, m_PointLights[i]->m_Position + glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f)));
-        pointLightMatrices.push_back(m_PointLights[i]->m_PointLightProjection * glm::lookAt(m_PointLights[i]->m_Position, m_PointLights[i]->m_Position + glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
-        pointLightMatrices.push_back(m_PointLights[i]->m_PointLightProjection * glm::lookAt(m_PointLights[i]->m_Position, m_PointLights[i]->m_Position + glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
+        if (m_PointLights[i]->m_CastShadows) {
+            // generate depth cube map
+            std::vector<glm::mat4> pointLightMatrices;
+            pointLightMatrices.push_back(m_PointLights[i]->m_PointLightProjection * glm::lookAt(m_PointLights[i]->m_Position, m_PointLights[i]->m_Position + glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
+            pointLightMatrices.push_back(m_PointLights[i]->m_PointLightProjection * glm::lookAt(m_PointLights[i]->m_Position, m_PointLights[i]->m_Position + glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
+            pointLightMatrices.push_back(m_PointLights[i]->m_PointLightProjection * glm::lookAt(m_PointLights[i]->m_Position, m_PointLights[i]->m_Position + glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)));
+            pointLightMatrices.push_back(m_PointLights[i]->m_PointLightProjection * glm::lookAt(m_PointLights[i]->m_Position, m_PointLights[i]->m_Position + glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f)));
+            pointLightMatrices.push_back(m_PointLights[i]->m_PointLightProjection * glm::lookAt(m_PointLights[i]->m_Position, m_PointLights[i]->m_Position + glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
+            pointLightMatrices.push_back(m_PointLights[i]->m_PointLightProjection * glm::lookAt(m_PointLights[i]->m_Position, m_PointLights[i]->m_Position + glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
 
-        for (GLuint j = 0; j < 6; j++) {
-            ResourceManager::GetShader("depth_cube_map").Use().SetMatrix4(("shadowMatrices[" + std::to_string(j) + "]").c_str(), pointLightMatrices[j]);
+            for (GLuint j = 0; j < 6; j++) {
+                ResourceManager::GetShader("depth_cube_map").Use().SetMatrix4(("shadowMatrices[" + std::to_string(j) + "]").c_str(), pointLightMatrices[j]);
+            }
+
+            ResourceManager::GetShader("depth_cube_map").Use().SetVector3f("lightPos", m_PointLights[i]->m_Position);
+            if (m_DebugDepthCubeMap) {
+                ResourceManager::GetShader("debug_depth_cube_map").Use().SetVector3f(("pointLights[" + std::to_string(i) + "].position").c_str(), m_PointLights[i]->m_Position);
+            }
+
+            // shadow mapping
+            glViewport(0, 0, m_PointLights[i]->m_ShadowWidth, m_PointLights[i]->m_ShadowHeight);
+
+            // point shadows
+            m_PointLights[i]->m_DepthCubeMapFBO.Bind();
+            glClear(GL_DEPTH_BUFFER_BIT);
+
+            m_Planes.renderSceneGraphSimple(GL_TRIANGLES, ResourceManager::GetShader("depth_cube_map"));
+            m_Spheres.renderSceneGraphSimple(GL_TRIANGLE_STRIP, ResourceManager::GetShader("depth_cube_map"));
+            m_Cubes.renderSceneGraphSimple(GL_TRIANGLES, ResourceManager::GetShader("depth_cube_map"));
+            m_Models.renderSceneGraphSimple(GL_TRIANGLES, ResourceManager::GetShader("depth_cube_map"));
+
+            FrameBuffer::UnBind();
+
+            glViewport(0, 0, m_Width, m_Height);
         }
-
-        ResourceManager::GetShader("depth_cube_map").Use().SetVector3f("lightPos", m_PointLights[i]->m_Position);
-
-        // shadow mapping
-        glViewport(0, 0, m_PointLights[i]->m_ShadowWidth, m_PointLights[i]->m_ShadowHeight);
-
-        // point shadows
-        m_PointLights[i]->m_DepthCubeMapFBO.Bind();
-        glClear(GL_DEPTH_BUFFER_BIT);
-
-        m_Planes.renderSceneGraphSimple(GL_TRIANGLES, ResourceManager::GetShader("depth_cube_map"));
-        m_Spheres.renderSceneGraphSimple(GL_TRIANGLE_STRIP, ResourceManager::GetShader("depth_cube_map"));
-        m_Cubes.renderSceneGraphSimple(GL_TRIANGLES, ResourceManager::GetShader("depth_cube_map"));
-        m_Models.renderSceneGraphSimple(GL_TRIANGLES, ResourceManager::GetShader("depth_cube_map"));
-
-        FrameBuffer::UnBind();
-
-        glViewport(0, 0, m_Width, m_Height);
     }
 
     // Render Normal Scene
     m_MultisampleFBO.Bind();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    if (m_UsePolygonLines) {
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    }
+
     // Render Point Lights Mesh
     for (size_t i = 0; i < m_PointLights.size(); i++) {
-        m_PointLights[i]->RenderMesh();
+        if (m_PointLights[i]->m_RenderMesh) {
+            m_PointLights[i]->RenderMesh();
+        }
     }
 
     unsigned int total = 0, display = 0;
@@ -210,10 +231,10 @@ void RendererLayer::OnUpdate()
         m_DirectionalLights[i]->m_DepthMapFBO.BindTexture(GL_TEXTURE_2D, 0);
     }
     for (size_t i = 0; i < m_PointLights.size(); i++) {
-        glActiveTexture(GL_TEXTURE10);
+        glActiveTexture(GL_TEXTURE10 + i);
         m_PointLights[i]->m_DepthCubeMapFBO.BindTexture(GL_TEXTURE_CUBE_MAP, 0);
     }
-    m_Planes.renderSceneGraph(GL_TRIANGLES, ResourceManager::GetShader("pbr_lighting"), m_CamFrustum, display, total);
+    m_Planes.renderSceneGraph(GL_TRIANGLES, m_PBRShader, m_CamFrustum, display, total);
     Texture2D::UnBind();
     Texture2D::UnBindCubemap();
 
@@ -229,10 +250,10 @@ void RendererLayer::OnUpdate()
         m_DirectionalLights[i]->m_DepthMapFBO.BindTexture(GL_TEXTURE_2D, 0);
     }
     for (size_t i = 0; i < m_PointLights.size(); i++) {
-        glActiveTexture(GL_TEXTURE10);
+        glActiveTexture(GL_TEXTURE10 + i);
         m_PointLights[i]->m_DepthCubeMapFBO.BindTexture(GL_TEXTURE_CUBE_MAP, 0);
     }
-    m_Cubes.renderSceneGraph(GL_TRIANGLES, ResourceManager::GetShader("pbr_lighting"), m_CamFrustum, display, total);
+    m_Cubes.renderSceneGraph(GL_TRIANGLES, m_PBRShader, m_CamFrustum, display, total);
     Texture2D::UnBind();
     Texture2D::UnBindCubemap();
 
@@ -248,10 +269,10 @@ void RendererLayer::OnUpdate()
         m_DirectionalLights[i]->m_DepthMapFBO.BindTexture(GL_TEXTURE_2D, 0);
     }
     for (size_t i = 0; i < m_PointLights.size(); i++) {
-        glActiveTexture(GL_TEXTURE10);
+        glActiveTexture(GL_TEXTURE10 + i);
         m_PointLights[i]->m_DepthCubeMapFBO.BindTexture(GL_TEXTURE_CUBE_MAP, 0);
     }
-    m_Spheres.renderSceneGraph(GL_TRIANGLE_STRIP, ResourceManager::GetShader("pbr_lighting"), m_CamFrustum, display, total);
+    m_Spheres.renderSceneGraph(GL_TRIANGLE_STRIP, m_PBRShader, m_CamFrustum, display, total);
     Texture2D::UnBind();
     Texture2D::UnBindCubemap();
 
@@ -265,10 +286,10 @@ void RendererLayer::OnUpdate()
         m_DirectionalLights[i]->m_DepthMapFBO.BindTexture(GL_TEXTURE_2D, 0);
     }
     for (size_t i = 0; i < m_PointLights.size(); i++) {
-        glActiveTexture(GL_TEXTURE10);
+        glActiveTexture(GL_TEXTURE10 + i);
         m_PointLights[i]->m_DepthCubeMapFBO.BindTexture(GL_TEXTURE_CUBE_MAP, 0);
     }
-    m_Models.renderSceneGraph(GL_TRIANGLES, ResourceManager::GetShader("pbr_lighting_textured"), m_CamFrustum, display, total);
+    m_Models.renderSceneGraph(GL_TRIANGLES, m_PBRShaderTextured, m_CamFrustum, display, total);
     Texture2D::UnBind();
     Texture2D::UnBindCubemap();
 
@@ -278,6 +299,11 @@ void RendererLayer::OnUpdate()
         m_PBR->RenderSkybox();
     }
     FrameBuffer::UnBind();
+
+    // Reset polygon mode to fill
+    if (m_UsePolygonLines) {
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    }
 
     m_MultisampleFBO.Blit(m_PostProcessor->GetHDRFBO(), m_Width, m_Height);
     FrameBuffer::CheckStatus();
@@ -293,6 +319,25 @@ void RendererLayer::OnUpdate()
     m_ImGUIFBO.Bind();
     m_PostProcessor->RenderPostProcessingQuad();
     FrameBuffer::UnBind();
+
+    // Bind to ImGui Debug Image
+    if (m_UseDebugWindow) {
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        m_DebugFBO.Bind();
+        if (m_DebugDepthMap) {
+            // Render the first directional light depth map
+            m_DirectionalLights[0]->RenderDepthMapQuad();
+        }
+        else {
+            glActiveTexture(GL_TEXTURE0);
+            m_PostProcessor->GetHDRFBO().BindTexture(GL_TEXTURE_2D, 0);
+            ResourceManager::GetShader("debug_quad").Use();
+            RenderQuad(GL_TRIANGLES);
+            Texture2D::UnBind();
+        }
+        FrameBuffer::UnBind();
+    }
+
     glEnable(GL_DEPTH_TEST);
 }
 
@@ -303,6 +348,16 @@ void RendererLayer::OnImGuiRender()
     float currentFrame = static_cast<float>(glfwGetTime());
     deltaTime = currentFrame - lastFrame;
     lastFrame = currentFrame;
+
+    if (m_UseDebugWindow) {
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+        ImGui::Begin("Debug Image");
+
+        ImGui::ImageButton((void*)(intptr_t)m_DebugFBO.GetTextureAttachments().at(0), ImVec2(m_Width, m_Height), ImVec2(0, 1), ImVec2(1, 0), 0);
+        ImGui::PopStyleVar();
+
+        ImGui::End();
+    }
 
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
     ImGui::Begin("Generated Image");
@@ -381,122 +436,29 @@ void RendererLayer::OnImGuiRender()
     }
 
     ImGui::Separator();
+    if (ImGui::CollapsingHeader("Lighting", base_flags)) {
+        for (size_t i = 0; i < m_DirectionalLights.size(); i++) {
+            m_DirectionalLights[i]->RenderGUI(i);
+        }
+
+        for (size_t i = 0; i < m_PointLights.size(); i++) {
+            m_PointLights[i]->RenderGUI(i);
+        }
+    }
+
+    ImGui::Separator();
     if (ImGui::CollapsingHeader("3D Objects", base_flags)) {
         for (unsigned int i = 0; i < m_Planes.children.size(); i++) {
-            if (ImGui::TreeNodeEx(("Plane " + std::to_string(i)).c_str())) {
-                if (ImGui::DragFloat3("Position", (float*)&m_Planes.children[i].get()->transform.getLocalPosition(), 0.01f, -FLT_MAX, FLT_MAX, "%.2f")) {
-                    m_Planes.children[i].get()->transform.setLocalPosition(m_Planes.children[i].get()->transform.getLocalPosition());
-                }
-                if (ImGui::DragFloat3("Rotation", (float*)&m_Planes.children[i].get()->transform.getLocalRotation(), 0.01f, -180.0f, 180.0f, "%.2f")) {
-                    m_Planes.children[i].get()->transform.setLocalRotation(m_Planes.children[i].get()->transform.getLocalRotation());
-                }
-                if (ImGui::DragFloat3("Scale", (float*)&m_Planes.children[i].get()->transform.getLocalScale(), 0.01f, 0.0f, FLT_MAX, "%.2f")) {
-                    m_Planes.children[i].get()->transform.setLocalScale(m_Planes.children[i].get()->transform.getLocalScale());
-                }
-                if (ImGui::TreeNodeEx("Material")) {
-                    if (ImGui::ColorEdit3("Albedo", (float*)&m_Planes.children[i].get()->material.getAlbedo())) {
-                        m_Planes.children[i].get()->material.setAlbedo(m_Planes.children[i].get()->material.getAlbedo());
-                    }
-                    if (ImGui::SliderFloat("Metallic", (float*)&m_Planes.children[i].get()->material.getMetallic(), 0.0f, 1.0f, "%.2f")) {
-                        m_Planes.children[i].get()->material.setMetallic(m_Planes.children[i].get()->material.getMetallic());
-                    }
-                    if (ImGui::SliderFloat("Roughness", (float*)&m_Planes.children[i].get()->material.getRoughness(), 0.0f, 1.0f, "%.2f")) {
-                        m_Planes.children[i].get()->material.setRoughness(m_Planes.children[i].get()->material.getRoughness());
-                    }
-                    if (ImGui::SliderFloat("AO", (float*)&m_Planes.children[i].get()->material.getAO(), 0.0f, 1.0f, "%.2f")) {
-                        m_Planes.children[i].get()->material.setAO(m_Planes.children[i].get()->material.getAO());
-                    }
-                    ImGui::TreePop();
-                }
-                ImGui::TreePop();
-            }
+            m_Planes.children[i].get()->renderGUI(i);
         }
         for (unsigned int i = 0; i < m_Models.children.size(); i++) {
-            if (ImGui::TreeNodeEx(("Model " + std::to_string(i)).c_str())) {
-                if (ImGui::DragFloat3("Position", (float*)&m_Models.children[i].get()->transform.getLocalPosition(), 0.01f, -FLT_MAX, FLT_MAX, "%.2f")) {
-                    m_Models.children[i].get()->transform.setLocalPosition(m_Models.children[i].get()->transform.getLocalPosition());
-                }
-                if (ImGui::DragFloat3("Rotation", (float*)&m_Models.children[i].get()->transform.getLocalRotation(), 0.01f, -180.0f, 180.0f, "%.2f")) {
-                    m_Models.children[i].get()->transform.setLocalRotation(m_Models.children[i].get()->transform.getLocalRotation());
-                }
-                if (ImGui::DragFloat3("Scale", (float*)&m_Models.children[i].get()->transform.getLocalScale(), 0.01f, 0.0f, FLT_MAX, "%.2f")) {
-                    m_Models.children[i].get()->transform.setLocalScale(m_Models.children[i].get()->transform.getLocalScale());
-                }
-                if (ImGui::TreeNodeEx("Material")) {
-                    if (ImGui::ColorEdit3("Albedo", (float*)&m_Models.children[i].get()->material.getAlbedo())) {
-                        m_Models.children[i].get()->material.setAlbedo(m_Models.children[i].get()->material.getAlbedo());
-                    }
-                    if (ImGui::SliderFloat("Metallic", (float*)&m_Models.children[i].get()->material.getMetallic(), 0.0f, 1.0f, "%.2f")) {
-                        m_Models.children[i].get()->material.setMetallic(m_Models.children[i].get()->material.getMetallic());
-                    }
-                    if (ImGui::SliderFloat("Roughness", (float*)&m_Models.children[i].get()->material.getRoughness(), 0.0f, 1.0f, "%.2f")) {
-                        m_Models.children[i].get()->material.setRoughness(m_Models.children[i].get()->material.getRoughness());
-                    }
-                    if (ImGui::SliderFloat("AO", (float*)&m_Models.children[i].get()->material.getAO(), 0.0f, 1.0f, "%.2f")) {
-                        m_Models.children[i].get()->material.setAO(m_Models.children[i].get()->material.getAO());
-                    }
-                    ImGui::TreePop();
-                }
-                ImGui::TreePop();
-            }
+            m_Models.children[i].get()->renderGUI(i);
         }
         for (unsigned int i = 0; i < m_Cubes.children.size(); i++) {
-            if (ImGui::TreeNodeEx(("Cube " + std::to_string(i)).c_str())) {
-                if (ImGui::DragFloat3("Position", (float*)&m_Cubes.children[i].get()->transform.getLocalPosition(), 0.01f, -FLT_MAX, FLT_MAX, "%.2f")) {
-                    m_Cubes.children[i].get()->transform.setLocalPosition(m_Cubes.children[i].get()->transform.getLocalPosition());
-                }
-                if (ImGui::DragFloat3("Rotation", (float*)&m_Cubes.children[i].get()->transform.getLocalRotation(), 0.01f, -180.0f, 180.0f, "%.2f")) {
-                    m_Cubes.children[i].get()->transform.setLocalRotation(m_Cubes.children[i].get()->transform.getLocalRotation());
-                }
-                if (ImGui::DragFloat3("Scale", (float*)&m_Cubes.children[i].get()->transform.getLocalScale(), 0.01f, 0.0f, FLT_MAX, "%.2f")) {
-                    m_Cubes.children[i].get()->transform.setLocalScale(m_Cubes.children[i].get()->transform.getLocalScale());
-                }
-                if (ImGui::TreeNodeEx("Material")) {
-                    if (ImGui::ColorEdit3("Albedo", (float*)&m_Cubes.children[i].get()->material.getAlbedo())) {
-                        m_Cubes.children[i].get()->material.setAlbedo(m_Cubes.children[i].get()->material.getAlbedo());
-                    }
-                    if (ImGui::SliderFloat("Metallic", (float*)&m_Cubes.children[i].get()->material.getMetallic(), 0.0f, 1.0f, "%.2f")) {
-                        m_Cubes.children[i].get()->material.setMetallic(m_Cubes.children[i].get()->material.getMetallic());
-                    }
-                    if (ImGui::SliderFloat("Roughness", (float*)&m_Cubes.children[i].get()->material.getRoughness(), 0.0f, 1.0f, "%.2f")) {
-                        m_Cubes.children[i].get()->material.setRoughness(m_Cubes.children[i].get()->material.getRoughness());
-                    }
-                    if (ImGui::SliderFloat("AO", (float*)&m_Cubes.children[i].get()->material.getAO(), 0.0f, 1.0f, "%.2f")) {
-                        m_Cubes.children[i].get()->material.setAO(m_Cubes.children[i].get()->material.getAO());
-                    }
-                    ImGui::TreePop();
-                }
-                ImGui::TreePop();
-            }
+            m_Cubes.children[i].get()->renderGUI(i);
         }
         for (unsigned int i = 0; i < m_Spheres.children.size(); i++) {
-            if (ImGui::TreeNodeEx(("Sphere " + std::to_string(i)).c_str())) {
-                if (ImGui::DragFloat3("Position", (float*)&m_Spheres.children[i].get()->transform.getLocalPosition(), 0.01f, -FLT_MAX, FLT_MAX, "%.2f")) {
-                    m_Spheres.children[i].get()->transform.setLocalPosition(m_Spheres.children[i].get()->transform.getLocalPosition());
-                }
-                if (ImGui::DragFloat3("Rotation", (float*)&m_Spheres.children[i].get()->transform.getLocalRotation(), 0.01f, -180.0f, 180.0f, "%.2f")) {
-                    m_Spheres.children[i].get()->transform.setLocalRotation(m_Spheres.children[i].get()->transform.getLocalRotation());
-                }
-                if (ImGui::DragFloat3("Scale", (float*)&m_Spheres.children[i].get()->transform.getLocalScale(), 0.01f, 0.0f, FLT_MAX, "%.2f")) {
-                    m_Spheres.children[i].get()->transform.setLocalScale(m_Spheres.children[i].get()->transform.getLocalScale());
-                }
-                if (ImGui::TreeNodeEx("Material")) {
-                    if (ImGui::ColorEdit3("Albedo", (float*)&m_Spheres.children[i].get()->material.getAlbedo())) {
-                        m_Spheres.children[i].get()->material.setAlbedo(m_Spheres.children[i].get()->material.getAlbedo());
-                    }
-                    if (ImGui::SliderFloat("Metallic", (float*)&m_Spheres.children[i].get()->material.getMetallic(), 0.0f, 1.0f, "%.2f")) {
-                        m_Spheres.children[i].get()->material.setMetallic(m_Spheres.children[i].get()->material.getMetallic());
-                    }
-                    if (ImGui::SliderFloat("Roughness", (float*)&m_Spheres.children[i].get()->material.getRoughness(), 0.0f, 1.0f, "%.2f")) {
-                        m_Spheres.children[i].get()->material.setRoughness(m_Spheres.children[i].get()->material.getRoughness());
-                    }
-                    if (ImGui::SliderFloat("AO", (float*)&m_Spheres.children[i].get()->material.getAO(), 0.0f, 1.0f, "%.2f")) {
-                        m_Spheres.children[i].get()->material.setAO(m_Spheres.children[i].get()->material.getAO());
-                    }
-                    ImGui::TreePop();
-                }
-                ImGui::TreePop();
-            }
+            m_Spheres.children[i].get()->renderGUI(i);
         }
     }
 
@@ -515,6 +477,28 @@ void RendererLayer::OnImGuiRender()
                 ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger("object.useIBL", 0);
             }
             ImGui::TreePop();
+        }
+    }
+
+    ImGui::Separator();
+    if (ImGui::CollapsingHeader("Debug", base_flags)) {
+        if (ImGui::TreeNodeEx("Debug Image Window", base_flags)) {
+            ImGui::SameLine();
+            ImGuiLayer::ToggleButton(" ", &m_UseDebugWindow);
+            if (m_UseDebugWindow) {
+                ImGui::Checkbox("Depth Map (Directional Light)", &m_DebugDepthMap);
+            }
+            ImGui::TreePop();
+        }
+
+        ImGui::Checkbox("Polygon Line Mode", &m_UsePolygonLines);
+        if (ImGui::Checkbox("Depth Cube Map (Point Lights)", &m_DebugDepthCubeMap)) {
+            m_PBRShader = ResourceManager::GetShader("debug_depth_cube_map");
+            m_PBRShaderTextured = ResourceManager::GetShader("debug_depth_cube_map");
+        }
+        if (!m_DebugDepthCubeMap) {
+            m_PBRShader = ResourceManager::GetShader("pbr_lighting");
+            m_PBRShaderTextured = ResourceManager::GetShader("pbr_lighting_textured");
         }
     }
 
@@ -549,6 +533,11 @@ bool RendererLayer::imGuiResize()
         FrameBuffer::CheckStatus();
         FrameBuffer::UnBind();
 
+        m_DebugFBO.Bind();
+        m_DebugFBO.ResizeTextureAttachment(0, GL_TEXTURE_2D, GL_RGBA8, m_Width, m_Height);
+        FrameBuffer::CheckStatus();
+        FrameBuffer::UnBind();
+
         m_PostProcessor->ResizeBuffers(m_Width, m_Height);
 
         GL_INFO("Resizing Generated Image to : {0} {1}", m_Width, m_Height);
@@ -562,6 +551,7 @@ void RendererLayer::OnDetach()
 {
     ResourceManager::Clear();
     m_ImGUIFBO.Destroy();
+    m_DebugFBO.Destroy();
     m_MultisampleFBO.Destroy();
 
     for (size_t i = 0; i < m_DirectionalLights.size(); i++) {
@@ -600,14 +590,14 @@ void RendererLayer::AddLight(DirectionalLight* light)
 {
     m_DirectionalLights.push_back(light);
     ResourceManager::GetShader("pbr_lighting").Use().SetInteger("dirLight.use", 1);
-    ResourceManager::GetShader("pbr_lighting").Use().SetVector3f("dirLight.direction", light->m_Direction);
-    ResourceManager::GetShader("pbr_lighting").Use().SetVector3f("dirLight.color", light->m_Color * light->m_Intensity);
-    ResourceManager::GetShader("pbr_lighting").Use().SetInteger("dirLight.shadows", light->m_CastShadows);
+    ResourceManager::GetShader("pbr_lighting").Use().SetVector3f(("dirLights[" + std::to_string(m_DirectionalLights.size()-1) + "].direction").c_str(), light->m_Direction);
+    ResourceManager::GetShader("pbr_lighting").Use().SetVector3f(("dirLights[" + std::to_string(m_DirectionalLights.size()-1) + "].color").c_str(), light->m_Color * light->m_Intensity);
+    ResourceManager::GetShader("pbr_lighting").Use().SetInteger(("dirLights[" + std::to_string(m_DirectionalLights.size()-1) + "].shadows").c_str(), light->m_CastShadows);
 
     ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger("dirLight.use", 1);
-    ResourceManager::GetShader("pbr_lighting_textured").Use().SetVector3f("dirLight.direction", light->m_Direction);
-    ResourceManager::GetShader("pbr_lighting_textured").Use().SetVector3f("dirLight.color", light->m_Color * light->m_Intensity);
-    ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger("dirLight.shadows", light->m_CastShadows);
+    ResourceManager::GetShader("pbr_lighting_textured").Use().SetVector3f(("dirLights[" + std::to_string(m_DirectionalLights.size()-1) + "].direction").c_str(), light->m_Direction);
+    ResourceManager::GetShader("pbr_lighting_textured").Use().SetVector3f(("dirLights[" + std::to_string(m_DirectionalLights.size()-1) + "].color").c_str(), light->m_Color * light->m_Intensity);
+    ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger(("dirLights[" + std::to_string(m_DirectionalLights.size()-1) + "].shadows").c_str(), light->m_CastShadows);
     light->DirectionalLightProjectionMatrix();
 }
 
@@ -618,6 +608,8 @@ void RendererLayer::AddLight(PointLight* light)
     ResourceManager::GetShader("pbr_lighting").Use().SetVector3f(("pointLights[" + std::to_string(m_PointLights.size()-1) + "].position").c_str(), light->m_Position);
     ResourceManager::GetShader("pbr_lighting").Use().SetVector3f(("pointLights[" + std::to_string(m_PointLights.size()-1) + "].color").c_str(), light->m_Color * light->m_Intensity);
     ResourceManager::GetShader("pbr_lighting").Use().SetInteger(("pointLights[" + std::to_string(m_PointLights.size()-1) + "].shadows").c_str(), light->m_CastShadows);
+
+    ResourceManager::GetShader("debug_depth_cube_map").Use().SetVector3f(("pointLights[" + std::to_string(m_PointLights.size()-1) + "].position").c_str(), light->m_Position);
 
     ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger("pointLight.use", 1);
     ResourceManager::GetShader("pbr_lighting_textured").Use().SetVector3f(("pointLights[" + std::to_string(m_PointLights.size()-1) + "].position").c_str(), light->m_Position);

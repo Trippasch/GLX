@@ -77,9 +77,44 @@ public:
             pVBO->UnlinkAttrib(0);
             pVBO->UnlinkAttrib(1);
             pVBO->UnlinkAttrib(2);
-            boundingVolume.get()->drawAABB(transform.getModelMatrix());
+
+            if (drawAABB) {
+                boundingVolume.get()->drawAABB(transform.getModelMatrix());
+            }
 
             display++;
+        }
+    }
+
+    void renderGUI(int i) override
+    {
+        if (ImGui::TreeNodeEx(("Cube " + std::to_string(i)).c_str())) {
+            if (ImGui::DragFloat3("Position", (float*)&transform.getLocalPosition(), 0.01f, -FLT_MAX, FLT_MAX, "%.2f")) {
+                transform.setLocalPosition(transform.getLocalPosition());
+            }
+            if (ImGui::DragFloat3("Rotation", (float*)&transform.getLocalRotation(), 0.01f, -180.0f, 180.0f, "%.2f")) {
+                transform.setLocalRotation(transform.getLocalRotation());
+            }
+            if (ImGui::DragFloat3("Scale", (float*)&transform.getLocalScale(), 0.01f, 0.0f, FLT_MAX, "%.2f")) {
+                transform.setLocalScale(transform.getLocalScale());
+            }
+            if (ImGui::TreeNodeEx("Material")) {
+                if (ImGui::ColorEdit3("Albedo", (float*)&material.getAlbedo())) {
+                    material.setAlbedo(material.getAlbedo());
+                }
+                if (ImGui::SliderFloat("Metallic", (float*)&material.getMetallic(), 0.0f, 1.0f, "%.2f")) {
+                    material.setMetallic(material.getMetallic());
+                }
+                if (ImGui::SliderFloat("Roughness", (float*)&material.getRoughness(), 0.0f, 1.0f, "%.2f")) {
+                    material.setRoughness(material.getRoughness());
+                }
+                if (ImGui::SliderFloat("AO", (float*)&material.getAO(), 0.0f, 1.0f, "%.2f")) {
+                    material.setAO(material.getAO());
+                }
+                ImGui::TreePop();
+            }
+            ImGui::Checkbox("Draw AABB", &drawAABB);
+            ImGui::TreePop();
         }
     }
 };

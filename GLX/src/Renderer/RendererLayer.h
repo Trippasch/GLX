@@ -34,6 +34,7 @@
 #include <glad/glad.h>
 
 class PBR;
+class DirectionalLight;
 class PointLight;
 class PostProcessor;
 
@@ -58,6 +59,9 @@ public:
 
     Camera& GetCamera() { return m_Camera; }
 
+    const void SetPBRShader(Shader& shader) { m_PBRShader = shader; }
+    const void SetPBRShaderTextured(Shader& shader) { m_PBRShaderTextured = shader; }
+
     void RenderCube(GLenum mode);
     void RenderQuad(GLenum mode);
     void AddLight(DirectionalLight* light);
@@ -79,6 +83,8 @@ private:
 
     // PBR
     PBR* m_PBR;
+    Shader m_PBRShader;
+    Shader m_PBRShaderTextured;
 
     // Lights
     std::vector<DirectionalLight*> m_DirectionalLights;
@@ -90,6 +96,7 @@ private:
     // FrameBuffers
     FrameBuffer m_MultisampleFBO;
     FrameBuffer m_ImGUIFBO;
+    FrameBuffer m_DebugFBO;
 
     // UniformBuffers
     UniformBuffer m_MatricesUBO;
@@ -102,6 +109,12 @@ private:
 
     // Skybox Properties
     bool m_UseSkybox = true;
+
+    // Debug Properties
+    bool m_UseDebugWindow = false;
+    bool m_UsePolygonLines = false;
+    bool m_DebugDepthCubeMap = false;
+    bool m_DebugDepthMap = false;
 
     bool imGuiResize();
 };

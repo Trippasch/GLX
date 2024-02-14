@@ -25,7 +25,7 @@ layout (binding = 8) uniform sampler2D emissiveMap;
 
 // shadows
 layout (binding = 9) uniform sampler2D depthMap;
-layout (binding = 10) uniform samplerCube depthCubeMap;
+layout (binding = 10) uniform samplerCube depthCubeMap[2];
 
 // material parameters
 struct Material {
@@ -36,6 +36,8 @@ struct Material {
 };
 uniform Material material;
 
+#define NR_LIGHTS 2
+
 // directional light
 struct DirLight {
     bool shadows;
@@ -43,10 +45,8 @@ struct DirLight {
     vec3 direction;
     vec3 color;
 };
+uniform DirLight dirLights[NR_LIGHTS];
 uniform DirLight dirLight;
-
-// point lights
-#define NR_LIGHTS 1
 
 struct PointLight {
     bool shadows;
@@ -176,7 +176,7 @@ vec3 gridSamplingDisk[20] = vec3[]
 //     return shadow;
 // }
 
-float PointShadowsCalculation(vec3 lightPos)
+float PointShadowsCalculation(vec3 lightPos, samplerCube cubeMap)
 {
     // get vector between fragment position and light position
     vec3 fragToLight = fs_in.FragPos - lightPos;
@@ -190,7 +190,7 @@ float PointShadowsCalculation(vec3 lightPos)
     float diskRadius = (1.0 + (viewDistance / far_plane)) / 25.0;
     for (int i = 0; i < samples; ++i)
     {
-        float closestDepth = texture(depthCubeMap, fragToLight + gridSamplingDisk[i] * diskRadius).r;
+        float closestDepth = texture(cubeMap, fragToLight + gridSamplingDisk[i] * diskRadius).r;
         closestDepth *= far_plane;   // undo mapping [0;1]
         if (currentDepth - bias > closestDepth)
             shadow += 1.0;
@@ -204,42 +204,44 @@ vec3 CalcDirLight(vec3 N, vec3 V, vec3 R, vec3 F0, vec3 albedo, float metallic, 
 {
     // reflectance equation
     vec3 Lo = vec3(0.0);
-    // calculate per-light radiance
-    vec3 L = normalize(-dirLight.direction);
-    vec3 H = normalize(V + L);
-    vec3 radiance = dirLight.color;
+    for (int i = 0; i < NR_LIGHTS; i++) {
+        // calculate per-light radiance
+        vec3 L = normalize(-dirLights[i].direction);
+        vec3 H = normalize(V + L);
+        vec3 radiance = dirLights[i].color;
 
-    // Cook-Torrance BRDF
-    float NDF = DistributionGGX(N, H, roughness);
-    float G = GeometrySmith(N, V, L, roughness);
-    vec3 FI = FresnelSchlick(max(dot(H, V), 0.0), F0);
+        // Cook-Torrance BRDF
+        float NDF = DistributionGGX(N, H, roughness);
+        float G = GeometrySmith(N, V, L, roughness);
+        vec3 FI = FresnelSchlick(max(dot(H, V), 0.0), F0);
 
-    vec3 numerator = NDF * G * FI;
-    // we add + 0.0001 to prevent division by zero
-    float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.0001;
-    vec3 specularI = numerator / denominator;
+        vec3 numerator = NDF * G * FI;
+        // we add + 0.0001 to prevent division by zero
+        float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.0001;
+        vec3 specularI = numerator / denominator;
 
-    // kS is equal to Fresnel
-    vec3 kSI = FI;
-    // for energy conservation, the diffuse and specular light can't 
-    // be above 1.0 (unless the surface emits light); to preserve this
-    // relationship the diffuse component (kD) should equal 1.0 - kS.
-    vec3 kDI = vec3(1.0) - kSI;
-    // multiply kD by the inverse metalness such that only non-metals
-    // have diffuse lighting, or a linear blend if partly metal (pure
-    // metals have no diffuse light).
-    kDI *= 1.0 - metallic;
+        // kS is equal to Fresnel
+        vec3 kSI = FI;
+        // for energy conservation, the diffuse and specular light can't 
+        // be above 1.0 (unless the surface emits light); to preserve this
+        // relationship the diffuse component (kD) should equal 1.0 - kS.
+        vec3 kDI = vec3(1.0) - kSI;
+        // multiply kD by the inverse metalness such that only non-metals
+        // have diffuse lighting, or a linear blend if partly metal (pure
+        // metals have no diffuse light).
+        kDI *= 1.0 - metallic;
 
-    // scale light by N dot L
-    float NdotL = max(dot(N, L), 0.0);
+        // scale light by N dot L
+        float NdotL = max(dot(N, L), 0.0);
 
-    float shadow = 0.0;
-    if (dirLight.shadows)
-        shadow = DirShadowsCalculation(fs_in.FragPosLightSpace, dirLight.direction);
+        float shadow = 0.0;
+        if (dirLights[i].shadows)
+            shadow = DirShadowsCalculation(fs_in.FragPosLightSpace, dirLights[i].direction);
 
-    // add to outgoing radiance Lo
-    Lo += (1.0 - shadow) * (kDI * albedo / M_PI + specularI) * radiance * NdotL;
-    // note that we already multiplied the BRDF by the Fresnel (kS) so we won't multiply by kS again
+        // add to outgoing radiance Lo
+        Lo += (1.0 - shadow) * (kDI * albedo / M_PI + specularI) * radiance * NdotL;
+        // note that we already multiplied the BRDF by the Fresnel (kS) so we won't multiply by kS again
+    }
 
     vec3 ambient = vec3(0.0);
     if (object.useIBL) {
@@ -307,7 +309,7 @@ vec3 CalcPointLight(vec3 N, vec3 V, vec3 R, vec3 F0, vec3 albedo, float metallic
 
         float shadow = 0.0;
         if (pointLights[i].shadows)
-            shadow = PointShadowsCalculation(pointLights[i].position);
+            shadow = PointShadowsCalculation(pointLights[i].position, depthCubeMap[i]);
 
         // add to outgoing radiance Lo
         Lo += (1.0 - shadow) * (kD * albedo / M_PI + specular) * radiance * NdotL;
