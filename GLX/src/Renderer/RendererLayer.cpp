@@ -76,6 +76,8 @@ void RendererLayer::OnAttach()
     // Lights
     DirectionalLight* dirLight = new DirectionalLight(this);
     AddLight(dirLight);
+    DirectionalLight* dirLight1 = new DirectionalLight(this);
+    AddLight(dirLight1);
     PointLight* pointLight = new PointLight(this);
     AddLight(pointLight);
     PointLight* pointLight1 = new PointLight(this);
@@ -142,8 +144,8 @@ void RendererLayer::OnUpdate()
             glm::mat4 depthMapLightSpaceMatrix = m_DirectionalLights[i]->m_DepthMapProjection * depthMapView;
 
             ResourceManager::GetShader("depth_map").Use().SetMatrix4(0, depthMapLightSpaceMatrix);
-            ResourceManager::GetShader("pbr_lighting").Use().SetMatrix4(2, depthMapLightSpaceMatrix);
-            ResourceManager::GetShader("pbr_lighting_textured").Use().SetMatrix4(2, depthMapLightSpaceMatrix);
+            ResourceManager::GetShader("pbr_lighting").Use().SetMatrix4(2 + i, depthMapLightSpaceMatrix);
+            ResourceManager::GetShader("pbr_lighting_textured").Use().SetMatrix4(2 + i, depthMapLightSpaceMatrix);
 
             // shadow mapping
             glViewport(0, 0, m_DirectionalLights[i]->m_ShadowWidth, m_DirectionalLights[i]->m_ShadowHeight);
@@ -227,11 +229,11 @@ void RendererLayer::OnUpdate()
     glActiveTexture(GL_TEXTURE8);
     glBindTexture(GL_TEXTURE_2D, 0);
     for (size_t i = 0; i < m_DirectionalLights.size(); i++) {
-        glActiveTexture(GL_TEXTURE9);
+        glActiveTexture(GL_TEXTURE9 + i);
         m_DirectionalLights[i]->m_DepthMapFBO.BindTexture(GL_TEXTURE_2D, 0);
     }
     for (size_t i = 0; i < m_PointLights.size(); i++) {
-        glActiveTexture(GL_TEXTURE10 + i);
+        glActiveTexture(GL_TEXTURE11 + i);
         m_PointLights[i]->m_DepthCubeMapFBO.BindTexture(GL_TEXTURE_CUBE_MAP, 0);
     }
     m_Planes.renderSceneGraph(GL_TRIANGLES, m_PBRShader, m_CamFrustum, display, total);
@@ -246,11 +248,11 @@ void RendererLayer::OnUpdate()
     glActiveTexture(GL_TEXTURE8);
     glBindTexture(GL_TEXTURE_2D, 0);
     for (size_t i = 0; i < m_DirectionalLights.size(); i++) {
-        glActiveTexture(GL_TEXTURE9);
+        glActiveTexture(GL_TEXTURE9 + i);
         m_DirectionalLights[i]->m_DepthMapFBO.BindTexture(GL_TEXTURE_2D, 0);
     }
     for (size_t i = 0; i < m_PointLights.size(); i++) {
-        glActiveTexture(GL_TEXTURE10 + i);
+        glActiveTexture(GL_TEXTURE11 + i);
         m_PointLights[i]->m_DepthCubeMapFBO.BindTexture(GL_TEXTURE_CUBE_MAP, 0);
     }
     m_Cubes.renderSceneGraph(GL_TRIANGLES, m_PBRShader, m_CamFrustum, display, total);
@@ -265,11 +267,11 @@ void RendererLayer::OnUpdate()
     glActiveTexture(GL_TEXTURE8);
     glBindTexture(GL_TEXTURE_2D, 0);
     for (size_t i = 0; i < m_DirectionalLights.size(); i++) {
-        glActiveTexture(GL_TEXTURE9);
+        glActiveTexture(GL_TEXTURE9 + i);
         m_DirectionalLights[i]->m_DepthMapFBO.BindTexture(GL_TEXTURE_2D, 0);
     }
     for (size_t i = 0; i < m_PointLights.size(); i++) {
-        glActiveTexture(GL_TEXTURE10 + i);
+        glActiveTexture(GL_TEXTURE11 + i);
         m_PointLights[i]->m_DepthCubeMapFBO.BindTexture(GL_TEXTURE_CUBE_MAP, 0);
     }
     m_Spheres.renderSceneGraph(GL_TRIANGLE_STRIP, m_PBRShader, m_CamFrustum, display, total);
@@ -282,11 +284,11 @@ void RendererLayer::OnUpdate()
         m_PBR->GetBRDFLUTTexture().Bind(2);
     }
     for (size_t i = 0; i < m_DirectionalLights.size(); i++) {
-        glActiveTexture(GL_TEXTURE9);
+        glActiveTexture(GL_TEXTURE9 + i);
         m_DirectionalLights[i]->m_DepthMapFBO.BindTexture(GL_TEXTURE_2D, 0);
     }
     for (size_t i = 0; i < m_PointLights.size(); i++) {
-        glActiveTexture(GL_TEXTURE10 + i);
+        glActiveTexture(GL_TEXTURE11 + i);
         m_PointLights[i]->m_DepthCubeMapFBO.BindTexture(GL_TEXTURE_CUBE_MAP, 0);
     }
     m_Models.renderSceneGraph(GL_TRIANGLES, m_PBRShaderTextured, m_CamFrustum, display, total);
@@ -553,6 +555,7 @@ void RendererLayer::OnDetach()
     m_ImGUIFBO.Destroy();
     m_DebugFBO.Destroy();
     m_MultisampleFBO.Destroy();
+    m_MatricesUBO.Destroy();
 
     for (size_t i = 0; i < m_DirectionalLights.size(); i++) {
         delete m_DirectionalLights[i];

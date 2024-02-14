@@ -51,16 +51,16 @@ public:
     virtual void OnImGuiRender() override;
     virtual void OnDetach() override;
 
-    const void SetWidth(GLuint width) { this->m_Width = width; }
+    void SetWidth(GLuint width) { this->m_Width = width; }
     const GLuint& GetWidth() const { return m_Width; }
 
-    const void SetHeight(GLuint height) { this->m_Height = height; }
+    void SetHeight(GLuint height) { this->m_Height = height; }
     const GLuint& GetHeight() const { return m_Height; }
 
     Camera& GetCamera() { return m_Camera; }
 
-    const void SetPBRShader(Shader& shader) { m_PBRShader = shader; }
-    const void SetPBRShaderTextured(Shader& shader) { m_PBRShaderTextured = shader; }
+    void SetPBRShader(Shader& shader) { m_PBRShader = shader; }
+    void SetPBRShaderTextured(Shader& shader) { m_PBRShaderTextured = shader; }
 
     void RenderCube(GLenum mode);
     void RenderQuad(GLenum mode);

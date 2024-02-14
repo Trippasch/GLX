@@ -13,7 +13,7 @@ in VS_OUT
     vec3 WorldPos;
     vec3 Normal;
     vec3 FragPos;
-    vec4 FragPosLightSpace;
+    vec4 FragPosLightSpaces[2];
 } fs_in;
 
 // IBL
@@ -30,8 +30,8 @@ layout (binding = 7) uniform sampler2D aoMap;
 layout (binding = 8) uniform sampler2D emissiveMap;
 
 // shadows
-layout (binding = 9) uniform sampler2D depthMap;
-layout (binding = 10) uniform samplerCube depthCubeMap[2];
+layout (binding = 9) uniform sampler2D depthMaps[2];
+layout (binding = 11) uniform samplerCube depthCubeMaps[2];
 
 // material parameters
 struct Material {
@@ -136,7 +136,7 @@ vec3 FresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness)
     return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }
 
-float DirShadowsCalculation(vec4 fragPosLightSpace, vec3 lightDir)
+float DirShadowsCalculation(vec4 fragPosLightSpace, vec3 lightDir, sampler2D depthMap)
 {
     // perform perspective division
     vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
@@ -199,7 +199,7 @@ vec3 gridSamplingDisk[20] = vec3[]
 //     return shadow;
 // }
 
-float PointShadowsCalculation(vec3 lightPos, samplerCube cubeMap)
+float PointShadowsCalculation(vec3 lightPos, samplerCube depthCubeMap)
 {
     // get vector between fragment position and light position
     vec3 fragToLight = fs_in.FragPos - lightPos;
@@ -213,7 +213,7 @@ float PointShadowsCalculation(vec3 lightPos, samplerCube cubeMap)
     float diskRadius = (1.0 + (viewDistance / far_plane)) / 25.0;
     for (int i = 0; i < samples; ++i)
     {
-        float closestDepth = texture(cubeMap, fragToLight + gridSamplingDisk[i] * diskRadius).r;
+        float closestDepth = texture(depthCubeMap, fragToLight + gridSamplingDisk[i] * diskRadius).r;
         closestDepth *= far_plane;   // undo mapping [0;1]
         if (currentDepth - bias > closestDepth)
             shadow += 1.0;
@@ -259,7 +259,7 @@ vec3 CalcDirLight(vec3 N, vec3 V, vec3 R, vec3 F0, vec3 albedo, float metallic, 
 
         float shadow = 0.0;
         if (dirLights[i].shadows)
-            shadow = DirShadowsCalculation(fs_in.FragPosLightSpace, dirLights[i].direction);
+            shadow = DirShadowsCalculation(fs_in.FragPosLightSpaces[i], dirLights[i].direction, depthMaps[i]);
 
         // add to outgoing radiance Lo
         Lo += (1.0 - shadow) * (kDI * albedo / M_PI + specularI) * radiance * NdotL;
@@ -332,7 +332,7 @@ vec3 CalcPointLight(vec3 N, vec3 V, vec3 R, vec3 F0, vec3 albedo, float metallic
 
         float shadow = 0.0;
         if (pointLights[i].shadows)
-            shadow = PointShadowsCalculation(pointLights[i].position, depthCubeMap[i]);
+            shadow = PointShadowsCalculation(pointLights[i].position, depthCubeMaps[i]);
 
         // add to outgoing radiance Lo
         Lo += (1.0 - shadow) * (kD * albedo / M_PI + specular) * radiance * NdotL;

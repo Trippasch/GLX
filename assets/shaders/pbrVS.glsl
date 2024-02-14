@@ -11,7 +11,7 @@ out VS_OUT
     vec3 WorldPos;
     vec3 Normal;
     vec3 FragPos;
-    vec4 FragPosLightSpace;
+    vec4 FragPosLightSpaces[2];
 } vs_out;
 
 layout (std140) uniform Matrices
@@ -20,12 +20,13 @@ layout (std140) uniform Matrices
 };
 
 layout (location = 1) uniform mat4 model;
-layout (location = 2) uniform mat4 lightSpaceMatrix;
+layout (location = 2) uniform mat4 lightSpaceMatrix[2];
 
 void main()
 {
     vs_out.FragPos = vec3(model * vec4(aPos, 1.0));
-    vs_out.FragPosLightSpace = (lightSpaceMatrix * vec4(vs_out.FragPos, 1.0));
+    vs_out.FragPosLightSpaces[0] = (lightSpaceMatrix[0] * vec4(vs_out.FragPos, 1.0));
+    vs_out.FragPosLightSpaces[1] = (lightSpaceMatrix[1] * vec4(vs_out.FragPos, 1.0));
 
     vs_out.TexCoords = aTexCoords;
     vs_out.WorldPos = vec3(model * vec4(aPos, 1.0));
