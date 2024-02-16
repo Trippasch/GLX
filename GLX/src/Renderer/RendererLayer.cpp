@@ -251,81 +251,95 @@ void RendererLayer::OnUpdate()
         }
     }
 
-    unsigned int total = 0, display = 0;
+    if (m_DebugDepthCubeMap) {
+        for (size_t i = 0; i < m_PointLights.size(); i++) {
+            glActiveTexture(GL_TEXTURE19 + i);
+            m_PointLights[i]->m_DepthCubeMapFBO.BindTexture(GL_TEXTURE_CUBE_MAP, 0);
+        }
+        m_Planes.renderSceneGraphSimple(GL_TRIANGLES, ResourceManager::GetShader("debug_depth_cube_map"));
+        m_Spheres.renderSceneGraphSimple(GL_TRIANGLE_STRIP, ResourceManager::GetShader("debug_depth_cube_map"));
+        m_Cubes.renderSceneGraphSimple(GL_TRIANGLES, ResourceManager::GetShader("debug_depth_cube_map"));
+        m_Models.renderSceneGraphSimple(GL_TRIANGLES, ResourceManager::GetShader("debug_depth_cube_map"));
+        Texture2D::UnBindCubemap();
+    }
+    else {
+        unsigned int total = 0, display = 0;
 
-    if (m_UseSkybox) {
-        m_PBR->GetIrradiancemap().BindCubemap(0);
-        m_PBR->GetPrefiltermap().BindCubemap(1);
-        m_PBR->GetBRDFLUTTexture().Bind(2);
-    }
-    for (size_t i = 0; i < m_DirectionalLights.size(); i++) {
-        glActiveTexture(GL_TEXTURE9 + i);
-        m_DirectionalLights[i]->m_DepthMapFBO.BindTexture(GL_TEXTURE_2D, 0);
-    }
-    for (size_t i = 0; i < m_PointLights.size(); i++) {
-        glActiveTexture(GL_TEXTURE19 + i);
-        m_PointLights[i]->m_DepthCubeMapFBO.BindTexture(GL_TEXTURE_CUBE_MAP, 0);
-    }
-    m_Planes.renderSceneGraph(GL_TRIANGLES, m_CamFrustum, display, total);
-    Texture2D::UnBind();
-    Texture2D::UnBindCubemap();
+        if (m_UseSkybox) {
+            m_PBR->GetIrradiancemap().BindCubemap(0);
+            m_PBR->GetPrefiltermap().BindCubemap(1);
+            m_PBR->GetBRDFLUTTexture().Bind(2);
+        }
+        for (size_t i = 0; i < m_DirectionalLights.size(); i++) {
+            glActiveTexture(GL_TEXTURE9 + i);
+            m_DirectionalLights[i]->m_DepthMapFBO.BindTexture(GL_TEXTURE_2D, 0);
+        }
+        for (size_t i = 0; i < m_PointLights.size(); i++) {
+            glActiveTexture(GL_TEXTURE19 + i);
+            m_PointLights[i]->m_DepthCubeMapFBO.BindTexture(GL_TEXTURE_CUBE_MAP, 0);
+        }
+        m_Planes.renderSceneGraph(GL_TRIANGLES, m_CamFrustum, display, total);
+        Texture2D::UnBind();
+        Texture2D::UnBindCubemap();
 
-    if (m_UseSkybox) {
-        m_PBR->GetIrradiancemap().BindCubemap(0);
-        m_PBR->GetPrefiltermap().BindCubemap(1);
-        m_PBR->GetBRDFLUTTexture().Bind(2);
-    }
-    for (size_t i = 0; i < m_DirectionalLights.size(); i++) {
-        glActiveTexture(GL_TEXTURE9 + i);
-        m_DirectionalLights[i]->m_DepthMapFBO.BindTexture(GL_TEXTURE_2D, 0);
-    }
-    for (size_t i = 0; i < m_PointLights.size(); i++) {
-        glActiveTexture(GL_TEXTURE19 + i);
-        m_PointLights[i]->m_DepthCubeMapFBO.BindTexture(GL_TEXTURE_CUBE_MAP, 0);
-    }
-    m_Cubes.renderSceneGraph(GL_TRIANGLES, m_CamFrustum, display, total);
-    Texture2D::UnBind();
-    Texture2D::UnBindCubemap();
+        if (m_UseSkybox) {
+            m_PBR->GetIrradiancemap().BindCubemap(0);
+            m_PBR->GetPrefiltermap().BindCubemap(1);
+            m_PBR->GetBRDFLUTTexture().Bind(2);
+        }
+        for (size_t i = 0; i < m_DirectionalLights.size(); i++) {
+            glActiveTexture(GL_TEXTURE9 + i);
+            m_DirectionalLights[i]->m_DepthMapFBO.BindTexture(GL_TEXTURE_2D, 0);
+        }
+        for (size_t i = 0; i < m_PointLights.size(); i++) {
+            glActiveTexture(GL_TEXTURE19 + i);
+            m_PointLights[i]->m_DepthCubeMapFBO.BindTexture(GL_TEXTURE_CUBE_MAP, 0);
+        }
+        m_Cubes.renderSceneGraph(GL_TRIANGLES, m_CamFrustum, display, total);
+        Texture2D::UnBind();
+        Texture2D::UnBindCubemap();
 
-    if (m_UseSkybox) {
-        m_PBR->GetIrradiancemap().BindCubemap(0);
-        m_PBR->GetPrefiltermap().BindCubemap(1);
-        m_PBR->GetBRDFLUTTexture().Bind(2);
-    }
-    for (size_t i = 0; i < m_DirectionalLights.size(); i++) {
-        glActiveTexture(GL_TEXTURE9 + i);
-        m_DirectionalLights[i]->m_DepthMapFBO.BindTexture(GL_TEXTURE_2D, 0);
-    }
-    for (size_t i = 0; i < m_PointLights.size(); i++) {
-        glActiveTexture(GL_TEXTURE19 + i);
-        m_PointLights[i]->m_DepthCubeMapFBO.BindTexture(GL_TEXTURE_CUBE_MAP, 0);
-    }
-    m_Spheres.renderSceneGraph(GL_TRIANGLE_STRIP, m_CamFrustum, display, total);
-    Texture2D::UnBind();
-    Texture2D::UnBindCubemap();
+        if (m_UseSkybox) {
+            m_PBR->GetIrradiancemap().BindCubemap(0);
+            m_PBR->GetPrefiltermap().BindCubemap(1);
+            m_PBR->GetBRDFLUTTexture().Bind(2);
+        }
+        for (size_t i = 0; i < m_DirectionalLights.size(); i++) {
+            glActiveTexture(GL_TEXTURE9 + i);
+            m_DirectionalLights[i]->m_DepthMapFBO.BindTexture(GL_TEXTURE_2D, 0);
+        }
+        for (size_t i = 0; i < m_PointLights.size(); i++) {
+            glActiveTexture(GL_TEXTURE19 + i);
+            m_PointLights[i]->m_DepthCubeMapFBO.BindTexture(GL_TEXTURE_CUBE_MAP, 0);
+        }
+        m_Spheres.renderSceneGraph(GL_TRIANGLE_STRIP, m_CamFrustum, display, total);
+        Texture2D::UnBind();
+        Texture2D::UnBindCubemap();
 
-    if (m_UseSkybox) {
-        m_PBR->GetIrradiancemap().BindCubemap(0);
-        m_PBR->GetPrefiltermap().BindCubemap(1);
-        m_PBR->GetBRDFLUTTexture().Bind(2);
-    }
-    for (size_t i = 0; i < m_DirectionalLights.size(); i++) {
-        glActiveTexture(GL_TEXTURE9 + i);
-        m_DirectionalLights[i]->m_DepthMapFBO.BindTexture(GL_TEXTURE_2D, 0);
-    }
-    for (size_t i = 0; i < m_PointLights.size(); i++) {
-        glActiveTexture(GL_TEXTURE19 + i);
-        m_PointLights[i]->m_DepthCubeMapFBO.BindTexture(GL_TEXTURE_CUBE_MAP, 0);
-    }
-    m_Models.renderSceneGraph(GL_TRIANGLES, m_CamFrustum, display, total);
-    Texture2D::UnBind();
-    Texture2D::UnBindCubemap();
+        if (m_UseSkybox) {
+            m_PBR->GetIrradiancemap().BindCubemap(0);
+            m_PBR->GetPrefiltermap().BindCubemap(1);
+            m_PBR->GetBRDFLUTTexture().Bind(2);
+        }
+        for (size_t i = 0; i < m_DirectionalLights.size(); i++) {
+            glActiveTexture(GL_TEXTURE9 + i);
+            m_DirectionalLights[i]->m_DepthMapFBO.BindTexture(GL_TEXTURE_2D, 0);
+        }
+        for (size_t i = 0; i < m_PointLights.size(); i++) {
+            glActiveTexture(GL_TEXTURE19 + i);
+            m_PointLights[i]->m_DepthCubeMapFBO.BindTexture(GL_TEXTURE_CUBE_MAP, 0);
+        }
+        m_Models.renderSceneGraph(GL_TRIANGLES, m_CamFrustum, display, total);
+        Texture2D::UnBind();
+        Texture2D::UnBindCubemap();
 
-    // GL_TRACE("Total process in CPU : {0} / Total send to GPU : {1}", total, display);
+        // GL_TRACE("Total process in CPU : {0} / Total send to GPU : {1}", total, display);
 
-    if (m_UseSkybox) {
-        m_PBR->RenderSkybox();
+        if (m_UseSkybox) {
+            m_PBR->RenderSkybox();
+        }
     }
+
     FrameBuffer::UnBind();
 
     // Reset polygon mode to fill
@@ -524,14 +538,7 @@ void RendererLayer::OnImGuiRender()
         }
 
         ImGui::Checkbox("Polygon Line Mode", &m_UsePolygonLines);
-        if (ImGui::Checkbox("Depth Cube Map (Point Lights)", &m_DebugDepthCubeMap)) {
-            if (m_DebugDepthCubeMap) {
-                // m_PBRShader = ResourceManager::GetShader("debug_depth_cube_map");
-            }
-            else {
-                // m_PBRShader = ResourceManager::GetShader("pbr_lighting");
-            }
-        }
+        ImGui::Checkbox("Depth Cube Map (Point Lights)", &m_DebugDepthCubeMap);
     }
 
     ImGui::Separator();
