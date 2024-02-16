@@ -21,16 +21,15 @@ public:
 
     //Space information
     Transform transform;
+    bool isGLTF = false;
 
     // Material information
     Material material;
 
     //Bounding volume
     std::shared_ptr<AABB> boundingVolume;
-
     bool drawAABB = false;
 
-    Entity();
     virtual ~Entity() = default;
 
     AABB getGlobalAABB();
@@ -52,7 +51,7 @@ public:
 
     virtual void drawSelfAndChildSimple(GLenum& mode, Shader& shader) = 0;
 
-    virtual void drawSelfAndChild(GLenum& mode, const Frustum& frustum, Shader& shader, unsigned int& display, unsigned int& total) = 0;
+    virtual void drawSelfAndChild(GLenum& mode, const Frustum& frustum, unsigned int& display, unsigned int& total) = 0;
 
     virtual void renderGUI(int i) = 0;
 
@@ -62,9 +61,9 @@ public:
         updateSelfAndChild();
     }
 
-    void renderSceneGraph(GLenum mode, Shader shader, const Frustum& camFrustum, unsigned int& display, unsigned int& total)
+    void renderSceneGraph(GLenum mode, const Frustum& camFrustum, unsigned int& display, unsigned int& total)
     {
-        drawSelfAndChild(mode, camFrustum, shader, display, total);
+        drawSelfAndChild(mode, camFrustum, display, total);
         updateSelfAndChild();
     }
 };

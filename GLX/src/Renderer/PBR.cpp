@@ -11,17 +11,6 @@ PBR::PBR(RendererLayer* renderer)
     ResourceManager::LoadShader("assets/shaders/hdrSkyboxVS.glsl", "assets/shaders/hdrSkyboxFS.glsl", nullptr, "hdr_skybox");
     ResourceManager::LoadShader("assets/shaders/brdfVS.glsl", "assets/shaders/brdfFS.glsl", nullptr, "brdf");
 
-    // Lighting
-    ResourceManager::LoadShader("assets/shaders/pbrVS.glsl", "assets/shaders/pbrFS.glsl", nullptr, "pbr_lighting");
-    ResourceManager::LoadShader("assets/shaders/pbrVS.glsl", "assets/shaders/pbrTexturedFS.glsl", nullptr, "pbr_lighting_textured");
-    ResourceManager::GetShader("pbr_lighting").Use().SetBlockIndex("Matrices", 0);
-
-    // PBR Object Settings
-    ResourceManager::GetShader("pbr_lighting").Use().SetFloat("object.emissiveIntensity", 1.0f);
-    ResourceManager::GetShader("pbr_lighting").Use().SetInteger("object.useIBL", 1);
-    ResourceManager::GetShader("pbr_lighting_textured").Use().SetFloat("object.emissiveIntensity", 1.0f);
-    ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger("object.useIBL", 1);
-
     m_CaptureFBO.Bind();
     m_CaptureFBO.RenderBufferAttachment(GL_FALSE, GL_DEPTH24_STENCIL8, m_EnvCubemapWidth, m_EnvCubemapHeight);
     FrameBuffer::CheckStatus();

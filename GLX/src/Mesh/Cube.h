@@ -44,7 +44,7 @@ public:
                 child->drawSelfAndChildSimple(mode, shader);
             }
         }
-        else {
+        else if (pVBO != nullptr) {
             shader.Use().SetMatrix4(1, transform.getModelMatrix());
             pVBO->LinkAttrib(0, 3, GL_FLOAT, 8 * sizeof(float), (void*)0);
             pVBO->LinkAttrib(1, 3, GL_FLOAT, 8 * sizeof(float), (void*)(3 * sizeof(float)));
@@ -56,20 +56,29 @@ public:
         }
     }
 
-    void drawSelfAndChild(GLenum& mode, const Frustum& frustum, Shader& shader, unsigned int& display, unsigned int& total) override
+    void drawSelfAndChild(GLenum& mode, const Frustum& frustum, unsigned int& display, unsigned int& total) override
     {
         if (!children.empty()) {
             total++;
             for (auto&& child : children) {
-                child->drawSelfAndChild(mode, frustum, shader, display, total);
+                child->drawSelfAndChild(mode, frustum, display, total);
             }
         }
-        else if (boundingVolume->isOnFrustum(frustum, transform)) {
-            shader.Use().SetVector3f("material.albedo", material.getAlbedo());
-            shader.Use().SetFloat("material.metallic", material.getMetallic());
-            shader.Use().SetFloat("material.roughness", material.getRoughness());
-            shader.Use().SetFloat("material.ao", material.getAO());
-            shader.Use().SetMatrix4(1, transform.getModelMatrix());
+        else if (pVBO != nullptr && boundingVolume->isOnFrustum(frustum, transform)) {
+            if (material.getIsTextured()) {
+                material.getAlbedoTexture().Bind(3);
+                material.getNormalTexture().Bind(4);
+                material.getMetallicTexture().Bind(5);
+                material.getRoughnessTexture().Bind(6);
+                material.getAOTexture().Bind(7);
+            }
+            material.getEmissiveTexture().Bind(8);
+            material.getShader().Use().SetVector3f("material.albedo", material.getAlbedo());
+            material.getShader().Use().SetFloat("material.metallic", material.getMetallic());
+            material.getShader().Use().SetFloat("material.roughness", material.getRoughness());
+            material.getShader().Use().SetFloat("material.ao", material.getAO());
+            material.getShader().Use().SetFloat("material.emissive", material.getEmissive());
+            material.getShader().Use().SetMatrix4(1, transform.getModelMatrix());
             pVBO->LinkAttrib(0, 3, GL_FLOAT, 8 * sizeof(float), (void*)0);
             pVBO->LinkAttrib(1, 3, GL_FLOAT, 8 * sizeof(float), (void*)(3 * sizeof(float)));
             pVBO->LinkAttrib(2, 2, GL_FLOAT, 8 * sizeof(float), (void*)(6 * sizeof(float)));
@@ -111,7 +120,18 @@ public:
                 if (ImGui::SliderFloat("AO", (float*)&material.getAO(), 0.0f, 1.0f, "%.2f")) {
                     material.setAO(material.getAO());
                 }
+                if (ImGui::DragFloat("Emissive", (float*)&material.getEmissive(), 0.01f, 0.0f, FLT_MAX, "%.2f")) {
+                    material.setEmissive(material.getEmissive());
+                }
                 ImGui::TreePop();
+            }
+            if (ImGui::Checkbox("Textured", &material.getIsTextured())) {
+                if (material.getIsTextured()) {
+                    material.setShader(ResourceManager::GetShader("pbr_lighting_textured"));
+                }
+                else {
+                    material.setShader(ResourceManager::GetShader("pbr_lighting"));
+                }
             }
             ImGui::Checkbox("Draw AABB", &drawAABB);
             ImGui::TreePop();

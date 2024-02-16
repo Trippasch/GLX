@@ -36,6 +36,7 @@ struct Material {
     float metallic;
     float roughness;
     float ao;
+    float emissive;
 };
 uniform Material material;
 
@@ -45,7 +46,6 @@ uniform int nrPointLights;
 // directional light
 struct DirLight {
     bool shadows;
-    bool use;
     vec3 direction;
     vec3 color;
 };
@@ -55,7 +55,6 @@ uniform DirLight dirLight;
 // point ligth
 struct PointLight {
     bool shadows;
-    bool use;
     vec3 position;
     vec3 color;
 };
@@ -67,7 +66,6 @@ uniform float far_plane;
 
 struct Object {
     bool useIBL;
-    float emissiveIntensity;
 };
 uniform Object object;
 
@@ -363,18 +361,16 @@ void main()
     vec3 N = normalize(fs_in.Normal);
 
     vec3 emissive = texture(emissiveMap, fs_in.TexCoords).rgb;
-    emissive = emissive * object.emissiveIntensity;
+    emissive = emissive * material.emissive;
 
     vec3 V = normalize(camPos - fs_in.WorldPos);
     vec3 R = reflect(-V, N);
 
     F0 = mix(F0, albedo, metallic);
 
-    if (dirLight.use)
-        result += CalcDirLight(N, V, R, F0, albedo, metallic, roughness, ao);
+    result += CalcDirLight(N, V, R, F0, albedo, metallic, roughness, ao);
 
-    if (pointLight.use)
-        result += CalcPointLight(N, V, R, F0, albedo, metallic, roughness, ao);
+    result += CalcPointLight(N, V, R, F0, albedo, metallic, roughness, ao);
 
     FragColor = vec4(result + emissive, 1.0);
 

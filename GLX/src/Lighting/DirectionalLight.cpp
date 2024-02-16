@@ -3,9 +3,6 @@
 DirectionalLight::DirectionalLight(RendererLayer* renderer)
     : m_Renderer(renderer)
 {
-    ResourceManager::LoadShader("assets/shaders/depthMapVS.glsl", "assets/shaders/depthMapFS.glsl", nullptr, "depth_map");
-    ResourceManager::LoadShader("assets/shaders/quadVS.glsl", "assets/shaders/depthQuadFS.glsl", nullptr, "depth_quad");
-
     m_DepthMapFBO.Bind();
     m_DepthMapFBO.TextureAttachment(1, 1, GL_TEXTURE_2D, GL_DEPTH_COMPONENT, m_ShadowWidth, m_ShadowHeight);
     FrameBuffer::CheckStatus();
@@ -53,18 +50,22 @@ void DirectionalLight::RenderGUI(int i)
         if (ImGui::SliderFloat3("Direction", (float*)&m_Direction, -1.0f, 1.0f, "%.2f")) {
             ResourceManager::GetShader("pbr_lighting").Use().SetVector3f(("dirLights[" + std::to_string(i) + "].direction").c_str(), m_Direction);
             ResourceManager::GetShader("pbr_lighting_textured").Use().SetVector3f(("dirLights[" + std::to_string(i) + "].direction").c_str(), m_Direction);
+            ResourceManager::GetShader("pbr_lighting_textured_gltf").Use().SetVector3f(("dirLights[" + std::to_string(i) + "].direction").c_str(), m_Direction);
         }
         if (ImGui::ColorEdit3("Color", (float*)&m_Color)) {
             ResourceManager::GetShader("pbr_lighting").Use().SetVector3f(("dirLights[" + std::to_string(i) + "].color").c_str(), m_Color * m_Intensity);
             ResourceManager::GetShader("pbr_lighting_textured").Use().SetVector3f(("dirLights[" + std::to_string(i) + "].color").c_str(), m_Color * m_Intensity);
+            ResourceManager::GetShader("pbr_lighting_textured_gltf").Use().SetVector3f(("dirLights[" + std::to_string(i) + "].color").c_str(), m_Color * m_Intensity);
         }
         if (ImGui::DragFloat("Intensity", &m_Intensity, 0.01f, 0.0f, FLT_MAX, "%.2f")) {
             ResourceManager::GetShader("pbr_lighting").Use().SetVector3f(("dirLights[" + std::to_string(i) + "].color").c_str(), m_Color * m_Intensity);
             ResourceManager::GetShader("pbr_lighting_textured").Use().SetVector3f(("dirLights[" + std::to_string(i) + "].color").c_str(), m_Color * m_Intensity);
+            ResourceManager::GetShader("pbr_lighting_textured_gltf").Use().SetVector3f(("dirLights[" + std::to_string(i) + "].color").c_str(), m_Color * m_Intensity);
         }
         if (ImGui::Checkbox("Cast Shadows", &m_CastShadows)) {
             ResourceManager::GetShader("pbr_lighting").Use().SetInteger(("dirLights[" + std::to_string(i) + "].shadows").c_str(), m_CastShadows);
             ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger(("dirLights[" + std::to_string(i) + "].shadows").c_str(), m_CastShadows);
+            ResourceManager::GetShader("pbr_lighting_textured_gltf").Use().SetInteger(("dirLights[" + std::to_string(i) + "].shadows").c_str(), m_CastShadows);
         }
 
         ImGui::TreePop();

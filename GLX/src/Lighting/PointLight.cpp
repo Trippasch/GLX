@@ -3,15 +3,6 @@
 PointLight::PointLight(RendererLayer* renderer)
     : m_Renderer(renderer)
 {
-    ResourceManager::LoadShader("assets/shaders/depthCubeMapVS.glsl", "assets/shaders/depthCubeMapFS.glsl", "assets/shaders/depthCubeMapGS.glsl", "depth_cube_map");
-    ResourceManager::LoadShader("assets/shaders/debugDepthCubeMapVS.glsl", "assets/shaders/debugDepthCubeMapFS.glsl", nullptr, "debug_depth_cube_map");
-    ResourceManager::LoadShader("assets/shaders/lightSourceVS.glsl", "assets/shaders/lightSourceFS.glsl", nullptr, "lightSource");
-
-    ResourceManager::GetShader("lightSource").Use().SetVector3f("color", m_Color);
-
-    ResourceManager::GetShader("lightSource").Use().SetBlockIndex("Matrices", 0);
-    ResourceManager::GetShader("debug_depth_cube_map").Use().SetBlockIndex("Matrices", 0);
-
     m_DepthCubeMapFBO.Bind();
     m_DepthCubeMapFBO.TextureAttachment(1, 2, GL_TEXTURE_CUBE_MAP, GL_DEPTH_COMPONENT, m_ShadowWidth, m_ShadowHeight);
     FrameBuffer::CheckStatus();
@@ -34,6 +25,7 @@ void PointLight::PointLightProjectionMatrix()
     ResourceManager::GetShader("debug_depth_cube_map").Use().SetFloat("far_plane", farPlane);
     ResourceManager::GetShader("pbr_lighting").Use().SetFloat("far_plane", farPlane);
     ResourceManager::GetShader("pbr_lighting_textured").Use().SetFloat("far_plane", farPlane);
+    ResourceManager::GetShader("pbr_lighting_textured_gltf").Use().SetFloat("far_plane", farPlane);
 }
 
 void PointLight::RenderMesh()
@@ -52,19 +44,23 @@ void PointLight::RenderGUI(int i)
         if (ImGui::DragFloat3("Position", (float*)&m_Position, 0.01f, -FLT_MAX, FLT_MAX, "%.2f")) {
             ResourceManager::GetShader("pbr_lighting").Use().SetVector3f(("pointLights[" + std::to_string(i) + "].position").c_str(), m_Position);
             ResourceManager::GetShader("pbr_lighting_textured").Use().SetVector3f(("pointLights[" + std::to_string(i) + "].position").c_str(), m_Position);
+            ResourceManager::GetShader("pbr_lighting_textured_gltf").Use().SetVector3f(("pointLights[" + std::to_string(i) + "].position").c_str(), m_Position);
         }
         if (ImGui::ColorEdit3("Color", (float*)&m_Color)) {
             ResourceManager::GetShader("pbr_lighting").Use().SetVector3f(("pointLights[" + std::to_string(i) + "].color").c_str(), m_Color * m_Intensity);
             ResourceManager::GetShader("pbr_lighting_textured").Use().SetVector3f(("pointLights[" + std::to_string(i) + "].color").c_str(), m_Color * m_Intensity);
+            ResourceManager::GetShader("pbr_lighting_textured_gltf").Use().SetVector3f(("pointLights[" + std::to_string(i) + "].color").c_str(), m_Color * m_Intensity);
         }
         if (ImGui::DragFloat("Intensity", &m_Intensity, 0.01f, 0.0f, FLT_MAX, "%.2f")) {
             ResourceManager::GetShader("pbr_lighting").Use().SetVector3f(("pointLights[" + std::to_string(i) + "].color").c_str(), m_Color * m_Intensity);
             ResourceManager::GetShader("pbr_lighting_textured").Use().SetVector3f(("pointLights[" + std::to_string(i) + "].color").c_str(), m_Color * m_Intensity);
+            ResourceManager::GetShader("pbr_lighting_textured_gltf").Use().SetVector3f(("pointLights[" + std::to_string(i) + "].color").c_str(), m_Color * m_Intensity);
         }
         ImGui::Checkbox("Render Mesh", &m_RenderMesh);
         if (ImGui::Checkbox("Cast Shadows", &m_CastShadows)) {
             ResourceManager::GetShader("pbr_lighting").Use().SetInteger(("pointLights[" + std::to_string(i) + "].shadows").c_str(), m_CastShadows);
             ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger(("pointLights[" + std::to_string(i) + "].shadows").c_str(), m_CastShadows);
+            ResourceManager::GetShader("pbr_lighting_textured_gltf").Use().SetInteger(("pointLights[" + std::to_string(i) + "].shadows").c_str(), m_CastShadows);
         }
 
         ImGui::TreePop();

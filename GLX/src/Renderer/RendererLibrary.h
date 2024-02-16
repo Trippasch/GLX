@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Resources/ResourceManager.h"
 #include "Resources/VertexBuffer.h"
 #include "Resources/IndexBuffer.h"
 

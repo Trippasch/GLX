@@ -59,9 +59,6 @@ public:
 
     Camera& GetCamera() { return m_Camera; }
 
-    void SetPBRShader(Shader& shader) { m_PBRShader = shader; }
-    void SetPBRShaderTextured(Shader& shader) { m_PBRShaderTextured = shader; }
-
     void RenderCube(GLenum mode);
     void RenderQuad(GLenum mode);
     void AddLight(DirectionalLight* light);
@@ -83,8 +80,6 @@ private:
 
     // PBR
     PBR* m_PBR;
-    Shader m_PBRShader;
-    Shader m_PBRShaderTextured;
 
     // Lights
     std::vector<DirectionalLight*> m_DirectionalLights;

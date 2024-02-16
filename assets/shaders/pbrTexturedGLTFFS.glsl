@@ -378,8 +378,8 @@ void main()
     vec3 F0 = vec3(0.04);
 
     vec3 albedo = pow(texture(albedoMap, fs_in.TexCoords).rgb, vec3(gamma));
-    float metallic = texture(metallicMap, fs_in.TexCoords).r;
-    float roughness = texture(roughnessMap, fs_in.TexCoords).r;
+    float metallic = texture(metallicMap, fs_in.TexCoords).b;
+    float roughness = texture(roughnessMap, fs_in.TexCoords).g;
     float ao = texture(aoMap, fs_in.TexCoords).r;
     vec3 N = getNormalFromMap();
 

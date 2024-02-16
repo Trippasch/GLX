@@ -114,13 +114,13 @@ void PostProcessor::RenderPostProcessingGUI()
             ImGui::SameLine();
             if (ImGuiLayer::ToggleButton(" ", &m_UseBloom)) {
                 ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.bloom", m_UseBloom);
-            }
-            if (m_UseBloom) {
-                if (ImGui::SliderFloat("Intensity", &m_BloomStrength, 0.0f, 0.5f, "%.2f")) {
-                    ResourceManager::GetShader("post_proc").Use().SetFloat("postProcessing.bloomStrength", m_BloomStrength);
-                }
-                if (ImGui::SliderFloat("Filter Radius", &m_BloomFilterRadius, 0.0f, 0.05f, "%.3f")) {
-                    ResourceManager::GetShader("upsample").Use().SetFloat("filterRadius", m_BloomFilterRadius);
+                if (m_UseBloom) {
+                    if (ImGui::SliderFloat("Intensity", &m_BloomStrength, 0.0f, 0.5f, "%.2f")) {
+                        ResourceManager::GetShader("post_proc").Use().SetFloat("postProcessing.bloomStrength", m_BloomStrength);
+                    }
+                    if (ImGui::SliderFloat("Filter Radius", &m_BloomFilterRadius, 0.0f, 0.05f, "%.3f")) {
+                        ResourceManager::GetShader("upsample").Use().SetFloat("filterRadius", m_BloomFilterRadius);
+                    }
                 }
             }
             ImGui::TreePop();

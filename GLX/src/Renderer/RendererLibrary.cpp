@@ -6,6 +6,45 @@ RendererLibrary::RendererLibrary()
     CreateQuadVBO();
     CreatePlaneVBO();
     CreateSphereData();
+
+    // Load default textures
+    ResourceManager::LoadTexture("assets/textures/default/albedo.png", "default_albedo");
+    ResourceManager::LoadTexture("assets/textures/default/normal.png", "default_normal");
+    ResourceManager::LoadTexture("assets/textures/default/metallic.png", "default_metallic");
+    ResourceManager::LoadTexture("assets/textures/default/roughness.png", "default_roughness");
+    ResourceManager::LoadTexture("assets/textures/default/ao.png", "default_ao");
+    ResourceManager::LoadTexture("assets/textures/default/emissive.png", "default_emissive");
+
+    // Load gizmo shader
+    ResourceManager::LoadShader("assets/shaders/gizmoVS.glsl", "assets/shaders/gizmoFS.glsl", nullptr, "gizmo");
+    ResourceManager::GetShader("gizmo").Use().SetVector3f("color", glm::vec3(1.0f, 1.0f, 1.0f));
+    ResourceManager::GetShader("gizmo").Use().SetBlockIndex("Matrices", 0);
+
+    // Load light source shader
+    ResourceManager::LoadShader("assets/shaders/lightSourceVS.glsl", "assets/shaders/lightSourceFS.glsl", nullptr, "lightSource");
+    ResourceManager::GetShader("lightSource").Use().SetVector3f("color", glm::vec3(0.0f, 0.0f, 0.0f));
+    ResourceManager::GetShader("lightSource").Use().SetBlockIndex("Matrices", 0);
+
+    // Load depth cube map and debug depth cube map shaders
+    ResourceManager::LoadShader("assets/shaders/depthCubeMapVS.glsl", "assets/shaders/depthCubeMapFS.glsl", "assets/shaders/depthCubeMapGS.glsl", "depth_cube_map");
+    ResourceManager::LoadShader("assets/shaders/debugDepthCubeMapVS.glsl", "assets/shaders/debugDepthCubeMapFS.glsl", nullptr, "debug_depth_cube_map");
+    ResourceManager::GetShader("debug_depth_cube_map").Use().SetBlockIndex("Matrices", 0);
+
+    // Load depth map and debug depth map shaders
+    ResourceManager::LoadShader("assets/shaders/depthMapVS.glsl", "assets/shaders/depthMapFS.glsl", nullptr, "depth_map");
+    ResourceManager::LoadShader("assets/shaders/quadVS.glsl", "assets/shaders/depthQuadFS.glsl", nullptr, "depth_quad");
+
+    // Load Debug Shader
+    ResourceManager::LoadShader("assets/shaders/quadVS.glsl", "assets/shaders/debugFS.glsl", nullptr, "debug_quad");
+
+    // Load Model
+    ResourceManager::LoadModel("assets/objects/helmet/DamagedHelmet.gltf", "helmet");
+
+    // Lighting
+    ResourceManager::LoadShader("assets/shaders/pbrVS.glsl", "assets/shaders/pbrFS.glsl", nullptr, "pbr_lighting");
+    ResourceManager::LoadShader("assets/shaders/pbrVS.glsl", "assets/shaders/pbrTexturedFS.glsl", nullptr, "pbr_lighting_textured");
+    ResourceManager::LoadShader("assets/shaders/pbrVS.glsl", "assets/shaders/pbrTexturedGLTFFS.glsl", nullptr, "pbr_lighting_textured_gltf");
+    ResourceManager::GetShader("pbr_lighting").Use().SetBlockIndex("Matrices", 0);
 }
 
 RendererLibrary::~RendererLibrary()

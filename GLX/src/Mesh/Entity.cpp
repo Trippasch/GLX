@@ -1,13 +1,5 @@
 #include "Mesh/Entity.h"
 
-Entity::Entity()
-{
-    ResourceManager::LoadShader("assets/shaders/gizmoVS.glsl", "assets/shaders/gizmoFS.glsl", nullptr, "gizmo");
-    ResourceManager::GetShader("gizmo").Use().SetVector3f("color", glm::vec3(1.0f, 1.0f, 1.0f));
-
-    ResourceManager::GetShader("gizmo").Use().SetBlockIndex("Matrices", 0);
-}
-
 AABB Entity::getGlobalAABB()
 {
     //Get global scale thanks to our transform
