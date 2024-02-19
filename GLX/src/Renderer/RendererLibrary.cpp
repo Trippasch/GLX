@@ -35,7 +35,7 @@ RendererLibrary::RendererLibrary()
     ResourceManager::LoadShader("assets/shaders/quadVS.glsl", "assets/shaders/debugFS.glsl", nullptr, "debug_quad");
 
     // Load Model
-    ResourceManager::LoadModel("assets/objects/helmet/DamagedHelmet.gltf", "helmet");
+    ResourceManager::LoadModel("assets/objects/sponza/Sponza.gltf", "sponza");
 
     // Lighting
     ResourceManager::LoadShader("assets/shaders/pbrVS.glsl", "assets/shaders/pbrFS.glsl", nullptr, "pbr_lighting");

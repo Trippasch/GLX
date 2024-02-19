@@ -61,8 +61,11 @@ public:
 
     void RenderCube(GLenum mode);
     void RenderQuad(GLenum mode);
+
     void AddLight(DirectionalLight* light);
     void AddLight(PointLight* light);
+    void RemoveLight(DirectionalLight* light);
+    void RemoveLight(PointLight* light);
 
 private:
     GLFWwindow* m_Window;

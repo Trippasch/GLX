@@ -4,7 +4,7 @@ PointLight::PointLight(RendererLayer* renderer)
     : m_Renderer(renderer)
 {
     m_DepthCubeMapFBO.Bind();
-    m_DepthCubeMapFBO.TextureAttachment(1, 2, GL_TEXTURE_CUBE_MAP, GL_DEPTH_COMPONENT, m_ShadowWidth, m_ShadowHeight);
+    m_DepthCubeMapFBO.TextureAttachment(1, 2, GL_TEXTURE_CUBE_MAP, GL_DEPTH_COMPONENT, m_DepthCubeMapResolution, m_DepthCubeMapResolution);
     FrameBuffer::CheckStatus();
     FrameBuffer::UnBind();
 }
@@ -16,7 +16,7 @@ PointLight::~PointLight()
 
 void PointLight::PointLightProjectionMatrix(float nearPlane, float farPlane)
 {
-    float aspect_ratio = static_cast<float>(m_ShadowWidth) / static_cast<float>(m_ShadowHeight);
+    float aspect_ratio = static_cast<float>(m_DepthCubeMapResolution) / static_cast<float>(m_DepthCubeMapResolution);
     m_PointLightProjection = glm::perspective(glm::radians(90.0f), aspect_ratio, nearPlane, farPlane);
 }
 
@@ -53,6 +53,9 @@ void PointLight::RenderGUI(int i)
             ResourceManager::GetShader("pbr_lighting").Use().SetInteger(("pointLights[" + std::to_string(i) + "].shadows").c_str(), m_CastShadows);
             ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger(("pointLights[" + std::to_string(i) + "].shadows").c_str(), m_CastShadows);
             ResourceManager::GetShader("pbr_lighting_textured_gltf").Use().SetInteger(("pointLights[" + std::to_string(i) + "].shadows").c_str(), m_CastShadows);
+        }
+        if (ImGui::Button("Remove Light", ImVec2(0, 0))) {
+            m_Renderer->RemoveLight(this);
         }
 
         ImGui::TreePop();

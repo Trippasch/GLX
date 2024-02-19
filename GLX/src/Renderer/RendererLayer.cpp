@@ -10,7 +10,6 @@ RendererLayer::RendererLayer()
 {
     Application &app = Application::Get();
     m_Window = static_cast<GLFWwindow *>(app.GetWindow().GetNativeWindow());
-    m_Camera = Camera(m_Width, m_Height, glm::vec3(0.0f, 2.0f, 20.0f));
 }
 
 void RendererLayer::OnAttach()
@@ -67,6 +66,9 @@ void RendererLayer::OnAttach()
     // PostProcessor
     m_PostProcessor = new PostProcessor(this);
 
+    // Camera
+    m_Camera = Camera(m_Width, m_Height, glm::vec3(0.0f, 2.0f, 20.0f));
+
     // Lights
     DirectionalLight* dirLight = new DirectionalLight(this);
     AddLight(dirLight);
@@ -79,16 +81,16 @@ void RendererLayer::OnAttach()
 
     Entity* lastEntity;
     // Create Models
-    m_Models.addChild<ModelEntity>(ResourceManager::GetModel("helmet"));
+    m_Models.addChild<ModelEntity>(ResourceManager::GetModel("sponza"));
     lastEntity = m_Models.children.back().get();
-    lastEntity->transform.setLocalPosition(glm::vec3(0.0f, 2.0f, 4.0f));
-    lastEntity->transform.setLocalRotation(glm::vec3(90.0f, 0.0f, 0.0f));
-    lastEntity->transform.setLocalScale(glm::vec3(1.0f));
+    lastEntity->transform.setLocalPosition(glm::vec3(0.0f, 0.0f, -1.0f));
+    lastEntity->transform.setLocalRotation(glm::vec3(0.0f, 0.0f, 0.0f));
+    lastEntity->transform.setLocalScale(glm::vec3(0.05f));
     lastEntity->material.setAlbedo(glm::vec3(1.0f));
     lastEntity->material.setMetallic(1.0f);
     lastEntity->material.setRoughness(1.0f);
-    lastEntity->material.setAO(1.0f);
-    lastEntity->material.setEmissive(1.0f);
+    lastEntity->material.setAO(0.36f);
+    lastEntity->material.setEmissive(0.0f);
     lastEntity->material.setIsTextured(true);
     lastEntity->material.setAlbedoTexture(ResourceManager::GetTexture("default_albedo"));
     lastEntity->material.setNormalTexture(ResourceManager::GetTexture("default_normal"));
@@ -100,23 +102,23 @@ void RendererLayer::OnAttach()
     lastEntity->material.setShader(ResourceManager::GetShader("pbr_lighting_textured_gltf"));
 
     // Create Planes
-    m_Planes.addChild<Plane>(m_RendererLibrary->GetPlaneVBO(), m_RendererLibrary->GetPlaneVertices(), 48);
-    lastEntity = m_Planes.children.back().get();
-    lastEntity->transform.setLocalPosition(glm::vec3(0.0f, 0.0f, 0.0f));
-    lastEntity->transform.setLocalScale(glm::vec3(500.0f));
-    lastEntity->material.setAlbedo(glm::vec3(1.0f));
-    lastEntity->material.setMetallic(1.0f);
-    lastEntity->material.setRoughness(1.0f);
-    lastEntity->material.setAO(1.0f);
-    lastEntity->material.setEmissive(0.0f);
-    lastEntity->material.setIsTextured(false);
-    lastEntity->material.setAlbedoTexture(ResourceManager::GetTexture("default_albedo"));
-    lastEntity->material.setNormalTexture(ResourceManager::GetTexture("default_normal"));
-    lastEntity->material.setMetallicTexture(ResourceManager::GetTexture("default_metallic"));
-    lastEntity->material.setRoughnessTexture(ResourceManager::GetTexture("default_roughness"));
-    lastEntity->material.setAOTexture(ResourceManager::GetTexture("default_ao"));
-    lastEntity->material.setEmissiveTexture(ResourceManager::GetTexture("default_emissive"));
-    lastEntity->material.setShader(ResourceManager::GetShader("pbr_lighting"));
+    // m_Planes.addChild<Plane>(m_RendererLibrary->GetPlaneVBO(), m_RendererLibrary->GetPlaneVertices(), 48);
+    // lastEntity = m_Planes.children.back().get();
+    // lastEntity->transform.setLocalPosition(glm::vec3(0.0f, 0.0f, 0.0f));
+    // lastEntity->transform.setLocalScale(glm::vec3(500.0f));
+    // lastEntity->material.setAlbedo(glm::vec3(1.0f));
+    // lastEntity->material.setMetallic(1.0f);
+    // lastEntity->material.setRoughness(1.0f);
+    // lastEntity->material.setAO(1.0f);
+    // lastEntity->material.setEmissive(0.0f);
+    // lastEntity->material.setIsTextured(false);
+    // lastEntity->material.setAlbedoTexture(ResourceManager::GetTexture("default_albedo"));
+    // lastEntity->material.setNormalTexture(ResourceManager::GetTexture("default_normal"));
+    // lastEntity->material.setMetallicTexture(ResourceManager::GetTexture("default_metallic"));
+    // lastEntity->material.setRoughnessTexture(ResourceManager::GetTexture("default_roughness"));
+    // lastEntity->material.setAOTexture(ResourceManager::GetTexture("default_ao"));
+    // lastEntity->material.setEmissiveTexture(ResourceManager::GetTexture("default_emissive"));
+    // lastEntity->material.setShader(ResourceManager::GetShader("pbr_lighting"));
 
     // Create Cubes
     m_Cubes.addChild<Cube>(m_RendererLibrary->GetCubeVBO(), m_RendererLibrary->GetCubeVertices(), 288);
@@ -177,7 +179,7 @@ void RendererLayer::OnUpdate()
 
     // Render Directional Lights Shadows
     for (size_t i = 0; i < m_DirectionalLights.size(); i++) {
-        if (m_DirectionalLights[i]->m_CastShadows) {
+        if (m_DirectionalLights[i]->GetCastShadows()) {
             // generate the depth map for directional shadows
             ResourceManager::GetShader("depth_map").Use().SetInteger("dirLightIndex", i);
 
@@ -188,10 +190,10 @@ void RendererLayer::OnUpdate()
             }
 
             // shadow mapping
-            glViewport(0, 0, m_DirectionalLights[i]->m_DepthMapResolution, m_DirectionalLights[i]->m_DepthMapResolution);
+            glViewport(0, 0, m_DirectionalLights[i]->GetDepthMapResolution(), m_DirectionalLights[i]->GetDepthMapResolution());
 
             // directional shadows
-            m_DirectionalLights[i]->m_DepthMapFBO.Bind();
+            m_DirectionalLights[i]->GetDepthMapFBO().Bind();
             glClear(GL_DEPTH_BUFFER_BIT);
             glCullFace(GL_FRONT);
             m_Planes.renderSceneGraphSimple(GL_TRIANGLES, ResourceManager::GetShader("depth_map"));
@@ -207,30 +209,30 @@ void RendererLayer::OnUpdate()
 
     // Render Point Lights Shadows
     for (size_t i = 0; i < m_PointLights.size(); i++) {
-        if (m_PointLights[i]->m_CastShadows) {
+        if (m_PointLights[i]->GetCastShadows()) {
             // generate depth cube map
             std::vector<glm::mat4> pointLightMatrices;
-            pointLightMatrices.push_back(m_PointLights[i]->m_PointLightProjection * glm::lookAt(m_PointLights[i]->m_Position, m_PointLights[i]->m_Position + glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
-            pointLightMatrices.push_back(m_PointLights[i]->m_PointLightProjection * glm::lookAt(m_PointLights[i]->m_Position, m_PointLights[i]->m_Position + glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
-            pointLightMatrices.push_back(m_PointLights[i]->m_PointLightProjection * glm::lookAt(m_PointLights[i]->m_Position, m_PointLights[i]->m_Position + glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)));
-            pointLightMatrices.push_back(m_PointLights[i]->m_PointLightProjection * glm::lookAt(m_PointLights[i]->m_Position, m_PointLights[i]->m_Position + glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f)));
-            pointLightMatrices.push_back(m_PointLights[i]->m_PointLightProjection * glm::lookAt(m_PointLights[i]->m_Position, m_PointLights[i]->m_Position + glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
-            pointLightMatrices.push_back(m_PointLights[i]->m_PointLightProjection * glm::lookAt(m_PointLights[i]->m_Position, m_PointLights[i]->m_Position + glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
+            pointLightMatrices.push_back(m_PointLights[i]->GetPointLightProjection() * glm::lookAt(m_PointLights[i]->GetPosition(), m_PointLights[i]->GetPosition() + glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
+            pointLightMatrices.push_back(m_PointLights[i]->GetPointLightProjection() * glm::lookAt(m_PointLights[i]->GetPosition(), m_PointLights[i]->GetPosition() + glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
+            pointLightMatrices.push_back(m_PointLights[i]->GetPointLightProjection() * glm::lookAt(m_PointLights[i]->GetPosition(), m_PointLights[i]->GetPosition() + glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)));
+            pointLightMatrices.push_back(m_PointLights[i]->GetPointLightProjection() * glm::lookAt(m_PointLights[i]->GetPosition(), m_PointLights[i]->GetPosition() + glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f)));
+            pointLightMatrices.push_back(m_PointLights[i]->GetPointLightProjection() * glm::lookAt(m_PointLights[i]->GetPosition(), m_PointLights[i]->GetPosition() + glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
+            pointLightMatrices.push_back(m_PointLights[i]->GetPointLightProjection() * glm::lookAt(m_PointLights[i]->GetPosition(), m_PointLights[i]->GetPosition() + glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
 
             for (GLuint j = 0; j < 6; j++) {
                 ResourceManager::GetShader("depth_cube_map").Use().SetMatrix4(("shadowMatrices[" + std::to_string(j) + "]").c_str(), pointLightMatrices[j]);
             }
 
-            ResourceManager::GetShader("depth_cube_map").Use().SetVector3f("lightPos", m_PointLights[i]->m_Position);
+            ResourceManager::GetShader("depth_cube_map").Use().SetVector3f("lightPos", m_PointLights[i]->GetPosition());
             if (m_DebugDepthCubeMap) {
-                ResourceManager::GetShader("debug_depth_cube_map").Use().SetVector3f(("pointLights[" + std::to_string(i) + "].position").c_str(), m_PointLights[i]->m_Position);
+                ResourceManager::GetShader("debug_depth_cube_map").Use().SetVector3f(("pointLights[" + std::to_string(i) + "].position").c_str(), m_PointLights[i]->GetPosition());
             }
 
             // shadow mapping
-            glViewport(0, 0, m_PointLights[i]->m_ShadowWidth, m_PointLights[i]->m_ShadowHeight);
+            glViewport(0, 0, m_PointLights[i]->GetDepthCubeMapResolution(), m_PointLights[i]->GetDepthCubeMapResolution());
 
             // point shadows
-            m_PointLights[i]->m_DepthCubeMapFBO.Bind();
+            m_PointLights[i]->GetDepthCubeMapFBO().Bind();
             glClear(GL_DEPTH_BUFFER_BIT);
 
             m_Planes.renderSceneGraphSimple(GL_TRIANGLES, ResourceManager::GetShader("depth_cube_map"));
@@ -254,7 +256,7 @@ void RendererLayer::OnUpdate()
 
     // Render Point Lights Mesh
     for (size_t i = 0; i < m_PointLights.size(); i++) {
-        if (m_PointLights[i]->m_RenderMesh) {
+        if (m_PointLights[i]->GetRenderMesh()) {
             m_PointLights[i]->RenderMesh();
         }
     }
@@ -262,7 +264,7 @@ void RendererLayer::OnUpdate()
     if (m_DebugDepthCubeMap) {
         for (size_t i = 0; i < m_PointLights.size(); i++) {
             glActiveTexture(GL_TEXTURE19 + i);
-            m_PointLights[i]->m_DepthCubeMapFBO.BindTexture(GL_TEXTURE_CUBE_MAP, 0);
+            m_PointLights[i]->GetDepthCubeMapFBO().BindTexture(GL_TEXTURE_CUBE_MAP, 0);
         }
         m_Planes.renderSceneGraphSimple(GL_TRIANGLES, ResourceManager::GetShader("debug_depth_cube_map"));
         m_Spheres.renderSceneGraphSimple(GL_TRIANGLE_STRIP, ResourceManager::GetShader("debug_depth_cube_map"));
@@ -280,11 +282,11 @@ void RendererLayer::OnUpdate()
         }
         for (size_t i = 0; i < m_DirectionalLights.size(); i++) {
             glActiveTexture(GL_TEXTURE9 + i);
-            m_DirectionalLights[i]->m_DepthMapFBO.BindTexture(GL_TEXTURE_2D_ARRAY, 0);
+            m_DirectionalLights[i]->GetDepthMapFBO().BindTexture(GL_TEXTURE_2D_ARRAY, 0);
         }
         for (size_t i = 0; i < m_PointLights.size(); i++) {
             glActiveTexture(GL_TEXTURE19 + i);
-            m_PointLights[i]->m_DepthCubeMapFBO.BindTexture(GL_TEXTURE_CUBE_MAP, 0);
+            m_PointLights[i]->GetDepthCubeMapFBO().BindTexture(GL_TEXTURE_CUBE_MAP, 0);
         }
         m_Planes.renderSceneGraph(GL_TRIANGLES, m_CamFrustum, display, total);
         m_Cubes.renderSceneGraph(GL_TRIANGLES, m_CamFrustum, display, total);
@@ -445,6 +447,15 @@ void RendererLayer::OnImGuiRender()
         for (size_t i = 0; i < m_PointLights.size(); i++) {
             m_PointLights[i]->RenderGUI(i);
         }
+
+        if (ImGui::Button("Add Directional Light")) {
+            DirectionalLight* dirLight = new DirectionalLight(this);
+            AddLight(dirLight);
+        }
+        if (ImGui::Button("Add Point Light")) {
+            PointLight* pointLight = new PointLight(this);
+            AddLight(pointLight);
+        }
     }
 
     ImGui::Separator();
@@ -595,39 +606,48 @@ void RendererLayer::AddLight(DirectionalLight* light)
     m_DirectionalLights.push_back(light);
     ResourceManager::GetShader("pbr_lighting").Use().SetInteger("nrDirLights", m_DirectionalLights.size());
 
-    ResourceManager::GetShader("pbr_lighting").Use().SetVector3f(("dirLights[" + std::to_string(m_DirectionalLights.size()-1) + "].direction").c_str(), light->m_Direction);
-    ResourceManager::GetShader("pbr_lighting").Use().SetVector3f(("dirLights[" + std::to_string(m_DirectionalLights.size()-1) + "].color").c_str(), light->m_Color * light->m_Intensity);
-    ResourceManager::GetShader("pbr_lighting").Use().SetInteger(("dirLights[" + std::to_string(m_DirectionalLights.size()-1) + "].shadows").c_str(), light->m_CastShadows);
+    ResourceManager::GetShader("pbr_lighting").Use().SetVector3f(("dirLights[" + std::to_string(m_DirectionalLights.size()-1) + "].direction").c_str(), light->GetDirection());
+    ResourceManager::GetShader("pbr_lighting").Use().SetVector3f(("dirLights[" + std::to_string(m_DirectionalLights.size()-1) + "].color").c_str(), light->GetColor() * light->GetIntensity());
+    ResourceManager::GetShader("pbr_lighting").Use().SetInteger(("dirLights[" + std::to_string(m_DirectionalLights.size()-1) + "].shadows").c_str(), light->GetCastShadows());
 
     ResourceManager::GetShader("pbr_lighting").Use().SetFloat("far_plane", m_Camera.m_FarPlane);
-    ResourceManager::GetShader("pbr_lighting").Use().SetInteger("cascadeCount", light->m_ShadowCascadeLevels.size());
-    for (size_t i = 0; i < light->m_ShadowCascadeLevels.size(); i++) {
-        ResourceManager::GetShader("pbr_lighting").Use().SetFloat(("cascadePlaneDistances[" + std::to_string(i) + "]").c_str(), light->m_ShadowCascadeLevels[i]);
+    ResourceManager::GetShader("pbr_lighting").Use().SetInteger("cascadeCount", light->GetShadowCascadeLevels().size());
+    for (size_t i = 0; i < light->GetShadowCascadeLevels().size(); i++) {
+        ResourceManager::GetShader("pbr_lighting").Use().SetFloat(("cascadePlaneDistances[" + std::to_string(i) + "]").c_str(), light->GetShadowCascadeLevels()[i]);
     }
 
     ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger("nrDirLights", m_DirectionalLights.size());
 
-    ResourceManager::GetShader("pbr_lighting_textured").Use().SetVector3f(("dirLights[" + std::to_string(m_DirectionalLights.size()-1) + "].direction").c_str(), light->m_Direction);
-    ResourceManager::GetShader("pbr_lighting_textured").Use().SetVector3f(("dirLights[" + std::to_string(m_DirectionalLights.size()-1) + "].color").c_str(), light->m_Color * light->m_Intensity);
-    ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger(("dirLights[" + std::to_string(m_DirectionalLights.size()-1) + "].shadows").c_str(), light->m_CastShadows);
+    ResourceManager::GetShader("pbr_lighting_textured").Use().SetVector3f(("dirLights[" + std::to_string(m_DirectionalLights.size()-1) + "].direction").c_str(), light->GetDirection());
+    ResourceManager::GetShader("pbr_lighting_textured").Use().SetVector3f(("dirLights[" + std::to_string(m_DirectionalLights.size()-1) + "].color").c_str(), light->GetColor() * light->GetIntensity());
+    ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger(("dirLights[" + std::to_string(m_DirectionalLights.size()-1) + "].shadows").c_str(), light->GetCastShadows());
 
     ResourceManager::GetShader("pbr_lighting_textured").Use().SetFloat("far_plane", m_Camera.m_FarPlane);
-    ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger("cascadeCount", light->m_ShadowCascadeLevels.size());
-    for (size_t i = 0; i < light->m_ShadowCascadeLevels.size(); i++) {
-        ResourceManager::GetShader("pbr_lighting_textured").Use().SetFloat(("cascadePlaneDistances[" + std::to_string(i) + "]").c_str(), light->m_ShadowCascadeLevels[i]);
+    ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger("cascadeCount", light->GetShadowCascadeLevels().size());
+    for (size_t i = 0; i < light->GetShadowCascadeLevels().size(); i++) {
+        ResourceManager::GetShader("pbr_lighting_textured").Use().SetFloat(("cascadePlaneDistances[" + std::to_string(i) + "]").c_str(), light->GetShadowCascadeLevels()[i]);
     }
 
     ResourceManager::GetShader("pbr_lighting_textured_gltf").Use().SetInteger("nrDirLights", m_DirectionalLights.size());
 
-    ResourceManager::GetShader("pbr_lighting_textured_gltf").Use().SetVector3f(("dirLights[" + std::to_string(m_DirectionalLights.size()-1) + "].direction").c_str(), light->m_Direction);
-    ResourceManager::GetShader("pbr_lighting_textured_gltf").Use().SetVector3f(("dirLights[" + std::to_string(m_DirectionalLights.size()-1) + "].color").c_str(), light->m_Color * light->m_Intensity);
-    ResourceManager::GetShader("pbr_lighting_textured_gltf").Use().SetInteger(("dirLights[" + std::to_string(m_DirectionalLights.size()-1) + "].shadows").c_str(), light->m_CastShadows);
+    ResourceManager::GetShader("pbr_lighting_textured_gltf").Use().SetVector3f(("dirLights[" + std::to_string(m_DirectionalLights.size()-1) + "].direction").c_str(), light->GetDirection());
+    ResourceManager::GetShader("pbr_lighting_textured_gltf").Use().SetVector3f(("dirLights[" + std::to_string(m_DirectionalLights.size()-1) + "].color").c_str(), light->GetColor() * light->GetIntensity());
+    ResourceManager::GetShader("pbr_lighting_textured_gltf").Use().SetInteger(("dirLights[" + std::to_string(m_DirectionalLights.size()-1) + "].shadows").c_str(), light->GetCastShadows());
 
     ResourceManager::GetShader("pbr_lighting_textured_gltf").Use().SetFloat("far_plane", m_Camera.m_FarPlane);
-    ResourceManager::GetShader("pbr_lighting_textured_gltf").Use().SetInteger("cascadeCount", light->m_ShadowCascadeLevels.size());
-    for (size_t i = 0; i < light->m_ShadowCascadeLevels.size(); i++) {
-        ResourceManager::GetShader("pbr_lighting_textured_gltf").Use().SetFloat(("cascadePlaneDistances[" + std::to_string(i) + "]").c_str(), light->m_ShadowCascadeLevels[i]);
+    ResourceManager::GetShader("pbr_lighting_textured_gltf").Use().SetInteger("cascadeCount", light->GetShadowCascadeLevels().size());
+    for (size_t i = 0; i < light->GetShadowCascadeLevels().size(); i++) {
+        ResourceManager::GetShader("pbr_lighting_textured_gltf").Use().SetFloat(("cascadePlaneDistances[" + std::to_string(i) + "]").c_str(), light->GetShadowCascadeLevels()[i]);
     }
+}
+
+void RendererLayer::RemoveLight(DirectionalLight* light)
+{
+    m_DirectionalLights.erase(std::remove(m_DirectionalLights.begin(), m_DirectionalLights.end(), light), m_DirectionalLights.end());
+
+    ResourceManager::GetShader("pbr_lighting").Use().SetInteger("nrDirLights", m_DirectionalLights.size());
+    ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger("nrDirLights", m_DirectionalLights.size());
+    ResourceManager::GetShader("pbr_lighting_textured_gltf").Use().SetInteger("nrDirLights", m_DirectionalLights.size());
 }
 
 void RendererLayer::AddLight(PointLight* light)
@@ -635,24 +655,24 @@ void RendererLayer::AddLight(PointLight* light)
     m_PointLights.push_back(light);
     ResourceManager::GetShader("pbr_lighting").Use().SetInteger("nrPointLights", m_PointLights.size());
 
-    ResourceManager::GetShader("pbr_lighting").Use().SetVector3f(("pointLights[" + std::to_string(m_PointLights.size()-1) + "].position").c_str(), light->m_Position);
-    ResourceManager::GetShader("pbr_lighting").Use().SetVector3f(("pointLights[" + std::to_string(m_PointLights.size()-1) + "].color").c_str(), light->m_Color * light->m_Intensity);
-    ResourceManager::GetShader("pbr_lighting").Use().SetInteger(("pointLights[" + std::to_string(m_PointLights.size()-1) + "].shadows").c_str(), light->m_CastShadows);
+    ResourceManager::GetShader("pbr_lighting").Use().SetVector3f(("pointLights[" + std::to_string(m_PointLights.size()-1) + "].position").c_str(), light->GetPosition());
+    ResourceManager::GetShader("pbr_lighting").Use().SetVector3f(("pointLights[" + std::to_string(m_PointLights.size()-1) + "].color").c_str(), light->GetColor() * light->GetIntensity());
+    ResourceManager::GetShader("pbr_lighting").Use().SetInteger(("pointLights[" + std::to_string(m_PointLights.size()-1) + "].shadows").c_str(), light->GetCastShadows());
 
     ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger("nrPointLights", m_PointLights.size());
 
-    ResourceManager::GetShader("pbr_lighting_textured").Use().SetVector3f(("pointLights[" + std::to_string(m_PointLights.size()-1) + "].position").c_str(), light->m_Position);
-    ResourceManager::GetShader("pbr_lighting_textured").Use().SetVector3f(("pointLights[" + std::to_string(m_PointLights.size()-1) + "].color").c_str(), light->m_Color * light->m_Intensity);
-    ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger(("pointLights[" + std::to_string(m_PointLights.size()-1) + "].shadows").c_str(), light->m_CastShadows);
+    ResourceManager::GetShader("pbr_lighting_textured").Use().SetVector3f(("pointLights[" + std::to_string(m_PointLights.size()-1) + "].position").c_str(), light->GetPosition());
+    ResourceManager::GetShader("pbr_lighting_textured").Use().SetVector3f(("pointLights[" + std::to_string(m_PointLights.size()-1) + "].color").c_str(), light->GetColor() * light->GetIntensity());
+    ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger(("pointLights[" + std::to_string(m_PointLights.size()-1) + "].shadows").c_str(), light->GetCastShadows());
 
     ResourceManager::GetShader("pbr_lighting_textured_gltf").Use().SetInteger("nrPointLights", m_PointLights.size());
 
-    ResourceManager::GetShader("pbr_lighting_textured_gltf").Use().SetVector3f(("pointLights[" + std::to_string(m_PointLights.size()-1) + "].position").c_str(), light->m_Position);
-    ResourceManager::GetShader("pbr_lighting_textured_gltf").Use().SetVector3f(("pointLights[" + std::to_string(m_PointLights.size()-1) + "].color").c_str(), light->m_Color * light->m_Intensity);
-    ResourceManager::GetShader("pbr_lighting_textured_gltf").Use().SetInteger(("pointLights[" + std::to_string(m_PointLights.size()-1) + "].shadows").c_str(), light->m_CastShadows);
+    ResourceManager::GetShader("pbr_lighting_textured_gltf").Use().SetVector3f(("pointLights[" + std::to_string(m_PointLights.size()-1) + "].position").c_str(), light->GetPosition());
+    ResourceManager::GetShader("pbr_lighting_textured_gltf").Use().SetVector3f(("pointLights[" + std::to_string(m_PointLights.size()-1) + "].color").c_str(), light->GetColor() * light->GetIntensity());
+    ResourceManager::GetShader("pbr_lighting_textured_gltf").Use().SetInteger(("pointLights[" + std::to_string(m_PointLights.size()-1) + "].shadows").c_str(), light->GetCastShadows());
 
     ResourceManager::GetShader("debug_depth_cube_map").Use().SetInteger("nrPointLights", m_PointLights.size());
-    ResourceManager::GetShader("debug_depth_cube_map").Use().SetVector3f(("pointLights[" + std::to_string(m_PointLights.size()-1) + "].position").c_str(), light->m_Position);
+    ResourceManager::GetShader("debug_depth_cube_map").Use().SetVector3f(("pointLights[" + std::to_string(m_PointLights.size()-1) + "].position").c_str(), light->GetPosition());
     ResourceManager::GetShader("debug_depth_cube_map").Use().SetFloat("far_plane", m_Camera.m_FarPlane);
     ResourceManager::GetShader("depth_cube_map").Use().SetFloat("far_plane", m_Camera.m_FarPlane);
 
@@ -661,4 +681,13 @@ void RendererLayer::AddLight(PointLight* light)
     ResourceManager::GetShader("pbr_lighting_textured_gltf").Use().SetFloat("far_plane", m_Camera.m_FarPlane);
 
     light->PointLightProjectionMatrix(m_Camera.m_NearPlane, m_Camera.m_FarPlane);
+}
+
+void RendererLayer::RemoveLight(PointLight* light)
+{
+    m_PointLights.erase(std::remove(m_PointLights.begin(), m_PointLights.end(), light), m_PointLights.end());
+
+    ResourceManager::GetShader("pbr_lighting").Use().SetInteger("nrPointLights", m_PointLights.size());
+    ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger("nrPointLights", m_PointLights.size());
+    ResourceManager::GetShader("pbr_lighting_textured_gltf").Use().SetInteger("nrPointLights", m_PointLights.size());
 }

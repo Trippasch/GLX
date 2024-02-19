@@ -47,6 +47,9 @@ void DirectionalLight::RenderGUI(int i)
             ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger(("dirLights[" + std::to_string(i) + "].shadows").c_str(), m_CastShadows);
             ResourceManager::GetShader("pbr_lighting_textured_gltf").Use().SetInteger(("dirLights[" + std::to_string(i) + "].shadows").c_str(), m_CastShadows);
         }
+        if (ImGui::Button("Remove Light", ImVec2(0, 0))) {
+            m_Renderer->RemoveLight(this);
+        }
 
         ImGui::TreePop();
     }
@@ -118,7 +121,7 @@ glm::mat4 DirectionalLight::getLightSpaceMatrix(const float nearPlane, const flo
         maxZ = std::max(maxZ, vLightSpace.z);
     }
 
-    constexpr float zMult = 10.0f;
+    constexpr float zMult = 100.0f;
     if (minZ < 0.0f) {
         minZ *= zMult;
     }
