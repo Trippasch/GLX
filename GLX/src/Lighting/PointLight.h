@@ -30,7 +30,7 @@ public:
     PointLight(RendererLayer* renderer);
     ~PointLight();
 
-    void PointLightProjectionMatrix();
+    void PointLightProjectionMatrix(float nearPlane, float farPlane);
     void RenderMesh();
     void RenderGUI(int i);
 };

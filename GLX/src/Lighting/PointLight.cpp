@@ -14,18 +14,10 @@ PointLight::~PointLight()
     m_DepthCubeMapFBO.Destroy();
 }
 
-void PointLight::PointLightProjectionMatrix()
+void PointLight::PointLightProjectionMatrix(float nearPlane, float farPlane)
 {
-    float nearPlane = 0.1f;
-    float farPlane = 100.0f;
     float aspect_ratio = static_cast<float>(m_ShadowWidth) / static_cast<float>(m_ShadowHeight);
     m_PointLightProjection = glm::perspective(glm::radians(90.0f), aspect_ratio, nearPlane, farPlane);
-
-    ResourceManager::GetShader("depth_cube_map").Use().SetFloat("far_plane", farPlane);
-    ResourceManager::GetShader("debug_depth_cube_map").Use().SetFloat("far_plane", farPlane);
-    ResourceManager::GetShader("pbr_lighting").Use().SetFloat("far_plane", farPlane);
-    ResourceManager::GetShader("pbr_lighting_textured").Use().SetFloat("far_plane", farPlane);
-    ResourceManager::GetShader("pbr_lighting_textured_gltf").Use().SetFloat("far_plane", farPlane);
 }
 
 void PointLight::RenderMesh()

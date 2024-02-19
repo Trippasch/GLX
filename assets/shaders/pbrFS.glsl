@@ -15,8 +15,6 @@ in VS_OUT
     vec2 TexCoords;
     vec3 WorldPos;
     vec3 Normal;
-    vec3 FragPos;
-    vec4 FragPosLightSpaces[MAX_DIR_LIGHTS];
 } fs_in;
 
 // IBL
@@ -27,8 +25,15 @@ layout (binding = 2) uniform sampler2D brdfLUT;
 layout (binding = 8) uniform sampler2D emissiveMap;
 
 // shadows
-layout (binding = 9) uniform sampler2D depthMaps[MAX_DIR_LIGHTS];
+layout (binding = 9) uniform sampler2DArray depthMaps[MAX_DIR_LIGHTS];
 layout (binding = 19) uniform samplerCube depthCubeMaps[MAX_POINT_LIGHTS];
+
+layout (std140, binding = 1) uniform LightSpaceMatrices
+{
+    mat4 lightSpaceMatrices[16 * MAX_DIR_LIGHTS];
+};
+uniform float cascadePlaneDistances[16];
+uniform int cascadeCount;
 
 // material parameters
 struct Material {
@@ -62,6 +67,7 @@ uniform PointLight pointLights[MAX_POINT_LIGHTS];
 uniform PointLight pointLight;
 
 uniform vec3 camPos;
+uniform mat4 camView;
 uniform float far_plane;
 
 struct Object {
@@ -116,36 +122,58 @@ vec3 FresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness)
     return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }
 
-float DirShadowsCalculation(vec4 fragPosLightSpace, vec3 lightDir, sampler2D depthMap)
+float DirShadowsCalculation(int dirLightIndex, vec3 lightDir, sampler2DArray depthMap)
 {
+    // select cascade layer
+    vec4 fragPosViewSpace = camView * vec4(fs_in.WorldPos, 1.0);
+    float depthValue = abs(fragPosViewSpace.z);
+
+    int layer = -1;
+    for (int i = 0; i < cascadeCount; i++) {
+        if (depthValue < cascadePlaneDistances[i]) {
+            layer = i;
+            break;
+        }
+    }
+    if (layer == -1) {
+        layer = cascadeCount;
+    }
+    // normal offset
+    vec3 offsetPos = fs_in.WorldPos + normalize(fs_in.Normal) * 0.005;
+    vec4 fragPosLightSpace = lightSpaceMatrices[dirLightIndex * 16 + layer] * vec4(offsetPos, 1.0);
     // perform perspective division
     vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
     // transform to [0,1] range
     projCoords = projCoords * 0.5 + 0.5;
-    // get closest depth value from light's perspective
-    float closestDepth = texture(depthMap, projCoords.xy).r;
     // get depth of current fragment from light's perspective
     float currentDepth = projCoords.z;
+    // keep the shadow at 0.0 when outside the far plane region of the light's frustum
+    if (currentDepth > 1.0) {
+        return 0.0;
+    }
+
     // calculate bias (based on depth map resolution and slope)
-    vec3 normal = normalize(fs_in.Normal);
-    lightDir = normalize(lightDir - fs_in.FragPos);
-    float bias = max(0.005 * (1.0 - dot(normal, lightDir)), 0.005);
-    // check whether current frag pos is in shadow
-    // float shadow = currentDepth - bias > closestDepth ? 1.0 : 0.0;
+    // vec3 normal = normalize(fs_in.Normal);
+    // float bias = max(0.05 * (1.0 - dot(normal, lightDir)), 0.005);
+    // const float biasModifier = 0.5;
+    // if (layer == cascadeCount) {
+    //     bias *= 1 / (far_plane * biasModifier);
+    // }
+    // else {
+    //     bias *= 1 / (cascadePlaneDistances[layer] * biasModifier);
+    // }
+
     // PCF
     float shadow = 0.0;
-    vec2 texelSize = 1.0 / textureSize(depthMap, 0);
-    for (int x = -1; x <= 1; x++) {
-        for (int y = -1; y <= 1; y++) {
-            float pcfDepth = texture(depthMap, projCoords.xy + vec2(x, y) * texelSize).r;
-            shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;
+    vec2 texelSize = 1.0 / vec2(textureSize(depthMap, 0));
+    const int halfkernelSize = 3; // default 1 (bigger value = softer shadows)
+    for (int x = -halfkernelSize; x <= halfkernelSize; x++) {
+        for (int y = -halfkernelSize; y <= halfkernelSize; y++) {
+            float pcfDepth = texture(depthMap, vec3(projCoords.xy + vec2(x, y) * texelSize, layer)).r;
+            shadow += (currentDepth) > pcfDepth ? 1.0 : 0.0;
         }
     }
-    shadow /= 9.0;
-
-    // keep the shadow at 0.0 when outside the far plane region of the light's frustum
-    if (projCoords.z > 1.0)
-        shadow = 0.0;
+    shadow /= (halfkernelSize * 2 + 1) * (halfkernelSize * 2 + 1);
 
     return shadow;
 }
@@ -163,7 +191,7 @@ vec3 gridSamplingDisk[20] = vec3[]
 // float PointShadowsCalculation(vec3 lightPos)
 // {
 //     // get vector between fragment position and light position
-//     vec3 fragToLight = fs_in.FragPos - lightPos;
+//     vec3 fragToLight = fs_in.WorldPos - lightPos;
 //     // use the light to fragment vector to sample from the depth map    
 //     float closestDepth = texture(depthCubeMap, fragToLight).r;
 //     // it is currently in linear range between [0,1]. Re-transform back to original value
@@ -182,14 +210,14 @@ vec3 gridSamplingDisk[20] = vec3[]
 float PointShadowsCalculation(vec3 lightPos, samplerCube depthCubeMap)
 {
     // get vector between fragment position and light position
-    vec3 fragToLight = fs_in.FragPos - lightPos;
+    vec3 fragToLight = fs_in.WorldPos - lightPos;
     // now get current linear depth as the length between the fragment and light position
     float currentDepth = length(fragToLight);
 
     float shadow = 0.0;
     float bias = 0.15;
     int samples = 20;
-    float viewDistance = length(camPos - fs_in.FragPos);
+    float viewDistance = length(camPos - fs_in.WorldPos);
     float diskRadius = (1.0 + (viewDistance / far_plane)) / 25.0;
     for (int i = 0; i < samples; ++i)
     {
@@ -209,7 +237,7 @@ vec3 CalcDirLight(vec3 N, vec3 V, vec3 R, vec3 F0, vec3 albedo, float metallic, 
     vec3 Lo = vec3(0.0);
     for (int i = 0; i < nrDirLights; i++) {
         // calculate per-light radiance
-        vec3 L = normalize(-dirLights[i].direction);
+        vec3 L = normalize(dirLights[i].direction);
         vec3 H = normalize(V + L);
         vec3 radiance = dirLights[i].color;
 
@@ -239,7 +267,7 @@ vec3 CalcDirLight(vec3 N, vec3 V, vec3 R, vec3 F0, vec3 albedo, float metallic, 
 
         float shadow = 0.0;
         if (dirLights[i].shadows)
-            shadow = DirShadowsCalculation(fs_in.FragPosLightSpaces[i], dirLights[i].direction, depthMaps[i]);
+            shadow = DirShadowsCalculation(i, dirLights[i].direction, depthMaps[i]);
 
         // add to outgoing radiance Lo
         Lo += (1.0 - shadow) * (kDI * albedo / M_PI + specularI) * radiance * NdotL;

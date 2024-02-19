@@ -110,6 +110,37 @@ void FrameBuffer::ResizeBloomAttachment(GLuint width, GLuint height, GLuint mipC
     glDrawBuffers(1, attachments);
 }
 
+void FrameBuffer::DepthMapAttachment(GLuint n, GLenum target, GLint inFormat, GLuint size, GLuint width, GLuint height)
+{
+    GLuint *tex = new GLuint[n];
+    glGenTextures(n, tex);
+
+    for (size_t i = 0; i < n; i++) {
+        glBindTexture(target, tex[i]);
+
+        glTexImage3D(target, 0, inFormat, width, height, size, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+        glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+        glTexParameteri(target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+        constexpr float borderColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+        glTexParameterfv(target, GL_TEXTURE_BORDER_COLOR, borderColor);
+
+        glBindTexture(target, 0);
+
+        glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, tex[i], 0);
+        glDrawBuffer(GL_NONE);
+        glReadBuffer(GL_NONE);
+    }
+
+    textures.clear();
+    for (GLuint i = 0; i < n; i++)
+        textures.push_back(tex[i]);
+
+    delete [] tex;
+}
+
+
 void FrameBuffer::TextureAttachment(GLuint n, GLuint mode, GLenum target, GLint inFormat, GLuint width, GLuint height)
 {
     GLuint *tex = new GLuint[n];

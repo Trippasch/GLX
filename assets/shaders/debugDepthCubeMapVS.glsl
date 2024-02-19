@@ -1,5 +1,6 @@
 #version 330 core
 #extension GL_ARB_explicit_uniform_location : enable
+#extension GL_ARB_shading_language_420pack : enable
 
 layout (location = 0) in vec3 aPos;
 
@@ -8,7 +9,7 @@ out VS_OUT
     vec3 FragPos;
 } vs_out;
 
-layout (std140) uniform Matrices
+layout (std140, binding = 0) uniform Matrices
 {
     mat4 projView;
 };

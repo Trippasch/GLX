@@ -46,7 +46,6 @@ public:
         }
         else if (pVBO != nullptr) {
             shader.Use().SetMatrix4(1, transform.getModelMatrix());
-            glDisable(GL_CULL_FACE);
             pVBO->LinkAttrib(0, 3, GL_FLOAT, 8 * sizeof(float), (void*)0);
             pVBO->LinkAttrib(1, 3, GL_FLOAT, 8 * sizeof(float), (void*)(3 * sizeof(float)));
             pVBO->LinkAttrib(2, 2, GL_FLOAT, 8 * sizeof(float), (void*)(6 * sizeof(float)));
@@ -54,7 +53,6 @@ public:
             pVBO->UnlinkAttrib(0);
             pVBO->UnlinkAttrib(1);
             pVBO->UnlinkAttrib(2);
-            glEnable(GL_CULL_FACE);
         }
     }
 
@@ -81,7 +79,7 @@ public:
             material.getShader().Use().SetFloat("material.ao", material.getAO());
             material.getShader().Use().SetFloat("material.emissive", material.getEmissive());
             material.getShader().Use().SetMatrix4(1, transform.getModelMatrix());
-            glDisable(GL_CULL_FACE);
+            // glDisable(GL_CULL_FACE);
             pVBO->LinkAttrib(0, 3, GL_FLOAT, 8 * sizeof(float), (void*)0);
             pVBO->LinkAttrib(1, 3, GL_FLOAT, 8 * sizeof(float), (void*)(3 * sizeof(float)));
             pVBO->LinkAttrib(2, 2, GL_FLOAT, 8 * sizeof(float), (void*)(6 * sizeof(float)));
@@ -89,7 +87,7 @@ public:
             pVBO->UnlinkAttrib(0);
             pVBO->UnlinkAttrib(1);
             pVBO->UnlinkAttrib(2);
-            glEnable(GL_CULL_FACE);
+            // glEnable(GL_CULL_FACE);
 
             if (drawAABB) {
                 boundingVolume.get()->drawAABB(transform.getModelMatrix());

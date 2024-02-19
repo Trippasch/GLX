@@ -72,13 +72,13 @@ private:
     VertexBuffer m_PlaneVBO;
     float m_PlaneVertices[48] = {
         // positions            // normals         // texcoords
-         1.0f, 0.0f,  1.0f,  0.0f, 1.0f, 0.0f,  1.0f,  0.0f,
-        -1.0f, 0.0f,  1.0f,  0.0f, 1.0f, 0.0f,  0.0f,  0.0f,
+        1.0f, 0.0f, -1.0f,  0.0f, 1.0f, 0.0f,  1.0f,  1.0f,
         -1.0f, 0.0f, -1.0f,  0.0f, 1.0f, 0.0f,  0.0f,  1.0f,
+        1.0f, 0.0f,  1.0f,  0.0f, 1.0f, 0.0f,  1.0f,  0.0f,
 
-         1.0f, 0.0f,  1.0f,  0.0f, 1.0f, 0.0f,  1.0f,  0.0f,
+        1.0f, 0.0f,  1.0f,  0.0f, 1.0f, 0.0f,  1.0f,  0.0f,
         -1.0f, 0.0f, -1.0f,  0.0f, 1.0f, 0.0f,  0.0f,  1.0f,
-         1.0f, 0.0f, -1.0f,  0.0f, 1.0f, 0.0f,  1.0f,  1.0f
+        -1.0f, 0.0f,  1.0f,  0.0f, 1.0f, 0.0f,  0.0f,  0.0f
     };
 
     VertexBuffer m_SphereVBO;

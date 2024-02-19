@@ -5,6 +5,8 @@ UniformBuffer::UniformBuffer(GLuint index, GLuint offset, GLuint size, GLenum mo
     glGenBuffers(1, &ID);
     glBindBuffer(GL_UNIFORM_BUFFER, ID);
     glBufferData(GL_UNIFORM_BUFFER, size, nullptr, mode);
+
+    glBindBufferBase(GL_UNIFORM_BUFFER, index, ID);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
     glBindBufferRange(GL_UNIFORM_BUFFER, index, ID, offset, size);

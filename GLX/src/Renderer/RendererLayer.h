@@ -82,6 +82,7 @@ private:
     PBR* m_PBR;
 
     // Lights
+    static const GLuint MAX_DIRECTIONAL_LIGHTS = 10;
     std::vector<DirectionalLight*> m_DirectionalLights;
     std::vector<PointLight*> m_PointLights;
 
@@ -95,6 +96,7 @@ private:
 
     // UniformBuffers
     UniformBuffer m_MatricesUBO;
+    UniformBuffer m_DirLightSpaceMatricesUBO;
 
     // Mesh Entities
     Plane m_Planes;
@@ -110,6 +112,7 @@ private:
     bool m_UsePolygonLines = false;
     bool m_DebugDepthCubeMap = false;
     bool m_DebugDepthMap = false;
+    GLint m_DebugDepthMapIndex = 0;
 
     bool imGuiResize();
 };

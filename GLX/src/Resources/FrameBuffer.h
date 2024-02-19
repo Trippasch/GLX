@@ -33,6 +33,8 @@ public:
 
     void BindTexture(GLenum target, GLuint index) const;
 
+    void DepthMapAttachment(GLuint n, GLenum target, GLint inFormat, GLuint size, GLuint width, GLuint height);
+
     void TextureAttachment(GLuint n, GLuint mode, GLenum target, GLint inFormat, GLuint width, GLuint height);
     void ResizeTextureAttachment(GLuint mode, GLenum target, GLint inFormat, GLuint width, GLuint height);
     void BloomAttachment(GLuint width, GLuint height, GLuint mipChainLength);
