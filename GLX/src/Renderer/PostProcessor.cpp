@@ -153,6 +153,7 @@ void PostProcessor::RenderPostProcessingQuad()
 
 void PostProcessor::RenderBloomTexture()
 {
+    glDisable(GL_BLEND);
     m_BloomFBO.Bind();
 
     // Render Downsamples
@@ -190,6 +191,7 @@ void PostProcessor::RenderBloomTexture()
     ResourceManager::GetShader("upsample").Use().SetFloat("filterRadius", m_BloomFilterRadius);
 
     // Enable additive blending
+    glEnable(GL_BLEND);
     glBlendFunc(GL_ONE, GL_ONE);
     glBlendEquation(GL_FUNC_ADD);
 

@@ -72,6 +72,7 @@ void RendererLayer::OnAttach()
 
     // Lights
     DirectionalLight* dirLight = new DirectionalLight(this);
+    dirLight->SetDirection(glm::vec3(0.35f, 0.87f, 0.15f));
     dirLight->SetColor(glm::vec3(0.94f, 0.65f, 0.20f));
     dirLight->SetIntensity(10.0f);
     AddLight(dirLight);

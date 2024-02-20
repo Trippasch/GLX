@@ -121,7 +121,7 @@ glm::mat4 DirectionalLight::getLightSpaceMatrix(const float nearPlane, const flo
         maxZ = std::max(maxZ, vLightSpace.z);
     }
 
-    constexpr float zMult = 100.0f;
+    constexpr float zMult = 50.0f;
     if (minZ < 0.0f) {
         minZ *= zMult;
     }
@@ -135,7 +135,7 @@ glm::mat4 DirectionalLight::getLightSpaceMatrix(const float nearPlane, const flo
         maxZ *= zMult;
     }
 
-    const glm::mat4 lightProj = glm::ortho(minX, maxX, minY, maxY, -1 * maxZ, -1 * minZ);
+    const glm::mat4 lightProj = glm::ortho(minX, maxX, minY, maxY, minZ, maxZ);
     return lightProj * lightView;
 }
 
