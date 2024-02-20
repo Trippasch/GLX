@@ -190,7 +190,6 @@ void PostProcessor::RenderBloomTexture()
     ResourceManager::GetShader("upsample").Use().SetFloat("filterRadius", m_BloomFilterRadius);
 
     // Enable additive blending
-    glEnable(GL_BLEND);
     glBlendFunc(GL_ONE, GL_ONE);
     glBlendEquation(GL_FUNC_ADD);
 
@@ -212,8 +211,7 @@ void PostProcessor::RenderBloomTexture()
     }
 
     // Disable additive blending
-    //glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-    glDisable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     Texture2D::UnBind();
 
     FrameBuffer::UnBind();

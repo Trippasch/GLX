@@ -67,17 +67,19 @@ void RendererLayer::OnAttach()
     m_PostProcessor = new PostProcessor(this);
 
     // Camera
-    m_Camera = Camera(m_Width, m_Height, glm::vec3(0.0f, 2.0f, 20.0f));
+    m_Camera = Camera(m_Width, m_Height, glm::vec3(8.0f, 2.5f, -2.5f));
+    m_Camera.SetOrientation(glm::vec3(-1.0f, 0.0f, 0.0f));
 
     // Lights
     DirectionalLight* dirLight = new DirectionalLight(this);
+    dirLight->SetColor(glm::vec3(0.94f, 0.65f, 0.20f));
+    dirLight->SetIntensity(10.0f);
     AddLight(dirLight);
-    // DirectionalLight* dirLight1 = new DirectionalLight(this);
-    // AddLight(dirLight1);
     PointLight* pointLight = new PointLight(this);
+    pointLight->SetPosition(glm::vec3(-31.0f, 7.5f, 6.1f));
+    pointLight->SetColor(glm::vec3(1.0f, 0.7f, 0.0f));
+    pointLight->SetIntensity(20.0f);
     AddLight(pointLight);
-    // PointLight* pointLight1 = new PointLight(this);
-    // AddLight(pointLight1);
 
     Entity* lastEntity;
     // Create Models
@@ -89,7 +91,7 @@ void RendererLayer::OnAttach()
     lastEntity->material.setAlbedo(glm::vec3(1.0f));
     lastEntity->material.setMetallic(1.0f);
     lastEntity->material.setRoughness(1.0f);
-    lastEntity->material.setAO(0.36f);
+    lastEntity->material.setAO(0.20f);
     lastEntity->material.setEmissive(0.0f);
     lastEntity->material.setIsTextured(true);
     lastEntity->material.setAlbedoTexture(ResourceManager::GetTexture("default_albedo"));
@@ -121,60 +123,60 @@ void RendererLayer::OnAttach()
     // lastEntity->material.setShader(ResourceManager::GetShader("pbr_lighting"));
 
     // Create Cubes
-    m_Cubes.addChild<Cube>(m_RendererLibrary->GetCubeVBO(), m_RendererLibrary->GetCubeVertices(), 288);
-    lastEntity = m_Cubes.children.back().get();
-    lastEntity->transform.setLocalPosition(glm::vec3(4.0f, 2.0f, 4.0f));
-    lastEntity->transform.setLocalScale(glm::vec3(1.0f));
-    lastEntity->material.setAlbedo(glm::vec3(1.0f));
-    lastEntity->material.setMetallic(1.0f);
-    lastEntity->material.setRoughness(1.0f);
-    lastEntity->material.setAO(1.0f);
-    lastEntity->material.setEmissive(0.0f);
-    lastEntity->material.setIsTextured(false);
-    lastEntity->material.setAlbedoTexture(ResourceManager::GetTexture("default_albedo"));
-    lastEntity->material.setNormalTexture(ResourceManager::GetTexture("default_normal"));
-    lastEntity->material.setMetallicTexture(ResourceManager::GetTexture("default_metallic"));
-    lastEntity->material.setRoughnessTexture(ResourceManager::GetTexture("default_roughness"));
-    lastEntity->material.setAOTexture(ResourceManager::GetTexture("default_ao"));
-    lastEntity->material.setEmissiveTexture(ResourceManager::GetTexture("default_emissive"));
-    lastEntity->material.setShader(ResourceManager::GetShader("pbr_lighting"));
+    // m_Cubes.addChild<Cube>(m_RendererLibrary->GetCubeVBO(), m_RendererLibrary->GetCubeVertices(), 288);
+    // lastEntity = m_Cubes.children.back().get();
+    // lastEntity->transform.setLocalPosition(glm::vec3(4.0f, 2.0f, 4.0f));
+    // lastEntity->transform.setLocalScale(glm::vec3(1.0f));
+    // lastEntity->material.setAlbedo(glm::vec3(1.0f));
+    // lastEntity->material.setMetallic(1.0f);
+    // lastEntity->material.setRoughness(1.0f);
+    // lastEntity->material.setAO(1.0f);
+    // lastEntity->material.setEmissive(0.0f);
+    // lastEntity->material.setIsTextured(false);
+    // lastEntity->material.setAlbedoTexture(ResourceManager::GetTexture("default_albedo"));
+    // lastEntity->material.setNormalTexture(ResourceManager::GetTexture("default_normal"));
+    // lastEntity->material.setMetallicTexture(ResourceManager::GetTexture("default_metallic"));
+    // lastEntity->material.setRoughnessTexture(ResourceManager::GetTexture("default_roughness"));
+    // lastEntity->material.setAOTexture(ResourceManager::GetTexture("default_ao"));
+    // lastEntity->material.setEmissiveTexture(ResourceManager::GetTexture("default_emissive"));
+    // lastEntity->material.setShader(ResourceManager::GetShader("pbr_lighting"));
 
     // Create Spheres
-    for (unsigned int i = 0; i < 5; i++) {
-        for (unsigned int j = 0; j < 5; j++) {
-            m_Spheres.addChild<Sphere>(m_RendererLibrary->GetSphereVBO(), &m_RendererLibrary->GetSphereVertices()[0], m_RendererLibrary->GetSphereVertices().size(), m_RendererLibrary->GetSphereEBO(), m_RendererLibrary->GetSphereIndicesCount());
-            lastEntity = m_Spheres.children.back().get();
-            lastEntity->transform.setLocalPosition(glm::vec3(-6.0f + (i*3), 1.0f + (j*3), 0.0f - (j*3)));
-            lastEntity->transform.setLocalScale(glm::vec3(1.0f));
-            lastEntity->material.setAlbedo(glm::vec3(1.0f));
-            lastEntity->material.setMetallic(1.0f);
-            lastEntity->material.setRoughness(1.0f);
-            lastEntity->material.setAO(1.0f);
-            lastEntity->material.setEmissive(0.0f);
-            lastEntity->material.setIsTextured(false);
-            lastEntity->material.setAlbedoTexture(ResourceManager::GetTexture("default_albedo"));
-            lastEntity->material.setNormalTexture(ResourceManager::GetTexture("default_normal"));
-            lastEntity->material.setMetallicTexture(ResourceManager::GetTexture("default_metallic"));
-            lastEntity->material.setRoughnessTexture(ResourceManager::GetTexture("default_roughness"));
-            lastEntity->material.setAOTexture(ResourceManager::GetTexture("default_ao"));
-            lastEntity->material.setEmissiveTexture(ResourceManager::GetTexture("default_emissive"));
-            lastEntity->material.setShader(ResourceManager::GetShader("pbr_lighting"));
-        }
-    }
+    // for (unsigned int i = 0; i < 5; i++) {
+    //     for (unsigned int j = 0; j < 5; j++) {
+    //         m_Spheres.addChild<Sphere>(m_RendererLibrary->GetSphereVBO(), &m_RendererLibrary->GetSphereVertices()[0], m_RendererLibrary->GetSphereVertices().size(), m_RendererLibrary->GetSphereEBO(), m_RendererLibrary->GetSphereIndicesCount());
+    //         lastEntity = m_Spheres.children.back().get();
+    //         lastEntity->transform.setLocalPosition(glm::vec3(-6.0f + (i*3), 1.0f + (j*3), 0.0f - (j*3)));
+    //         lastEntity->transform.setLocalScale(glm::vec3(1.0f));
+    //         lastEntity->material.setAlbedo(glm::vec3(1.0f));
+    //         lastEntity->material.setMetallic(1.0f);
+    //         lastEntity->material.setRoughness(1.0f);
+    //         lastEntity->material.setAO(1.0f);
+    //         lastEntity->material.setEmissive(0.0f);
+    //         lastEntity->material.setIsTextured(false);
+    //         lastEntity->material.setAlbedoTexture(ResourceManager::GetTexture("default_albedo"));
+    //         lastEntity->material.setNormalTexture(ResourceManager::GetTexture("default_normal"));
+    //         lastEntity->material.setMetallicTexture(ResourceManager::GetTexture("default_metallic"));
+    //         lastEntity->material.setRoughnessTexture(ResourceManager::GetTexture("default_roughness"));
+    //         lastEntity->material.setAOTexture(ResourceManager::GetTexture("default_ao"));
+    //         lastEntity->material.setEmissiveTexture(ResourceManager::GetTexture("default_emissive"));
+    //         lastEntity->material.setShader(ResourceManager::GetShader("pbr_lighting"));
+    //     }
+    // }
 }
 
 void RendererLayer::OnUpdate()
 {
-    glm::mat4 projView = m_Camera.Matrix(m_Camera.m_Fov, static_cast<float>(m_Width) / m_Height, m_Camera.m_NearPlane, m_Camera.m_FarPlane);
-    m_CamFrustum = m_Camera.CreateFrustumFromCamera(static_cast<float>(m_Width) / m_Height, glm::radians(m_Camera.m_Fov), m_Camera.m_NearPlane, m_Camera.m_FarPlane);
+    glm::mat4 projView = m_Camera.Matrix(m_Camera.GetFov(), static_cast<float>(m_Width) / m_Height, m_Camera.GetNearPlane(), m_Camera.GetFarPlane());
+    m_CamFrustum = m_Camera.CreateFrustumFromCamera(static_cast<float>(m_Width) / m_Height, glm::radians(m_Camera.GetFov()), m_Camera.GetNearPlane(), m_Camera.GetFarPlane());
 
     m_MatricesUBO.FillBuffer(&projView, 0, sizeof(glm::mat4));
 
-    ResourceManager::GetShader("pbr_lighting").Use().SetVector3f("camPos", m_Camera.m_Position);
+    ResourceManager::GetShader("pbr_lighting").Use().SetVector3f("camPos", m_Camera.GetPosition());
     ResourceManager::GetShader("pbr_lighting").Use().SetMatrix4("camView", m_Camera.GetViewMatrix());
-    ResourceManager::GetShader("pbr_lighting_textured").Use().SetVector3f("camPos", m_Camera.m_Position);
+    ResourceManager::GetShader("pbr_lighting_textured").Use().SetVector3f("camPos", m_Camera.GetPosition());
     ResourceManager::GetShader("pbr_lighting_textured").Use().SetMatrix4("camView", m_Camera.GetViewMatrix());
-    ResourceManager::GetShader("pbr_lighting_textured_gltf").Use().SetVector3f("camPos", m_Camera.m_Position);
+    ResourceManager::GetShader("pbr_lighting_textured_gltf").Use().SetVector3f("camPos", m_Camera.GetPosition());
     ResourceManager::GetShader("pbr_lighting_textured_gltf").Use().SetMatrix4("camView", m_Camera.GetViewMatrix());
 
     // Render Directional Lights Shadows
@@ -248,6 +250,7 @@ void RendererLayer::OnUpdate()
 
     // Render Normal Scene
     m_MultisampleFBO.Bind();
+    glClearColor(m_BackgroundColor.r, m_BackgroundColor.g, m_BackgroundColor.b, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     if (m_UsePolygonLines) {
@@ -386,7 +389,7 @@ void RendererLayer::OnImGuiRender()
     }
     else {
         glfwSetInputMode((GLFWwindow *)ImGui::GetMainViewport()->PlatformHandle, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-        m_Camera.m_FirstClick = true;
+        m_Camera.SetFirstClick(true);
     }
 
     ImGui::End();
@@ -433,9 +436,9 @@ void RendererLayer::OnImGuiRender()
 
     ImGui::Separator();
     if (ImGui::CollapsingHeader("Camera", base_flags)) {
-        ImGui::DragFloat3("Position", (float*)&m_Camera.m_Position, 0.01f, -FLT_MAX, FLT_MAX, "%.2f");
-        ImGui::DragFloat3("Orientation", (float*)&m_Camera.m_Orientation, 0.01f, -FLT_MAX, FLT_MAX, "%.2f");
-        ImGui::SliderFloat("Field of view", &m_Camera.m_Fov, 1.0f, 90.0f, "%.2f");
+        ImGui::DragFloat3("Position", (float*)&m_Camera.GetPosition(), 0.01f, -FLT_MAX, FLT_MAX, "%.2f");
+        ImGui::DragFloat3("Orientation", (float*)&m_Camera.GetOrientation(), 0.01f, -FLT_MAX, FLT_MAX, "%.2f");
+        ImGui::SliderFloat("Field of view", (float*)&m_Camera.GetFov(), 1.0f, 90.0f, "%.2f");
     }
 
     ImGui::Separator();
@@ -491,6 +494,11 @@ void RendererLayer::OnImGuiRender()
                     ResourceManager::GetShader("pbr_lighting_textured_gltf").Use().SetInteger("object.useIBL", 0);
                 }
             }
+            ImGui::TreePop();
+        }
+
+        if (ImGui::TreeNodeEx("Background Color", base_flags)) {
+            ImGui::ColorEdit3("", (float*)&m_BackgroundColor);
             ImGui::TreePop();
         }
     }
@@ -610,7 +618,7 @@ void RendererLayer::AddLight(DirectionalLight* light)
     ResourceManager::GetShader("pbr_lighting").Use().SetVector3f(("dirLights[" + std::to_string(m_DirectionalLights.size()-1) + "].color").c_str(), light->GetColor() * light->GetIntensity());
     ResourceManager::GetShader("pbr_lighting").Use().SetInteger(("dirLights[" + std::to_string(m_DirectionalLights.size()-1) + "].shadows").c_str(), light->GetCastShadows());
 
-    ResourceManager::GetShader("pbr_lighting").Use().SetFloat("far_plane", m_Camera.m_FarPlane);
+    ResourceManager::GetShader("pbr_lighting").Use().SetFloat("far_plane", m_Camera.GetFarPlane());
     ResourceManager::GetShader("pbr_lighting").Use().SetInteger("cascadeCount", light->GetShadowCascadeLevels().size());
     for (size_t i = 0; i < light->GetShadowCascadeLevels().size(); i++) {
         ResourceManager::GetShader("pbr_lighting").Use().SetFloat(("cascadePlaneDistances[" + std::to_string(i) + "]").c_str(), light->GetShadowCascadeLevels()[i]);
@@ -622,7 +630,7 @@ void RendererLayer::AddLight(DirectionalLight* light)
     ResourceManager::GetShader("pbr_lighting_textured").Use().SetVector3f(("dirLights[" + std::to_string(m_DirectionalLights.size()-1) + "].color").c_str(), light->GetColor() * light->GetIntensity());
     ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger(("dirLights[" + std::to_string(m_DirectionalLights.size()-1) + "].shadows").c_str(), light->GetCastShadows());
 
-    ResourceManager::GetShader("pbr_lighting_textured").Use().SetFloat("far_plane", m_Camera.m_FarPlane);
+    ResourceManager::GetShader("pbr_lighting_textured").Use().SetFloat("far_plane", m_Camera.GetFarPlane());
     ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger("cascadeCount", light->GetShadowCascadeLevels().size());
     for (size_t i = 0; i < light->GetShadowCascadeLevels().size(); i++) {
         ResourceManager::GetShader("pbr_lighting_textured").Use().SetFloat(("cascadePlaneDistances[" + std::to_string(i) + "]").c_str(), light->GetShadowCascadeLevels()[i]);
@@ -634,7 +642,7 @@ void RendererLayer::AddLight(DirectionalLight* light)
     ResourceManager::GetShader("pbr_lighting_textured_gltf").Use().SetVector3f(("dirLights[" + std::to_string(m_DirectionalLights.size()-1) + "].color").c_str(), light->GetColor() * light->GetIntensity());
     ResourceManager::GetShader("pbr_lighting_textured_gltf").Use().SetInteger(("dirLights[" + std::to_string(m_DirectionalLights.size()-1) + "].shadows").c_str(), light->GetCastShadows());
 
-    ResourceManager::GetShader("pbr_lighting_textured_gltf").Use().SetFloat("far_plane", m_Camera.m_FarPlane);
+    ResourceManager::GetShader("pbr_lighting_textured_gltf").Use().SetFloat("far_plane", m_Camera.GetFarPlane());
     ResourceManager::GetShader("pbr_lighting_textured_gltf").Use().SetInteger("cascadeCount", light->GetShadowCascadeLevels().size());
     for (size_t i = 0; i < light->GetShadowCascadeLevels().size(); i++) {
         ResourceManager::GetShader("pbr_lighting_textured_gltf").Use().SetFloat(("cascadePlaneDistances[" + std::to_string(i) + "]").c_str(), light->GetShadowCascadeLevels()[i]);
@@ -673,14 +681,14 @@ void RendererLayer::AddLight(PointLight* light)
 
     ResourceManager::GetShader("debug_depth_cube_map").Use().SetInteger("nrPointLights", m_PointLights.size());
     ResourceManager::GetShader("debug_depth_cube_map").Use().SetVector3f(("pointLights[" + std::to_string(m_PointLights.size()-1) + "].position").c_str(), light->GetPosition());
-    ResourceManager::GetShader("debug_depth_cube_map").Use().SetFloat("far_plane", m_Camera.m_FarPlane);
-    ResourceManager::GetShader("depth_cube_map").Use().SetFloat("far_plane", m_Camera.m_FarPlane);
+    ResourceManager::GetShader("debug_depth_cube_map").Use().SetFloat("far_plane", m_Camera.GetFarPlane());
+    ResourceManager::GetShader("depth_cube_map").Use().SetFloat("far_plane", m_Camera.GetFarPlane());
 
-    ResourceManager::GetShader("pbr_lighting").Use().SetFloat("far_plane", m_Camera.m_FarPlane);
-    ResourceManager::GetShader("pbr_lighting_textured").Use().SetFloat("far_plane", m_Camera.m_FarPlane);
-    ResourceManager::GetShader("pbr_lighting_textured_gltf").Use().SetFloat("far_plane", m_Camera.m_FarPlane);
+    ResourceManager::GetShader("pbr_lighting").Use().SetFloat("far_plane", m_Camera.GetFarPlane());
+    ResourceManager::GetShader("pbr_lighting_textured").Use().SetFloat("far_plane", m_Camera.GetFarPlane());
+    ResourceManager::GetShader("pbr_lighting_textured_gltf").Use().SetFloat("far_plane", m_Camera.GetFarPlane());
 
-    light->PointLightProjectionMatrix(m_Camera.m_NearPlane, m_Camera.m_FarPlane);
+    light->PointLightProjectionMatrix(m_Camera.GetNearPlane(), m_Camera.GetFarPlane());
 }
 
 void RendererLayer::RemoveLight(PointLight* light)

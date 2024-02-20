@@ -19,7 +19,7 @@ private:
     glm::vec3 m_Color = glm::vec3(1.0f, 1.0f, 1.0f);
     float m_Intensity = 1.0f;
     bool m_CastShadows = true;
-    GLuint m_DepthMapResolution = 1024;
+    GLuint m_DepthMapResolution = 4096;
 
     std::vector<float> m_ShadowCascadeLevels;
 

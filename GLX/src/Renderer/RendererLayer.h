@@ -109,6 +109,7 @@ private:
 
     // Skybox Properties
     bool m_UseSkybox = true;
+    glm::vec3 m_BackgroundColor = glm::vec3(0.1f, 0.1f, 0.1f);
 
     // Debug Properties
     bool m_UseDebugWindow = false;

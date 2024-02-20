@@ -4,18 +4,18 @@ DirectionalLight::DirectionalLight(RendererLayer* renderer)
     : m_Renderer(renderer)
 {
     m_ShadowCascadeLevels = std::vector<float>({
-        m_Renderer->GetCamera().m_FarPlane / 50.0f,
-        m_Renderer->GetCamera().m_FarPlane / 25.0f,
-        m_Renderer->GetCamera().m_FarPlane / 10.0f,
-        m_Renderer->GetCamera().m_FarPlane / 2.0f});
+        m_Renderer->GetCamera().GetFarPlane() / 50.0f,
+        m_Renderer->GetCamera().GetFarPlane() / 25.0f,
+        m_Renderer->GetCamera().GetFarPlane() / 10.0f,
+        m_Renderer->GetCamera().GetFarPlane() / 2.0f});
 
     m_DepthMapFBO.Bind();
     m_DepthMapFBO.DepthMapAttachment(1, GL_TEXTURE_2D_ARRAY, GL_DEPTH_COMPONENT32F, m_ShadowCascadeLevels.size() + 1, m_DepthMapResolution, m_DepthMapResolution);
     FrameBuffer::CheckStatus();
     FrameBuffer::UnBind();
 
-    ResourceManager::GetShader("debug_depth_map").Use().SetFloat("nearPlane", m_Renderer->GetCamera().m_NearPlane);
-    ResourceManager::GetShader("debug_depth_map").Use().SetFloat("farPlane", m_Renderer->GetCamera().m_FarPlane);
+    ResourceManager::GetShader("debug_depth_map").Use().SetFloat("nearPlane", m_Renderer->GetCamera().GetNearPlane());
+    ResourceManager::GetShader("debug_depth_map").Use().SetFloat("farPlane", m_Renderer->GetCamera().GetFarPlane());
     ResourceManager::GetShader("debug_depth_map").Use().SetInteger("layer", m_DebugDepthMapLayer);
 }
 
@@ -94,7 +94,7 @@ std::vector<glm::vec4> DirectionalLight::getFrustumCornersWorldSpace(const glm::
 
 glm::mat4 DirectionalLight::getLightSpaceMatrix(const float nearPlane, const float far_plane)
 {
-    const glm::mat4 proj = glm::perspective(glm::radians(m_Renderer->GetCamera().m_Fov), static_cast<float>(m_Renderer->GetWidth()) / m_Renderer->GetHeight(), nearPlane, far_plane);
+    const glm::mat4 proj = glm::perspective(glm::radians(m_Renderer->GetCamera().GetFov()), static_cast<float>(m_Renderer->GetWidth()) / m_Renderer->GetHeight(), nearPlane, far_plane);
     const std::vector<glm::vec4> frustumCorners = getFrustumCornersWorldSpace(proj, m_Renderer->GetCamera().GetViewMatrix());
 
     glm::vec3 center = glm::vec3(0.0f);
@@ -144,13 +144,13 @@ std::vector<glm::mat4> DirectionalLight::GetLightSpaceMatrices()
     std::vector<glm::mat4> lightSpaceMatrices;
     for (size_t i = 0; i < m_ShadowCascadeLevels.size() + 1; i++) {
         if (i == 0) {
-            lightSpaceMatrices.push_back(getLightSpaceMatrix(m_Renderer->GetCamera().m_NearPlane, m_ShadowCascadeLevels[i]));
+            lightSpaceMatrices.push_back(getLightSpaceMatrix(m_Renderer->GetCamera().GetNearPlane(), m_ShadowCascadeLevels[i]));
         }
         else if (i < m_ShadowCascadeLevels.size()) {
             lightSpaceMatrices.push_back(getLightSpaceMatrix(m_ShadowCascadeLevels[i - 1], m_ShadowCascadeLevels[i]));
         }
         else {
-            lightSpaceMatrices.push_back(getLightSpaceMatrix(m_ShadowCascadeLevels[i - 1], m_Renderer->GetCamera().m_FarPlane));
+            lightSpaceMatrices.push_back(getLightSpaceMatrix(m_ShadowCascadeLevels[i - 1], m_Renderer->GetCamera().GetFarPlane()));
         }
     }
 

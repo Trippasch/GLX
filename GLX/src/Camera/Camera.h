@@ -28,7 +28,27 @@ public:
     // Create a frustum from the camera
     Frustum CreateFrustumFromCamera(float aspect_ratio, float fovY, float zNear, float zFar);
 
-public:
+    void SetPosition(const glm::vec3& position) { m_Position = position; }
+    void SetOrientation(const glm::vec3& orientation)
+    {
+        m_Orientation = orientation;
+        m_Pitch = glm::degrees(asin(m_Orientation.y));
+        m_Yaw = glm::degrees(atan2(m_Orientation.z, m_Orientation.x));
+    }
+    void SetNearPlane(float nearPlane) { m_NearPlane = nearPlane; }
+    void SetFarPlane(float farPlane) { m_FarPlane = farPlane; }
+    void SetFov(float fov) { m_Fov = fov; }
+    void SetFirstClick(bool firstClick) { m_FirstClick = firstClick; }
+
+    const glm::vec3& GetPosition() const { return m_Position; }
+    const glm::vec3& GetOrientation() const { return m_Orientation; }
+    const glm::vec3& GetUp() const { return m_Up; }
+    const float& GetNearPlane() const { return m_NearPlane; }
+    const float& GetFarPlane() const { return m_FarPlane; }
+    const float& GetFov() const { return m_Fov; }
+    const bool& GetFirstClick() const { return m_FirstClick; }
+
+private:
     glm::vec3 m_Position;
     glm::vec3 m_Orientation = glm::vec3(0.0f, 0.0f, -1.0f);
     glm::vec3 m_Up = glm::vec3(0.0f, 1.0f, 0.0f);
@@ -37,10 +57,11 @@ public:
     float m_NearPlane = 0.1f;
     float m_Fov = 45.0f;
 
+    glm::vec3 m_InitialOrientation = glm::vec3(-1.0f, 0.0f, 0.0f);
+
     // Prevents the camera from jumping around when first clicking left click
     bool m_FirstClick = true;
 
-private:
     // Stores the width and height of the window
     int m_Width;
     int m_Height;

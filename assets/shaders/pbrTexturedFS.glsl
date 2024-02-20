@@ -405,7 +405,9 @@ void main()
     // calculate reflectance at normal incidence; if dia-electric (like plastic) use F0 of 0.04 and if it's a metal, use the albedo color as F0 (metallic workflow)
     vec3 F0 = vec3(0.04);
 
-    vec3 albedo = pow(texture(albedoMap, fs_in.TexCoords).rgb, vec3(gamma));
+    vec4 albedoTexture = texture(albedoMap, fs_in.TexCoords);
+    float alpha = albedoTexture.a;
+    vec3 albedo = pow(albedoTexture.rgb, vec3(gamma));
     float metallic = texture(metallicMap, fs_in.TexCoords).r;
     float roughness = texture(roughnessMap, fs_in.TexCoords).r;
     float ao = texture(aoMap, fs_in.TexCoords).r;
@@ -428,7 +430,7 @@ void main()
 
     result += CalcPointLight(N, V, R, F0, albedo, metallic, roughness, ao);
 
-    FragColor = vec4(result + emissive, 1.0);
+    FragColor = vec4(result + emissive, alpha);
 
     // Debug textures
     // FragColor = vec4(N, 1.0);
