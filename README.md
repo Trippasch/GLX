@@ -1,4 +1,4 @@
-# GLX Engine
+# GLX - Graphics Engine
 GLX is an early-stage cross-platform OpenGL graphics engine for learning purposes, inspired by the lessons from the online book [LearnOpenGL](https://learnopengl.com/).
 
 ![GLX](https://i.imgur.com/qcN1wqx.png)
