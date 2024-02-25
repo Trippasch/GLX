@@ -89,7 +89,7 @@ void RendererLayer::OnAttach()
     lastEntity->transform.setLocalPosition(glm::vec3(0.0f, 0.0f, -1.0f));
     lastEntity->transform.setLocalRotation(glm::vec3(0.0f, 0.0f, 0.0f));
     lastEntity->transform.setLocalScale(glm::vec3(0.05f));
-    lastEntity->material.setAlbedo(glm::vec3(1.0f));
+    lastEntity->material.setAlbedo(glm::vec4(1.0f));
     lastEntity->material.setMetallic(1.0f);
     lastEntity->material.setRoughness(1.0f);
     lastEntity->material.setAO(0.20f);
@@ -105,6 +105,32 @@ void RendererLayer::OnAttach()
     lastEntity->material.setShader(ResourceManager::GetShader("pbr_lighting_textured_gltf"));
 
     // Create Planes
+    for (unsigned int i = 0; i < 3; i++) {
+        m_Planes.addChild<Plane>(m_RendererLibrary->GetPlaneVBO(), m_RendererLibrary->GetPlaneVertices(), 48);
+        lastEntity = m_Planes.children.back().get();
+        lastEntity->transform.setLocalPosition(glm::vec3(0.0f, 2.0f, (i * 3.0f)));
+        lastEntity->transform.setLocalRotation(glm::vec3(90.0f, 0.0f, 0.0f));
+        lastEntity->transform.setLocalScale(glm::vec3(2.0f));
+        if (i == 0)
+            lastEntity->material.setAlbedo(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
+        else if (i == 1)
+            lastEntity->material.setAlbedo(glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
+        else if (i == 2)
+            lastEntity->material.setAlbedo(glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
+        lastEntity->material.setMetallic(1.0f);
+        lastEntity->material.setRoughness(1.0f);
+        lastEntity->material.setAO(1.0f);
+        lastEntity->material.setEmissive(0.0f);
+        lastEntity->material.setIsTextured(false);
+        lastEntity->material.setAlbedoTexture(ResourceManager::GetTexture("default_albedo"));
+        lastEntity->material.setNormalTexture(ResourceManager::GetTexture("default_normal"));
+        lastEntity->material.setMetallicTexture(ResourceManager::GetTexture("default_metallic"));
+        lastEntity->material.setRoughnessTexture(ResourceManager::GetTexture("default_roughness"));
+        lastEntity->material.setAOTexture(ResourceManager::GetTexture("default_ao"));
+        lastEntity->material.setEmissiveTexture(ResourceManager::GetTexture("default_emissive"));
+        lastEntity->material.setShader(ResourceManager::GetShader("pbr_lighting"));
+    }
+
     // m_Planes.addChild<Plane>(m_RendererLibrary->GetPlaneVBO(), m_RendererLibrary->GetPlaneVertices(), 48);
     // lastEntity = m_Planes.children.back().get();
     // lastEntity->transform.setLocalPosition(glm::vec3(0.0f, 0.0f, 0.0f));
@@ -199,10 +225,10 @@ void RendererLayer::OnUpdate()
             m_DirectionalLights[i]->GetDepthMapFBO().Bind();
             glClear(GL_DEPTH_BUFFER_BIT);
             glCullFace(GL_FRONT);
-            m_Planes.renderSceneGraphSimple(GL_TRIANGLES, ResourceManager::GetShader("depth_map"));
-            m_Spheres.renderSceneGraphSimple(GL_TRIANGLE_STRIP, ResourceManager::GetShader("depth_map"));
-            m_Cubes.renderSceneGraphSimple(GL_TRIANGLES, ResourceManager::GetShader("depth_map"));
             m_Models.renderSceneGraphSimple(GL_TRIANGLES, ResourceManager::GetShader("depth_map"));
+            m_Cubes.renderSceneGraphSimple(GL_TRIANGLES, ResourceManager::GetShader("depth_map"));
+            m_Spheres.renderSceneGraphSimple(GL_TRIANGLE_STRIP, ResourceManager::GetShader("depth_map"));
+            m_Planes.renderSceneGraphSimple(GL_TRIANGLES, ResourceManager::GetShader("depth_map"));
             glCullFace(GL_BACK);
             FrameBuffer::UnBind();
 
@@ -238,10 +264,10 @@ void RendererLayer::OnUpdate()
             m_PointLights[i]->GetDepthCubeMapFBO().Bind();
             glClear(GL_DEPTH_BUFFER_BIT);
 
-            m_Planes.renderSceneGraphSimple(GL_TRIANGLES, ResourceManager::GetShader("depth_cube_map"));
-            m_Spheres.renderSceneGraphSimple(GL_TRIANGLE_STRIP, ResourceManager::GetShader("depth_cube_map"));
-            m_Cubes.renderSceneGraphSimple(GL_TRIANGLES, ResourceManager::GetShader("depth_cube_map"));
             m_Models.renderSceneGraphSimple(GL_TRIANGLES, ResourceManager::GetShader("depth_cube_map"));
+            m_Cubes.renderSceneGraphSimple(GL_TRIANGLES, ResourceManager::GetShader("depth_cube_map"));
+            m_Spheres.renderSceneGraphSimple(GL_TRIANGLE_STRIP, ResourceManager::GetShader("depth_cube_map"));
+            m_Planes.renderSceneGraphSimple(GL_TRIANGLES, ResourceManager::GetShader("depth_cube_map"));
 
             FrameBuffer::UnBind();
 
@@ -270,10 +296,10 @@ void RendererLayer::OnUpdate()
             glActiveTexture(GL_TEXTURE19 + i);
             m_PointLights[i]->GetDepthCubeMapFBO().BindTexture(GL_TEXTURE_CUBE_MAP, 0);
         }
-        m_Planes.renderSceneGraphSimple(GL_TRIANGLES, ResourceManager::GetShader("debug_depth_cube_map"));
-        m_Spheres.renderSceneGraphSimple(GL_TRIANGLE_STRIP, ResourceManager::GetShader("debug_depth_cube_map"));
-        m_Cubes.renderSceneGraphSimple(GL_TRIANGLES, ResourceManager::GetShader("debug_depth_cube_map"));
         m_Models.renderSceneGraphSimple(GL_TRIANGLES, ResourceManager::GetShader("debug_depth_cube_map"));
+        m_Cubes.renderSceneGraphSimple(GL_TRIANGLES, ResourceManager::GetShader("debug_depth_cube_map"));
+        m_Spheres.renderSceneGraphSimple(GL_TRIANGLE_STRIP, ResourceManager::GetShader("debug_depth_cube_map"));
+        m_Planes.renderSceneGraphSimple(GL_TRIANGLES, ResourceManager::GetShader("debug_depth_cube_map"));
         Texture2D::UnBindCubemap();
     }
     else {
@@ -292,10 +318,10 @@ void RendererLayer::OnUpdate()
             glActiveTexture(GL_TEXTURE19 + i);
             m_PointLights[i]->GetDepthCubeMapFBO().BindTexture(GL_TEXTURE_CUBE_MAP, 0);
         }
-        m_Planes.renderSceneGraph(GL_TRIANGLES, m_CamFrustum, display, total);
+        m_Models.renderSceneGraph(GL_TRIANGLES, m_CamFrustum, display, total);
         m_Cubes.renderSceneGraph(GL_TRIANGLES, m_CamFrustum, display, total);
         m_Spheres.renderSceneGraph(GL_TRIANGLE_STRIP, m_CamFrustum, display, total);
-        m_Models.renderSceneGraph(GL_TRIANGLES, m_CamFrustum, display, total);
+        m_Planes.renderSceneGraph(GL_TRIANGLES, m_CamFrustum, display, total);
         Texture2D::UnBind();
         Texture2D::UnBindCubemap();
 
@@ -520,7 +546,7 @@ void RendererLayer::OnImGuiRender()
             ImGui::TreePop();
         }
 
-        ImGui::Checkbox("Polygon Line Mode", &m_UsePolygonLines);
+        ImGui::Checkbox("Wireframe", &m_UsePolygonLines);
         ImGui::Checkbox("Depth Cube Map (Point Lights)", &m_DebugDepthCubeMap);
     }
 

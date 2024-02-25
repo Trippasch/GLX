@@ -37,7 +37,7 @@ uniform int cascadeCount;
 
 // material parameters
 struct Material {
-    vec3 albedo;
+    vec4 albedo;
     float metallic;
     float roughness;
     float ao;
@@ -382,7 +382,9 @@ void main()
     // calculate reflectance at normal incidence; if dia-electric (like plastic) use F0 of 0.04 and if it's a metal, use the albedo color as F0 (metallic workflow)
     vec3 F0 = vec3(0.04);
 
-    vec3 albedo = material.albedo;
+    vec3 albedo = material.albedo.rgb;
+    float alpha = material.albedo.a;
+    albedo *= alpha; // pre-multiplied alpha (alpha blending)
     float metallic = material.metallic;
     float roughness = material.roughness;
     float ao = material.ao;
@@ -400,7 +402,7 @@ void main()
 
     result += CalcPointLight(N, V, R, F0, albedo, metallic, roughness, ao);
 
-    FragColor = vec4(result + emissive, 1.0);
+    FragColor = vec4(result + emissive, alpha);
 
     // Debug
     // FragColor = vec4(N, 1.0);

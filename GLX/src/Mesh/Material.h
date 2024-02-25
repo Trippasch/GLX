@@ -8,7 +8,7 @@
 class Material
 {
 protected:
-    glm::vec3 m_Albedo = glm::vec3(0.0f, 0.0f, 0.0f);
+    glm::vec4 m_Albedo = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
     float m_Metallic = 0.0f;
     float m_Roughness = 0.0f;
     float m_AO = 1.0f;
@@ -23,7 +23,29 @@ protected:
     Texture2D m_EmissiveTexture;
 
 public:
-    const glm::vec3& getAlbedo() const
+    void renderMaterialGUI()
+    {
+        if (ImGui::TreeNodeEx("Material")) {
+            if (ImGui::ColorEdit4("Albedo", (float*)&getAlbedo())) {
+                setAlbedo(getAlbedo());
+            }
+            if (ImGui::SliderFloat("Metallic", (float*)&getMetallic(), 0.0f, 1.0f, "%.2f")) {
+                setMetallic(getMetallic());
+            }
+            if (ImGui::SliderFloat("Roughness", (float*)&getRoughness(), 0.0f, 1.0f, "%.2f")) {
+                setRoughness(getRoughness());
+            }
+            if (ImGui::SliderFloat("AO", (float*)&getAO(), 0.0f, 1.0f, "%.2f")) {
+                setAO(getAO());
+            }
+            if (ImGui::DragFloat("Emissive", (float*)&getEmissive(), 0.01f, 0.0f, FLT_MAX, "%.2f")) {
+                setEmissive(getEmissive());
+            }
+            ImGui::TreePop();
+        }
+    }
+
+    const glm::vec4& getAlbedo() const
     {
         return m_Albedo;
     }
@@ -76,7 +98,7 @@ public:
         return m_EmissiveTexture;
     }
 
-    void setAlbedo(const glm::vec3& newAlbedo)
+    void setAlbedo(const glm::vec4& newAlbedo)
     {
         m_Albedo = newAlbedo;
     }

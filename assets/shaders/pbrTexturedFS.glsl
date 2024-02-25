@@ -43,7 +43,7 @@ uniform int cascadeCount;
 
 // material parameters
 struct Material {
-    vec3 albedo;
+    vec4 albedo;
     float metallic;
     float roughness;
     float ao;
@@ -408,12 +408,13 @@ void main()
     vec4 albedoTexture = texture(albedoMap, fs_in.TexCoords);
     float alpha = albedoTexture.a;
     vec3 albedo = pow(albedoTexture.rgb, vec3(gamma));
+    // albedo *= alpha; // pre-multiplied alpha (alpha blending)
     float metallic = texture(metallicMap, fs_in.TexCoords).r;
     float roughness = texture(roughnessMap, fs_in.TexCoords).r;
     float ao = texture(aoMap, fs_in.TexCoords).r;
     vec3 N = getNormalFromMap();
 
-    albedo = albedo * material.albedo;
+    albedo = albedo * material.albedo.rgb;
     metallic = metallic * material.metallic;
     roughness = roughness * material.roughness;
     ao = ao * material.ao;
@@ -430,7 +431,10 @@ void main()
 
     result += CalcPointLight(N, V, R, F0, albedo, metallic, roughness, ao);
 
-    FragColor = vec4(result + emissive, alpha);
+    if (alpha <= 0.5)
+        discard;
+
+    FragColor = vec4(result + emissive, 1.0);
 
     // Debug textures
     // FragColor = vec4(N, 1.0);

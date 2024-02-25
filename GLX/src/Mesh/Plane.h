@@ -46,6 +46,7 @@ public:
         }
         else if (pVBO != nullptr) {
             shader.Use().SetMatrix4(1, transform.getModelMatrix());
+            glDisable(GL_CULL_FACE);
             pVBO->LinkAttrib(0, 3, GL_FLOAT, 8 * sizeof(float), (void*)0);
             pVBO->LinkAttrib(1, 3, GL_FLOAT, 8 * sizeof(float), (void*)(3 * sizeof(float)));
             pVBO->LinkAttrib(2, 2, GL_FLOAT, 8 * sizeof(float), (void*)(6 * sizeof(float)));
@@ -53,6 +54,7 @@ public:
             pVBO->UnlinkAttrib(0);
             pVBO->UnlinkAttrib(1);
             pVBO->UnlinkAttrib(2);
+            glEnable(GL_CULL_FACE);
         }
     }
 
@@ -73,13 +75,13 @@ public:
                 material.getAOTexture().Bind(7);
             }
             material.getEmissiveTexture().Bind(8);
-            material.getShader().Use().SetVector3f("material.albedo", material.getAlbedo());
+            material.getShader().Use().SetVector4f("material.albedo", material.getAlbedo());
             material.getShader().Use().SetFloat("material.metallic", material.getMetallic());
             material.getShader().Use().SetFloat("material.roughness", material.getRoughness());
             material.getShader().Use().SetFloat("material.ao", material.getAO());
             material.getShader().Use().SetFloat("material.emissive", material.getEmissive());
             material.getShader().Use().SetMatrix4(1, transform.getModelMatrix());
-            // glDisable(GL_CULL_FACE);
+            glDisable(GL_CULL_FACE);
             pVBO->LinkAttrib(0, 3, GL_FLOAT, 8 * sizeof(float), (void*)0);
             pVBO->LinkAttrib(1, 3, GL_FLOAT, 8 * sizeof(float), (void*)(3 * sizeof(float)));
             pVBO->LinkAttrib(2, 2, GL_FLOAT, 8 * sizeof(float), (void*)(6 * sizeof(float)));
@@ -87,7 +89,7 @@ public:
             pVBO->UnlinkAttrib(0);
             pVBO->UnlinkAttrib(1);
             pVBO->UnlinkAttrib(2);
-            // glEnable(GL_CULL_FACE);
+            glEnable(GL_CULL_FACE);
 
             if (drawAABB) {
                 boundingVolume.get()->drawAABB(transform.getModelMatrix());
@@ -100,33 +102,8 @@ public:
     void renderGUI(int i) override
     {
         if (ImGui::TreeNodeEx(("Plane " + std::to_string(i)).c_str())) {
-            if (ImGui::DragFloat3("Position", (float*)&transform.getLocalPosition(), 0.01f, -FLT_MAX, FLT_MAX, "%.2f")) {
-                transform.setLocalPosition(transform.getLocalPosition());
-            }
-            if (ImGui::DragFloat3("Rotation", (float*)&transform.getLocalRotation(), 0.01f, -180.0f, 180.0f, "%.2f")) {
-                transform.setLocalRotation(transform.getLocalRotation());
-            }
-            if (ImGui::DragFloat3("Scale", (float*)&transform.getLocalScale(), 0.01f, 0.0f, FLT_MAX, "%.2f")) {
-                transform.setLocalScale(transform.getLocalScale());
-            }
-            if (ImGui::TreeNodeEx("Material")) {
-                if (ImGui::ColorEdit3("Albedo", (float*)&material.getAlbedo())) {
-                    material.setAlbedo(material.getAlbedo());
-                }
-                if (ImGui::SliderFloat("Metallic", (float*)&material.getMetallic(), 0.0f, 1.0f, "%.2f")) {
-                    material.setMetallic(material.getMetallic());
-                }
-                if (ImGui::SliderFloat("Roughness", (float*)&material.getRoughness(), 0.0f, 1.0f, "%.2f")) {
-                    material.setRoughness(material.getRoughness());
-                }
-                if (ImGui::SliderFloat("AO", (float*)&material.getAO(), 0.0f, 1.0f, "%.2f")) {
-                    material.setAO(material.getAO());
-                }
-                if (ImGui::DragFloat("Emissive", (float*)&material.getEmissive(), 0.01f, 0.0f, FLT_MAX, "%.2f")) {
-                    material.setEmissive(material.getEmissive());
-                }
-                ImGui::TreePop();
-            }
+            transform.renderTransformGUI();
+            material.renderMaterialGUI();
             if (ImGui::Checkbox("Textured", &material.getIsTextured())) {
                 if (material.getIsTextured()) {
                     material.setShader(ResourceManager::GetShader("pbr_lighting_textured"));

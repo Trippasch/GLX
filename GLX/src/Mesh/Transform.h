@@ -3,6 +3,8 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include <imgui.h>
+
 class Transform
 {
 protected:
@@ -39,4 +41,6 @@ public:
     glm::vec3 getForward() const;
     glm::vec3 getGlobalScale() const;
     bool isDirty() const;
+
+    void renderTransformGUI();
 };

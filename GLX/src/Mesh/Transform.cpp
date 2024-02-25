@@ -97,3 +97,16 @@ bool Transform::isDirty() const
 {
     return m_isDirty;
 }
+
+void Transform::renderTransformGUI()
+{
+    if (ImGui::DragFloat3("Position", (float*)&getLocalPosition(), 0.01f, -FLT_MAX, FLT_MAX, "%.2f")) {
+        setLocalPosition(getLocalPosition());
+    }
+    if (ImGui::DragFloat3("Rotation", (float*)&getLocalRotation(), 0.01f, -180.0f, 180.0f, "%.2f")) {
+        setLocalRotation(getLocalRotation());
+    }
+    if (ImGui::DragFloat3("Scale", (float*)&getLocalScale(), 0.01f, 0.0f, FLT_MAX, "%.2f")) {
+        setLocalScale(getLocalScale());
+    }
+}
