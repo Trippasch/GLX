@@ -148,7 +148,7 @@ void PostProcessor::RenderPostProcessingQuad()
     }
     ResourceManager::GetShader("post_proc").Use();
     m_Renderer->RenderQuad(GL_TRIANGLES);
-    Texture2D::UnBind();
+    Texture2D::UnBind(GL_TEXTURE_2D);
 }
 
 void PostProcessor::RenderBloomTexture()
@@ -185,7 +185,7 @@ void PostProcessor::RenderBloomTexture()
             ResourceManager::GetShader("downsample").Use().SetInteger("mipLevel", 1);
         }
     }
-    Texture2D::UnBind();
+    Texture2D::UnBind(GL_TEXTURE_2D);
 
     // Render Upsamples
     ResourceManager::GetShader("upsample").Use().SetFloat("filterRadius", m_BloomFilterRadius);
@@ -214,7 +214,7 @@ void PostProcessor::RenderBloomTexture()
 
     // Disable additive blending
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    Texture2D::UnBind();
+    Texture2D::UnBind(GL_TEXTURE_2D);
 
     FrameBuffer::UnBind();
     glViewport(0, 0, m_Renderer->GetWidth(), m_Renderer->GetHeight());

@@ -68,13 +68,13 @@ public:
         }
         else if (pVBO != nullptr && boundingVolume->isOnFrustum(frustum, transform)) {
             if (material.getIsTextured()) {
-                material.getAlbedoTexture().Bind(3);
-                material.getNormalTexture().Bind(4);
-                material.getMetallicTexture().Bind(5);
-                material.getRoughnessTexture().Bind(6);
-                material.getAOTexture().Bind(7);
+                material.getAlbedoTexture().Bind(GL_TEXTURE_2D, 3);
+                material.getNormalTexture().Bind(GL_TEXTURE_2D, 4);
+                material.getMetallicTexture().Bind(GL_TEXTURE_2D, 5);
+                material.getRoughnessTexture().Bind(GL_TEXTURE_2D, 6);
+                material.getAOTexture().Bind(GL_TEXTURE_2D, 7);
             }
-            material.getEmissiveTexture().Bind(8);
+            material.getEmissiveTexture().Bind(GL_TEXTURE_2D, 8);
             material.getShader().Use().SetVector4f("material.albedo", material.getAlbedo());
             material.getShader().Use().SetFloat("material.metallic", material.getMetallic());
             material.getShader().Use().SetFloat("material.roughness", material.getRoughness());

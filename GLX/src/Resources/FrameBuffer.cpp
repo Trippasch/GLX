@@ -25,6 +25,10 @@ void FrameBuffer::Destroy() const
         if (textures[i] != 0)
             glDeleteTextures(1, &textures[i]);
     }
+    for (size_t i = 0; i < translucentTextures.size(); i++) {
+        if (translucentTextures[i] != 0)
+            glDeleteTextures(1, &translucentTextures[i]);
+    }
     for (size_t i = 0; i < mipChain.size(); i++) {
         if (mipChain[i].texture != 0)
             glDeleteTextures(1, &mipChain[i].texture);
@@ -40,6 +44,11 @@ void FrameBuffer::CheckStatus()
 void FrameBuffer::BindTexture(GLenum target, GLuint index) const
 {
     glBindTexture(target, textures[index]);
+}
+
+void FrameBuffer::BindTranslucentTexture(GLenum target, GLuint index) const
+{
+    glBindTexture(target, translucentTextures[index]);
 }
 
 void FrameBuffer::BloomAttachment(GLuint width, GLuint height, GLuint mipChainLength)
@@ -140,6 +149,106 @@ void FrameBuffer::DepthMapAttachment(GLuint n, GLenum target, GLint inFormat, GL
     delete [] tex;
 }
 
+void FrameBuffer::TranslucentAttachments(GLenum target, GLuint width, GLuint height)
+{
+    GLuint *tex = new GLuint[2];
+    glGenTextures(2, tex);
+
+    for (size_t i = 0; i < 2; i++) {
+        glBindTexture(target, tex[i]);
+
+        if (i == 0) {
+            // accum texture
+            if (target == GL_TEXTURE_2D) {
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+            }
+            else if (GL_TEXTURE_2D_MULTISAMPLE) {
+                glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_RGBA16F, width, height, GL_TRUE);
+                glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+                glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+            }
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, target, tex[i], 0);
+        }
+        else if (i == 1) {
+            // reveal texture
+            if (target == GL_TEXTURE_2D) {
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, width, height, 0, GL_RED, GL_FLOAT, NULL);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+            }
+            else if (GL_TEXTURE_2D_MULTISAMPLE) {
+                glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_R8, width, height, GL_TRUE);
+                glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+                glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+            }
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, target, tex[i], 0);
+        }
+
+        glBindTexture(target, 0);
+    }
+
+    translucentTextures.clear();
+    for (GLuint i = 0; i < 2; i++)
+        translucentTextures.push_back(tex[i]);
+
+    delete [] tex;
+}
+
+void FrameBuffer::ResizeTranslucentAttachments(GLenum target, GLuint width, GLuint height)
+{
+    for (size_t i = 0; i < translucentTextures.size(); i++) {
+        glBindTexture(target, translucentTextures[i]);
+
+        if (i == 0) {
+            // accum texture
+            if (target == GL_TEXTURE_2D) {
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+            }
+            else if (GL_TEXTURE_2D_MULTISAMPLE) {
+                glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_RGBA16F, width, height, GL_TRUE);
+                glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+                glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+            }
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, target, translucentTextures[i], 0);
+        }
+        else if (i == 1) {
+            // reveal texture
+            if (target == GL_TEXTURE_2D) {
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, width, height, 0, GL_RED, GL_FLOAT, NULL);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+            }
+            else if (GL_TEXTURE_2D_MULTISAMPLE) {
+                glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_R8, width, height, GL_TRUE);
+                glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+                glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+            }
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, target, translucentTextures[i], 0);
+        }
+
+        glBindTexture(target, 0);
+    }
+}
 
 void FrameBuffer::TextureAttachment(GLuint n, GLuint mode, GLenum target, GLint inFormat, GLuint width, GLuint height)
 {

@@ -34,10 +34,8 @@ public:
     // generates cubemap texture from image data
     void GenerateCubemap(GLuint width, GLuint height, GLboolean mipmap = false);
     // binds the texture as the current active GL_TEXTURE_2D texture object
-    void Bind(GLuint index) const;
-    void BindCubemap(GLuint index) const;
+    void Bind(GLenum target, GLuint index) const;
     void Destroy() const;
 
-    static void UnBind();
-    static void UnBindCubemap();
+    static void UnBind(GLenum target);
 };

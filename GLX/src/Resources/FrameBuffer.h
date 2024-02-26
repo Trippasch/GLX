@@ -21,6 +21,7 @@ private:
     GLuint m_RenderBufferID = 0;
 
     std::vector<GLuint> textures;
+    std::vector<GLuint> translucentTextures;
     std::vector<BloomMip> mipChain;
 
 public:
@@ -32,9 +33,11 @@ public:
     static void CheckStatus();
 
     void BindTexture(GLenum target, GLuint index) const;
+    void BindTranslucentTexture(GLenum target, GLuint index) const;
 
     void DepthMapAttachment(GLuint n, GLenum target, GLint inFormat, GLuint size, GLuint width, GLuint height);
-
+    void TranslucentAttachments(GLenum target, GLuint width, GLuint height);
+    void ResizeTranslucentAttachments(GLenum target, GLuint width, GLuint height);
     void TextureAttachment(GLuint n, GLuint mode, GLenum target, GLint inFormat, GLuint width, GLuint height);
     void ResizeTextureAttachment(GLuint mode, GLenum target, GLint inFormat, GLuint width, GLuint height);
     void BloomAttachment(GLuint width, GLuint height, GLuint mipChainLength);

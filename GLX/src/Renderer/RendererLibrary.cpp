@@ -41,6 +41,9 @@ RendererLibrary::RendererLibrary()
     ResourceManager::LoadShader("assets/shaders/pbrVS.glsl", "assets/shaders/pbrFS.glsl", nullptr, "pbr_lighting");
     ResourceManager::LoadShader("assets/shaders/pbrVS.glsl", "assets/shaders/pbrTexturedFS.glsl", nullptr, "pbr_lighting_textured");
     ResourceManager::LoadShader("assets/shaders/pbrVS.glsl", "assets/shaders/pbrTexturedGLTFFS.glsl", nullptr, "pbr_lighting_textured_gltf");
+
+    // Composite
+    ResourceManager::LoadShader("assets/shaders/quadVS.glsl", "assets/shaders/compositeFS.glsl", nullptr, "composite");
 }
 
 RendererLibrary::~RendererLibrary()

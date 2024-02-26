@@ -68,7 +68,7 @@ void DirectionalLight::RenderDepthMapQuad()
     m_DepthMapFBO.BindTexture(GL_TEXTURE_2D_ARRAY, 0);
     ResourceManager::GetShader("debug_depth_map").Use();
     m_Renderer->RenderQuad(GL_TRIANGLES);
-    Texture2D::UnBind();
+    Texture2D::UnBind(GL_TEXTURE_2D);
 }
 
 std::vector<glm::vec4> DirectionalLight::getFrustumCornersWorldSpace(const glm::mat4& projView)

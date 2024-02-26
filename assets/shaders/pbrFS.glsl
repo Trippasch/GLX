@@ -3,9 +3,15 @@
 #extension GL_ARB_shading_language_420pack : enable
 
 #define M_PI 3.14159265358979323846
+#define TRANSLUCENCY
 
+#ifdef TRANSLUCENCY
+layout (location = 2) out vec4 AccumColor;
+layout (location = 3) out float RevealColor;
+#else
 layout (location = 0) out vec4 FragColor;
 layout (location = 1) out vec4 BrightColor;
+#endif
 
 #define MAX_DIR_LIGHTS 10
 #define MAX_POINT_LIGHTS 10
@@ -389,7 +395,9 @@ void main()
     float roughness = material.roughness;
     float ao = material.ao;
     vec3 N = normalize(fs_in.Normal);
-
+    if (!gl_FrontFacing) {
+        N = -N;
+    }
     vec3 emissive = texture(emissiveMap, fs_in.TexCoords).rgb;
     emissive = emissive * material.emissive;
 
@@ -402,17 +410,30 @@ void main()
 
     result += CalcPointLight(N, V, R, F0, albedo, metallic, roughness, ao);
 
-    FragColor = vec4(result + emissive, alpha);
+    #ifdef TRANSLUCENCY
+        result += emissive;
 
-    // Debug
-    // FragColor = vec4(N, 1.0);
-    // FragColor = vec4(albedo, 1.0);
-    // FragColor = vec4(texture(emissiveMap, fs_in.TexCoords).rgb, 1.0);
+        // weight function
+        float weight = clamp(pow(min(1.0, alpha * 10.0) + 0.01, 3.0) * 1e8 * pow(1.0 - gl_FragCoord.z * 0.9, 3.0), 1e-2, 3e3);
 
-    // check whether result is higher than some threshold, if so, output as bloom threshold color
-    float brightness = dot(FragColor.rgb, vec3(0.2126, 0.7152, 0.0722));
-    if(brightness > 1.0)
-        BrightColor = vec4(FragColor.rgb, 1.0);
-    else
-        BrightColor = vec4(0.0, 0.0, 0.0, 1.0);
+        // store pixel color accumulation
+        AccumColor = vec4(result * alpha, alpha) * weight;
+
+        // store pixel revealage threshold
+        RevealColor = alpha;
+    #else
+        FragColor = vec4(result + emissive, alpha);
+
+        // Debug
+        // FragColor = vec4(N, 1.0);
+        // FragColor = vec4(albedo, 1.0);
+        // FragColor = vec4(texture(emissiveMap, fs_in.TexCoords).rgb, 1.0);
+
+        // check whether result is higher than some threshold, if so, output as bloom threshold color
+        float brightness = dot(FragColor.rgb, vec3(0.2126, 0.7152, 0.0722));
+        if(brightness > 1.0)
+            BrightColor = vec4(FragColor.rgb, 1.0);
+        else
+            BrightColor = vec4(0.0, 0.0, 0.0, 1.0);
+    #endif
 }

@@ -55,16 +55,10 @@ void Texture2D::GenerateCubemap(GLuint width, GLuint height, GLboolean mipmap)
     glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 }
 
-void Texture2D::Bind(GLuint index) const
+void Texture2D::Bind(GLenum target, GLuint index) const
 {
     glActiveTexture(GL_TEXTURE0 + index);
-    glBindTexture(GL_TEXTURE_2D, this->ID);
-}
-
-void Texture2D::BindCubemap(GLuint index) const
-{
-    glActiveTexture(GL_TEXTURE0 + index);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, this->ID);
+    glBindTexture(target, this->ID);
 }
 
 void Texture2D::Destroy() const
@@ -72,14 +66,8 @@ void Texture2D::Destroy() const
     glDeleteTextures(1, &this->ID);
 }
 
-void Texture2D::UnBind()
+void Texture2D::UnBind(GLenum target)
 {
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, 0);
-}
-
-void Texture2D::UnBindCubemap()
-{
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+    glBindTexture(target, 0);
 }

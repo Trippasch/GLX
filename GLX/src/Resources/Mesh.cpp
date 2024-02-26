@@ -54,7 +54,7 @@ void Mesh::UnBind() const
 void Mesh::Draw(GLenum mode, const Shader &shader) const
 {
     for (unsigned int i = 0; i < textures.size(); i++)
-        textures[i].Bind(i+3);
+        textures[i].Bind(GL_TEXTURE_2D, i+3);
 
     // draw mesh
     Bind();

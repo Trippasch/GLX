@@ -32,14 +32,14 @@ void PBR::RenderSkybox()
     ResourceManager::GetShader("hdr_skybox").Use().SetMatrix4(0, m_Renderer->GetCamera().GetProjectionMatrix());
     ResourceManager::GetShader("hdr_skybox").Use().SetMatrix4(1, m_Renderer->GetCamera().GetViewMatrix());
 
-    m_EnvCubemap.BindCubemap(0);
+    m_EnvCubemap.Bind(GL_TEXTURE_CUBE_MAP, 0);
     // m_Irradiancemap.BindCubemap(0);
     // m_Prefiltermap.BindCubemap(0);
     ResourceManager::GetShader("hdr_skybox").Use();
     glCullFace(GL_FRONT);
     m_Renderer->RenderCube(GL_TRIANGLES);
     glCullFace(GL_BACK);
-    Texture2D::UnBindCubemap();
+    Texture2D::UnBind(GL_TEXTURE_CUBE_MAP);
 }
 
 void PBR::RenderSkyboxGUI()
@@ -112,7 +112,7 @@ void PBR::CreateSkybox()
     };
 
     // convert HDR equirectangular environment map to cubemap equivalent
-    ResourceManager::GetTexture("hdr_texture").Bind(0);
+    ResourceManager::GetTexture("hdr_texture").Bind(GL_TEXTURE_2D, 0);
     ResourceManager::GetShader("equirectangular_to_cubemap").Use().SetMatrix4(0, captureProjection);
     glViewport(0, 0, m_EnvCubemapWidth, m_EnvCubemapHeight);
     m_CaptureFBO.Bind();
@@ -123,11 +123,11 @@ void PBR::CreateSkybox()
         m_Renderer->RenderCube(GL_TRIANGLES);
     }
     FrameBuffer::UnBind();
-    Texture2D::UnBind();
+    Texture2D::UnBind(GL_TEXTURE_2D);
 
     glBindTexture(GL_TEXTURE_CUBE_MAP, m_EnvCubemap.ID);
     glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
-    Texture2D::UnBindCubemap();
+    Texture2D::UnBind(GL_TEXTURE_CUBE_MAP);
 
     // create an irradiance cubemap, and re-scale m_CaptureFBO to irradiance scale
     m_Irradiancemap.Internal_Format = GL_RGB16F;
@@ -143,7 +143,7 @@ void PBR::CreateSkybox()
     m_CaptureFBO.Bind();
     m_CaptureFBO.ResizeRenderBuffer(GL_DEPTH24_STENCIL8, m_IrradiancemapWidth, m_IrradiancemapHeight);
 
-    m_EnvCubemap.BindCubemap(0);
+    m_EnvCubemap.Bind(GL_TEXTURE_CUBE_MAP, 0);
     ResourceManager::GetShader("irradiance").Use().SetMatrix4(0, captureProjection);
     glViewport(0, 0, m_IrradiancemapWidth, m_IrradiancemapHeight);
     for (GLuint i = 0; i < 6; i++) {
@@ -153,7 +153,7 @@ void PBR::CreateSkybox()
         m_Renderer->RenderCube(GL_TRIANGLES);
     }
     FrameBuffer::UnBind();
-    Texture2D::UnBindCubemap();
+    Texture2D::UnBind(GL_TEXTURE_CUBE_MAP);
 
     // prefilter HDR environment map
     m_Prefiltermap.Internal_Format = GL_RGB16F;
@@ -168,7 +168,7 @@ void PBR::CreateSkybox()
 
     // run a quasi monte-carlo simulation on the environment lighting to create a prefilter (cube)map.
     ResourceManager::GetShader("prefilter").Use().SetMatrix4(0, captureProjection);
-    m_EnvCubemap.BindCubemap(0);
+    m_EnvCubemap.Bind(GL_TEXTURE_CUBE_MAP, 0);
     m_CaptureFBO.Bind();
     GLuint maxMipLevels = 5;
     for (GLuint mip = 0; mip < maxMipLevels; ++mip)
@@ -192,7 +192,7 @@ void PBR::CreateSkybox()
         }
     }
     FrameBuffer::UnBind();
-    Texture2D::UnBindCubemap();
+    Texture2D::UnBind(GL_TEXTURE_CUBE_MAP);
 
     // generate a 2D LUT from the BRDF equations used.
     m_BRDFLUTTexture.Internal_Format = GL_RG16F;

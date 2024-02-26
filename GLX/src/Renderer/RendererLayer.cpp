@@ -33,10 +33,11 @@ void RendererLayer::OnAttach()
     // Initialize Framebuffers
     m_MultisampleFBO.Bind();
     m_MultisampleFBO.TextureAttachment(2, 0, GL_TEXTURE_2D_MULTISAMPLE, GL_RGBA16F, m_Width, m_Height);
+    m_MultisampleFBO.TranslucentAttachments(GL_TEXTURE_2D_MULTISAMPLE, m_Width, m_Height);
     m_MultisampleFBO.RenderBufferAttachment(GL_TRUE, GL_DEPTH24_STENCIL8, m_Width, m_Height);
     // tell OpenGL which color attachments we'll use (of this framebuffer) for rendering
-    GLenum attachments[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
-    glDrawBuffers(2, attachments);
+    GLenum attachments[4] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 };
+    glDrawBuffers(4, attachments);
     FrameBuffer::CheckStatus();
     FrameBuffer::UnBind();
 
@@ -112,11 +113,11 @@ void RendererLayer::OnAttach()
         lastEntity->transform.setLocalRotation(glm::vec3(90.0f, 0.0f, 0.0f));
         lastEntity->transform.setLocalScale(glm::vec3(2.0f));
         if (i == 0)
-            lastEntity->material.setAlbedo(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
+            lastEntity->material.setAlbedo(glm::vec4(1.0f, 0.0f, 0.0f, 0.5f));
         else if (i == 1)
-            lastEntity->material.setAlbedo(glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
+            lastEntity->material.setAlbedo(glm::vec4(0.0f, 1.0f, 0.0f, 0.5f));
         else if (i == 2)
-            lastEntity->material.setAlbedo(glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
+            lastEntity->material.setAlbedo(glm::vec4(0.0f, 0.0f, 1.0f, 0.5f));
         lastEntity->material.setMetallic(1.0f);
         lastEntity->material.setRoughness(1.0f);
         lastEntity->material.setAO(1.0f);
@@ -154,7 +155,7 @@ void RendererLayer::OnAttach()
     // lastEntity = m_Cubes.children.back().get();
     // lastEntity->transform.setLocalPosition(glm::vec3(4.0f, 2.0f, 4.0f));
     // lastEntity->transform.setLocalScale(glm::vec3(1.0f));
-    // lastEntity->material.setAlbedo(glm::vec3(1.0f));
+    // lastEntity->material.setAlbedo(glm::vec4(1.0f));
     // lastEntity->material.setMetallic(1.0f);
     // lastEntity->material.setRoughness(1.0f);
     // lastEntity->material.setAO(1.0f);
@@ -228,7 +229,7 @@ void RendererLayer::OnUpdate()
             m_Models.renderSceneGraphSimple(GL_TRIANGLES, ResourceManager::GetShader("depth_map"));
             m_Cubes.renderSceneGraphSimple(GL_TRIANGLES, ResourceManager::GetShader("depth_map"));
             m_Spheres.renderSceneGraphSimple(GL_TRIANGLE_STRIP, ResourceManager::GetShader("depth_map"));
-            m_Planes.renderSceneGraphSimple(GL_TRIANGLES, ResourceManager::GetShader("depth_map"));
+            // m_Planes.renderSceneGraphSimple(GL_TRIANGLES, ResourceManager::GetShader("depth_map"));
             glCullFace(GL_BACK);
             FrameBuffer::UnBind();
 
@@ -267,7 +268,7 @@ void RendererLayer::OnUpdate()
             m_Models.renderSceneGraphSimple(GL_TRIANGLES, ResourceManager::GetShader("depth_cube_map"));
             m_Cubes.renderSceneGraphSimple(GL_TRIANGLES, ResourceManager::GetShader("depth_cube_map"));
             m_Spheres.renderSceneGraphSimple(GL_TRIANGLE_STRIP, ResourceManager::GetShader("depth_cube_map"));
-            m_Planes.renderSceneGraphSimple(GL_TRIANGLES, ResourceManager::GetShader("depth_cube_map"));
+            // m_Planes.renderSceneGraphSimple(GL_TRIANGLES, ResourceManager::GetShader("depth_cube_map"));
 
             FrameBuffer::UnBind();
 
@@ -276,8 +277,14 @@ void RendererLayer::OnUpdate()
     }
 
     // Render Normal Scene
+    // opaque pass
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LEQUAL);
+    glDepthMask(GL_TRUE);
+    glDisable(GL_BLEND);
+
     m_MultisampleFBO.Bind();
-    glClearColor(m_BackgroundColor.r, m_BackgroundColor.g, m_BackgroundColor.b, 1.0f);
+    glClearColor(m_BackgroundColor.r, m_BackgroundColor.g, m_BackgroundColor.b, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     if (m_UsePolygonLines) {
@@ -291,47 +298,66 @@ void RendererLayer::OnUpdate()
         }
     }
 
+    unsigned int total = 0, display = 0;
+
+    if (m_UseSkybox) {
+        m_PBR->GetIrradiancemap().Bind(GL_TEXTURE_CUBE_MAP, 0);
+        m_PBR->GetPrefiltermap().Bind(GL_TEXTURE_CUBE_MAP, 1);
+        m_PBR->GetBRDFLUTTexture().Bind(GL_TEXTURE_2D, 2);
+    }
+    for (size_t i = 0; i < m_DirectionalLights.size(); i++) {
+        glActiveTexture(GL_TEXTURE9 + i);
+        m_DirectionalLights[i]->GetDepthMapFBO().BindTexture(GL_TEXTURE_2D_ARRAY, 0);
+    }
+    for (size_t i = 0; i < m_PointLights.size(); i++) {
+        glActiveTexture(GL_TEXTURE19 + i);
+        m_PointLights[i]->GetDepthCubeMapFBO().BindTexture(GL_TEXTURE_CUBE_MAP, 0);
+    }
+
     if (m_DebugDepthCubeMap) {
-        for (size_t i = 0; i < m_PointLights.size(); i++) {
-            glActiveTexture(GL_TEXTURE19 + i);
-            m_PointLights[i]->GetDepthCubeMapFBO().BindTexture(GL_TEXTURE_CUBE_MAP, 0);
-        }
         m_Models.renderSceneGraphSimple(GL_TRIANGLES, ResourceManager::GetShader("debug_depth_cube_map"));
         m_Cubes.renderSceneGraphSimple(GL_TRIANGLES, ResourceManager::GetShader("debug_depth_cube_map"));
         m_Spheres.renderSceneGraphSimple(GL_TRIANGLE_STRIP, ResourceManager::GetShader("debug_depth_cube_map"));
-        m_Planes.renderSceneGraphSimple(GL_TRIANGLES, ResourceManager::GetShader("debug_depth_cube_map"));
-        Texture2D::UnBindCubemap();
+        // m_Planes.renderSceneGraphSimple(GL_TRIANGLES, ResourceManager::GetShader("debug_depth_cube_map"));
     }
     else {
-        unsigned int total = 0, display = 0;
-
-        if (m_UseSkybox) {
-            m_PBR->GetIrradiancemap().BindCubemap(0);
-            m_PBR->GetPrefiltermap().BindCubemap(1);
-            m_PBR->GetBRDFLUTTexture().Bind(2);
-        }
-        for (size_t i = 0; i < m_DirectionalLights.size(); i++) {
-            glActiveTexture(GL_TEXTURE9 + i);
-            m_DirectionalLights[i]->GetDepthMapFBO().BindTexture(GL_TEXTURE_2D_ARRAY, 0);
-        }
-        for (size_t i = 0; i < m_PointLights.size(); i++) {
-            glActiveTexture(GL_TEXTURE19 + i);
-            m_PointLights[i]->GetDepthCubeMapFBO().BindTexture(GL_TEXTURE_CUBE_MAP, 0);
-        }
         m_Models.renderSceneGraph(GL_TRIANGLES, m_CamFrustum, display, total);
         m_Cubes.renderSceneGraph(GL_TRIANGLES, m_CamFrustum, display, total);
         m_Spheres.renderSceneGraph(GL_TRIANGLE_STRIP, m_CamFrustum, display, total);
-        m_Planes.renderSceneGraph(GL_TRIANGLES, m_CamFrustum, display, total);
-        Texture2D::UnBind();
-        Texture2D::UnBindCubemap();
+        // m_Planes.renderSceneGraph(GL_TRIANGLES, m_CamFrustum, display, total);
 
         // GL_TRACE("Total process in CPU : {0} / Total send to GPU : {1}", total, display);
 
         if (m_UseSkybox) {
             m_PBR->RenderSkybox();
         }
+
+        // translucent pass
+        glDepthMask(GL_FALSE);
+        glEnable(GL_BLEND);
+        glBlendFunci(2, GL_ONE, GL_ONE);
+        glBlendFunci(3, GL_ZERO, GL_ONE_MINUS_SRC_COLOR);
+        glBlendEquation(GL_FUNC_ADD);
+        glClearBufferfv(GL_COLOR, 2, &glm::vec4(0.0f)[0]);
+        glClearBufferfv(GL_COLOR, 3, &glm::vec4(1.0f)[0]);
+        m_Planes.renderSceneGraph(GL_TRIANGLES, m_CamFrustum, display, total);
     }
 
+    FrameBuffer::UnBind();
+
+    // composite pass
+    glDepthFunc(GL_ALWAYS);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    m_MultisampleFBO.Bind();
+    glActiveTexture(GL_TEXTURE2);
+    m_MultisampleFBO.BindTranslucentTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
+    glActiveTexture(GL_TEXTURE3);
+    m_MultisampleFBO.BindTranslucentTexture(GL_TEXTURE_2D_MULTISAMPLE, 1);
+    ResourceManager::GetShader("composite").Use();
+    RenderQuad(GL_TRIANGLES);
+    Texture2D::UnBind(GL_TEXTURE_2D_MULTISAMPLE);
     FrameBuffer::UnBind();
 
     // Reset polygon mode to fill
@@ -348,16 +374,20 @@ void RendererLayer::OnUpdate()
     }
 
     // Bind to ImGui Image
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glDisable(GL_DEPTH_TEST);
+    glDepthMask(GL_TRUE); // enable depth writes so glClear won't ignore clearing the depth buffer
+    glDisable(GL_BLEND);
+
     m_ImGUIFBO.Bind();
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
     m_PostProcessor->RenderPostProcessingQuad();
     FrameBuffer::UnBind();
 
     // Bind to ImGui Debug Image
     if (m_UseDebugWindow) {
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         m_DebugFBO.Bind();
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
         if (m_DebugDepthMap) {
             m_DirectionalLights[m_DebugDepthMapIndex]->RenderDepthMapQuad();
         }
@@ -366,12 +396,14 @@ void RendererLayer::OnUpdate()
             m_PostProcessor->GetHDRFBO().BindTexture(GL_TEXTURE_2D, 0);
             ResourceManager::GetShader("debug_quad").Use();
             RenderQuad(GL_TRIANGLES);
-            Texture2D::UnBind();
+            Texture2D::UnBind(GL_TEXTURE_2D);
         }
         FrameBuffer::UnBind();
     }
 
     glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LEQUAL);
+    glDepthMask(GL_TRUE);
 }
 
 void RendererLayer::OnImGuiRender()
@@ -572,6 +604,7 @@ bool RendererLayer::imGuiResize()
 
         m_MultisampleFBO.Bind();
         m_MultisampleFBO.ResizeTextureAttachment(0, GL_TEXTURE_2D_MULTISAMPLE, GL_RGBA16F, m_Width, m_Height);
+        m_MultisampleFBO.ResizeTranslucentAttachments(GL_TEXTURE_2D_MULTISAMPLE, m_Width, m_Height);
         m_MultisampleFBO.ResizeRenderBufferAttachment(GL_TRUE, GL_DEPTH24_STENCIL8, m_Width, m_Height);
         FrameBuffer::CheckStatus();
         FrameBuffer::UnBind();
@@ -601,6 +634,7 @@ void RendererLayer::OnDetach()
     m_ImGUIFBO.Destroy();
     m_DebugFBO.Destroy();
     m_MultisampleFBO.Destroy();
+
     m_MatricesUBO.Destroy();
     m_DirLightSpaceMatricesUBO.Destroy();
 
