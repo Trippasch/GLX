@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 #include <glad/glad.h>
 #include <glm/glm.hpp>
@@ -10,13 +11,13 @@ class Shader
 {
 public:
     // state
-    GLuint ID; 
+    GLuint ID;
     // constructor
     Shader() { }
     // sets the current shader as active
     Shader &Use();
     // compiles the shader from given source code
-    void Compile(const char *vertexSource, const char *fragmentSource, const char *geometrySource = nullptr); // note: geometry source code is optional 
+    void Compile(const char *vertexSource, const char *fragmentSource, const char *geometrySource = nullptr, const std::vector<std::string> &defines = {}); // note: geometry source code and defines are optional
 
     // utility functions
     void SetFloat(const char *name, float value, bool useShader = false);

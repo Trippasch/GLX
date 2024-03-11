@@ -27,7 +27,7 @@ public:
     // retrieves a stored model
     static Model& GetModel(const std::string &name);
     // loads (and generates) a shader program from file loading vertex, fragment (and geometry) shader's source code. If gShaderFile is not nullptr, it also loads a geometry shader
-    static Shader LoadShader(const char *vShaderFile, const char *fShaderFile, const char *gShaderFile, const std::string &name);
+    static Shader LoadShader(const char *vShaderFile, const char *fShaderFile, const char *gShaderFile, const std::string &name, const std::vector<std::string> &defines = {});
     // retrieves a stored shader
     static Shader& GetShader(const std::string &name);
     // loads (and generates) a texture from file
@@ -46,7 +46,7 @@ private:
     // loads and generates a model from file
     static Model loadModelFromFile(const char *file);
     // loads and generates a shader from file
-    static Shader loadShaderFromFile(const char *vShaderFile, const char *fShaderFile, const char *gShaderFile = nullptr);
+    static Shader loadShaderFromFile(const char *vShaderFile, const char *fShaderFile, const char *gShaderFile = nullptr, const std::vector<std::string> &defines = {});
     // loads a single texture from file
     static Texture2D loadTextureFromFile(const char *file, bool gamma);
     // loads a single HDR texture from file

@@ -23,9 +23,9 @@ Model& ResourceManager::GetModel(const std::string &name)
     return Models[name];
 }
 
-Shader ResourceManager::LoadShader(const char *vShaderFile, const char *fShaderFile, const char *gShaderFile, const std::string &name)
+Shader ResourceManager::LoadShader(const char *vShaderFile, const char *fShaderFile, const char *gShaderFile, const std::string &name, const std::vector<std::string> &defines)
 {
-    Shaders[name] = loadShaderFromFile(vShaderFile, fShaderFile, gShaderFile);
+    Shaders[name] = loadShaderFromFile(vShaderFile, fShaderFile, gShaderFile, defines);
     return Shaders[name];
 }
 
@@ -74,7 +74,7 @@ void ResourceManager::Clear()
     }
 }
 
-Shader ResourceManager::loadShaderFromFile(const char *vShaderFile, const char *fShaderFile, const char *gShaderFile)
+Shader ResourceManager::loadShaderFromFile(const char *vShaderFile, const char *fShaderFile, const char *gShaderFile, const std::vector<std::string> &defines)
 {
     // 1. retrieve the vertex/fragment source code from filePath
     std::string vertexCode;
@@ -114,7 +114,7 @@ Shader ResourceManager::loadShaderFromFile(const char *vShaderFile, const char *
     const char *gShaderCode = geometryCode.c_str();
     // 2. now create shader object from source code
     Shader shader;
-    shader.Compile(vShaderCode, fShaderCode, gShaderFile != nullptr ? gShaderCode : nullptr);
+    shader.Compile(vShaderCode, fShaderCode, gShaderFile != nullptr ? gShaderCode : nullptr, defines);
     return shader;
 }
 
@@ -178,6 +178,7 @@ Texture2D ResourceManager::loadHDRTextureFromFile(const char *file)
         GL_ERROR("HDR Texture failed to load at path: {0} ", file);
         stbi_image_free(data);
     }
+    stbi_set_flip_vertically_on_load(0);
     return texture;
 }
 

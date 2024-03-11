@@ -52,8 +52,15 @@ void RendererLayer::OnAttach()
     FrameBuffer::UnBind();
 
     // Uniform Buffers
-    m_MatricesUBO = UniformBuffer(0, 0, sizeof(glm::mat4), GL_STATIC_DRAW);
-    m_DirLightSpaceMatricesUBO = UniformBuffer(1, 0, sizeof(glm::mat4x4) * 16 * MAX_DIRECTIONAL_LIGHTS, GL_STATIC_DRAW);
+    m_MatricesUBO = UniformBuffer(0, 0, sizeof(glm::mat4), GL_DYNAMIC_DRAW);
+    m_LightsUBO = UniformBuffer(1, 0, sizeof(glm::mat4x4) * 16 * DirectionalLight::MAX_LIGHTS + sizeof(glm::vec4)
+                                            + 2 * sizeof(glm::vec4) * DirectionalLight::MAX_LIGHTS
+                                            + 2 * sizeof(glm::vec4) * PointLight::MAX_LIGHTS + sizeof(glm::vec4), GL_DYNAMIC_DRAW);
+    m_CameraUBO = UniformBuffer(2, 0, sizeof(glm::mat4) + sizeof(glm::vec4), GL_DYNAMIC_DRAW);
+    m_ObjectUBO = UniformBuffer(3, 0, sizeof(glm::vec4) + Material::MAX_OBJECTS*(2*sizeof(glm::vec4)), GL_DYNAMIC_DRAW);
+
+    // Fill Uniform Buffers
+    m_ObjectUBO.FillBuffer(&m_UseSkybox, 0, sizeof(float));
 
     // Renderer Library
     m_RendererLibrary = new RendererLibrary();
@@ -83,6 +90,7 @@ void RendererLayer::OnAttach()
     pointLight->SetIntensity(20.0f);
     AddLight(pointLight);
 
+    // Objects
     Entity* lastEntity;
     // Create Models
     m_Models.addChild<ModelEntity>(ResourceManager::GetModel("sponza"));
@@ -95,7 +103,10 @@ void RendererLayer::OnAttach()
     lastEntity->material.setRoughness(1.0f);
     lastEntity->material.setAO(0.20f);
     lastEntity->material.setEmissive(0.0f);
+    lastEntity->material.fillMaterialBuffer(m_ObjectUBO, m_ObjectsID);
+    m_ObjectsID++;
     lastEntity->material.setIsTextured(true);
+    lastEntity->material.setIsTranslucent(false);
     lastEntity->material.setAlbedoTexture(ResourceManager::GetTexture("default_albedo"));
     lastEntity->material.setNormalTexture(ResourceManager::GetTexture("default_normal"));
     lastEntity->material.setMetallicTexture(ResourceManager::GetTexture("default_metallic"));
@@ -103,7 +114,8 @@ void RendererLayer::OnAttach()
     lastEntity->material.setAOTexture(ResourceManager::GetTexture("default_ao"));
     lastEntity->material.setEmissiveTexture(ResourceManager::GetTexture("default_emissive"));
     lastEntity->isGLTF = true;
-    lastEntity->material.setShader(ResourceManager::GetShader("pbr_lighting_textured_gltf"));
+    ResourceManager::LoadShader("assets/shaders/pbrVS.glsl", "assets/shaders/pbrFS.glsl", nullptr, "pbr_lighting", { "TEXTURED", "GLTF", "MAX_DIR_LIGHTS 10", "MAX_POINT_LIGHTS 10", "MAX_OBJECTS 100" });
+    lastEntity->material.setShader(ResourceManager::GetShader("pbr_lighting"));
 
     // Create Planes
     for (unsigned int i = 0; i < 3; i++) {
@@ -122,75 +134,19 @@ void RendererLayer::OnAttach()
         lastEntity->material.setRoughness(1.0f);
         lastEntity->material.setAO(1.0f);
         lastEntity->material.setEmissive(0.0f);
+        lastEntity->material.fillMaterialBuffer(m_ObjectUBO, m_ObjectsID);
+        m_ObjectsID++;
         lastEntity->material.setIsTextured(false);
+        lastEntity->material.setIsTranslucent(true);
         lastEntity->material.setAlbedoTexture(ResourceManager::GetTexture("default_albedo"));
         lastEntity->material.setNormalTexture(ResourceManager::GetTexture("default_normal"));
         lastEntity->material.setMetallicTexture(ResourceManager::GetTexture("default_metallic"));
         lastEntity->material.setRoughnessTexture(ResourceManager::GetTexture("default_roughness"));
         lastEntity->material.setAOTexture(ResourceManager::GetTexture("default_ao"));
         lastEntity->material.setEmissiveTexture(ResourceManager::GetTexture("default_emissive"));
+        ResourceManager::LoadShader("assets/shaders/pbrVS.glsl", "assets/shaders/pbrFS.glsl", nullptr, "pbr_lighting", { "TRANSLUCENT", "MAX_DIR_LIGHTS 10", "MAX_POINT_LIGHTS 10", "MAX_OBJECTS 100" });
         lastEntity->material.setShader(ResourceManager::GetShader("pbr_lighting"));
     }
-
-    // m_Planes.addChild<Plane>(m_RendererLibrary->GetPlaneVBO(), m_RendererLibrary->GetPlaneVertices(), 48);
-    // lastEntity = m_Planes.children.back().get();
-    // lastEntity->transform.setLocalPosition(glm::vec3(0.0f, 0.0f, 0.0f));
-    // lastEntity->transform.setLocalScale(glm::vec3(500.0f));
-    // lastEntity->material.setAlbedo(glm::vec3(1.0f));
-    // lastEntity->material.setMetallic(1.0f);
-    // lastEntity->material.setRoughness(1.0f);
-    // lastEntity->material.setAO(1.0f);
-    // lastEntity->material.setEmissive(0.0f);
-    // lastEntity->material.setIsTextured(false);
-    // lastEntity->material.setAlbedoTexture(ResourceManager::GetTexture("default_albedo"));
-    // lastEntity->material.setNormalTexture(ResourceManager::GetTexture("default_normal"));
-    // lastEntity->material.setMetallicTexture(ResourceManager::GetTexture("default_metallic"));
-    // lastEntity->material.setRoughnessTexture(ResourceManager::GetTexture("default_roughness"));
-    // lastEntity->material.setAOTexture(ResourceManager::GetTexture("default_ao"));
-    // lastEntity->material.setEmissiveTexture(ResourceManager::GetTexture("default_emissive"));
-    // lastEntity->material.setShader(ResourceManager::GetShader("pbr_lighting"));
-
-    // Create Cubes
-    // m_Cubes.addChild<Cube>(m_RendererLibrary->GetCubeVBO(), m_RendererLibrary->GetCubeVertices(), 288);
-    // lastEntity = m_Cubes.children.back().get();
-    // lastEntity->transform.setLocalPosition(glm::vec3(4.0f, 2.0f, 4.0f));
-    // lastEntity->transform.setLocalScale(glm::vec3(1.0f));
-    // lastEntity->material.setAlbedo(glm::vec4(1.0f));
-    // lastEntity->material.setMetallic(1.0f);
-    // lastEntity->material.setRoughness(1.0f);
-    // lastEntity->material.setAO(1.0f);
-    // lastEntity->material.setEmissive(0.0f);
-    // lastEntity->material.setIsTextured(false);
-    // lastEntity->material.setAlbedoTexture(ResourceManager::GetTexture("default_albedo"));
-    // lastEntity->material.setNormalTexture(ResourceManager::GetTexture("default_normal"));
-    // lastEntity->material.setMetallicTexture(ResourceManager::GetTexture("default_metallic"));
-    // lastEntity->material.setRoughnessTexture(ResourceManager::GetTexture("default_roughness"));
-    // lastEntity->material.setAOTexture(ResourceManager::GetTexture("default_ao"));
-    // lastEntity->material.setEmissiveTexture(ResourceManager::GetTexture("default_emissive"));
-    // lastEntity->material.setShader(ResourceManager::GetShader("pbr_lighting"));
-
-    // Create Spheres
-    // for (unsigned int i = 0; i < 5; i++) {
-    //     for (unsigned int j = 0; j < 5; j++) {
-    //         m_Spheres.addChild<Sphere>(m_RendererLibrary->GetSphereVBO(), &m_RendererLibrary->GetSphereVertices()[0], m_RendererLibrary->GetSphereVertices().size(), m_RendererLibrary->GetSphereEBO(), m_RendererLibrary->GetSphereIndicesCount());
-    //         lastEntity = m_Spheres.children.back().get();
-    //         lastEntity->transform.setLocalPosition(glm::vec3(-6.0f + (i*3), 1.0f + (j*3), 0.0f - (j*3)));
-    //         lastEntity->transform.setLocalScale(glm::vec3(1.0f));
-    //         lastEntity->material.setAlbedo(glm::vec3(1.0f));
-    //         lastEntity->material.setMetallic(1.0f);
-    //         lastEntity->material.setRoughness(1.0f);
-    //         lastEntity->material.setAO(1.0f);
-    //         lastEntity->material.setEmissive(0.0f);
-    //         lastEntity->material.setIsTextured(false);
-    //         lastEntity->material.setAlbedoTexture(ResourceManager::GetTexture("default_albedo"));
-    //         lastEntity->material.setNormalTexture(ResourceManager::GetTexture("default_normal"));
-    //         lastEntity->material.setMetallicTexture(ResourceManager::GetTexture("default_metallic"));
-    //         lastEntity->material.setRoughnessTexture(ResourceManager::GetTexture("default_roughness"));
-    //         lastEntity->material.setAOTexture(ResourceManager::GetTexture("default_ao"));
-    //         lastEntity->material.setEmissiveTexture(ResourceManager::GetTexture("default_emissive"));
-    //         lastEntity->material.setShader(ResourceManager::GetShader("pbr_lighting"));
-    //     }
-    // }
 }
 
 void RendererLayer::OnUpdate()
@@ -200,12 +156,9 @@ void RendererLayer::OnUpdate()
 
     m_MatricesUBO.FillBuffer(&projView, 0, sizeof(glm::mat4));
 
-    ResourceManager::GetShader("pbr_lighting").Use().SetVector3f("camPos", m_Camera.GetPosition());
-    ResourceManager::GetShader("pbr_lighting").Use().SetMatrix4("camView", m_Camera.GetViewMatrix());
-    ResourceManager::GetShader("pbr_lighting_textured").Use().SetVector3f("camPos", m_Camera.GetPosition());
-    ResourceManager::GetShader("pbr_lighting_textured").Use().SetMatrix4("camView", m_Camera.GetViewMatrix());
-    ResourceManager::GetShader("pbr_lighting_textured_gltf").Use().SetVector3f("camPos", m_Camera.GetPosition());
-    ResourceManager::GetShader("pbr_lighting_textured_gltf").Use().SetMatrix4("camView", m_Camera.GetViewMatrix());
+    m_CameraUBO.FillBuffer(&m_Camera.GetViewMatrix(), 0, sizeof(glm::mat4));
+    m_CameraUBO.FillBuffer(&m_Camera.GetPosition(), sizeof(glm::mat4), sizeof(glm::vec3));
+    m_CameraUBO.FillBuffer(&m_Camera.GetFarPlane(), sizeof(glm::mat4) + sizeof(glm::vec3), sizeof(float));
 
     // Render Directional Lights Shadows
     for (size_t i = 0; i < m_DirectionalLights.size(); i++) {
@@ -216,7 +169,7 @@ void RendererLayer::OnUpdate()
             const auto lightMatrices = m_DirectionalLights[i]->GetLightSpaceMatrices();
             for (size_t j = 0; j < lightMatrices.size(); j++) {
                 size_t offset = i * sizeof(glm::mat4x4) * 16 + j * sizeof(glm::mat4x4);
-                m_DirLightSpaceMatricesUBO.FillBuffer(&lightMatrices[j], offset, sizeof(glm::mat4x4));
+                m_LightsUBO.FillBuffer(&lightMatrices[j], offset, sizeof(glm::mat4x4));
             }
 
             // shadow mapping
@@ -318,13 +271,13 @@ void RendererLayer::OnUpdate()
         m_Models.renderSceneGraphSimple(GL_TRIANGLES, ResourceManager::GetShader("debug_depth_cube_map"));
         m_Cubes.renderSceneGraphSimple(GL_TRIANGLES, ResourceManager::GetShader("debug_depth_cube_map"));
         m_Spheres.renderSceneGraphSimple(GL_TRIANGLE_STRIP, ResourceManager::GetShader("debug_depth_cube_map"));
-        // m_Planes.renderSceneGraphSimple(GL_TRIANGLES, ResourceManager::GetShader("debug_depth_cube_map"));
+        m_Planes.renderSceneGraphSimple(GL_TRIANGLES, ResourceManager::GetShader("debug_depth_cube_map"));
     }
     else {
-        m_Models.renderSceneGraph(GL_TRIANGLES, m_CamFrustum, display, total);
-        m_Cubes.renderSceneGraph(GL_TRIANGLES, m_CamFrustum, display, total);
-        m_Spheres.renderSceneGraph(GL_TRIANGLE_STRIP, m_CamFrustum, display, total);
-        // m_Planes.renderSceneGraph(GL_TRIANGLES, m_CamFrustum, display, total);
+        m_Models.renderSceneGraph(GL_TRIANGLES, m_CamFrustum, m_ObjectUBO, display, total);
+        m_Cubes.renderSceneGraph(GL_TRIANGLES, m_CamFrustum, m_ObjectUBO, display, total);
+        m_Spheres.renderSceneGraph(GL_TRIANGLE_STRIP, m_CamFrustum, m_ObjectUBO, display, total);
+        m_Planes.renderSceneGraph(GL_TRIANGLES, m_CamFrustum, m_ObjectUBO, display, total);
 
         // GL_TRACE("Total process in CPU : {0} / Total send to GPU : {1}", total, display);
 
@@ -340,7 +293,16 @@ void RendererLayer::OnUpdate()
         glBlendEquation(GL_FUNC_ADD);
         glClearBufferfv(GL_COLOR, 2, &glm::vec4(0.0f)[0]);
         glClearBufferfv(GL_COLOR, 3, &glm::vec4(1.0f)[0]);
-        m_Planes.renderSceneGraph(GL_TRIANGLES, m_CamFrustum, display, total);
+
+        if (m_UseSkybox) {
+            m_PBR->GetIrradiancemap().Bind(GL_TEXTURE_CUBE_MAP, 0);
+            m_PBR->GetPrefiltermap().Bind(GL_TEXTURE_CUBE_MAP, 1);
+            m_PBR->GetBRDFLUTTexture().Bind(GL_TEXTURE_2D, 2);
+        }
+        m_Models.renderSceneGraphTranslucent(GL_TRIANGLES, m_CamFrustum, m_ObjectUBO, display, total);
+        m_Cubes.renderSceneGraphTranslucent(GL_TRIANGLES, m_CamFrustum, m_ObjectUBO, display, total);
+        m_Spheres.renderSceneGraphTranslucent(GL_TRIANGLE_STRIP, m_CamFrustum, m_ObjectUBO, display, total);
+        m_Planes.renderSceneGraphTranslucent(GL_TRIANGLES, m_CamFrustum, m_ObjectUBO, display, total);
     }
 
     FrameBuffer::UnBind();
@@ -503,36 +465,150 @@ void RendererLayer::OnImGuiRender()
     ImGui::Separator();
     if (ImGui::CollapsingHeader("Lighting", base_flags)) {
         for (size_t i = 0; i < m_DirectionalLights.size(); i++) {
-            m_DirectionalLights[i]->RenderGUI(i);
+            m_DirectionalLights[i]->RenderGUI(i, m_LightsUBO);
         }
 
         for (size_t i = 0; i < m_PointLights.size(); i++) {
-            m_PointLights[i]->RenderGUI(i);
+            m_PointLights[i]->RenderGUI(i, m_LightsUBO);
         }
 
-        if (ImGui::Button("Add Directional Light")) {
-            DirectionalLight* dirLight = new DirectionalLight(this);
-            AddLight(dirLight);
+        if (ImGui::Button(" + ", ImVec2(0, 0))) {
+            ImGui::OpenPopup("New Light");
         }
-        if (ImGui::Button("Add Point Light")) {
-            PointLight* pointLight = new PointLight(this);
-            AddLight(pointLight);
+
+        // Always center this window when appearing
+        ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+        ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+
+        static const char* items[] = { "Directional", "Point" };
+        static int currentItem = 0;
+
+        if (ImGui::BeginPopupModal("New Light", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
+            ImGui::Separator();
+            ImGui::Text("Choose the type of light:");
+            ImGui::Separator();
+            ImGui::Combo("Light Type", &currentItem, items, IM_ARRAYSIZE(items));
+            ImGui::Separator();
+
+            if (ImGui::Button("Add")) {
+                DirectionalLight* dirLight = nullptr;
+                PointLight* pointLight = nullptr;
+
+                switch (currentItem) {
+                    case 0:
+                        dirLight = new DirectionalLight(this);
+                        AddLight(dirLight);
+                        break;
+                    case 1:
+                        pointLight = new PointLight(this);
+                        AddLight(pointLight);
+                        break;
+                }
+                ImGui::CloseCurrentPopup();
+            }
+
+            if (ImGui::Button("Cancel")) {
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::EndPopup();
         }
     }
 
     ImGui::Separator();
     if (ImGui::CollapsingHeader("3D Objects", base_flags)) {
         for (unsigned int i = 0; i < m_Planes.children.size(); i++) {
-            m_Planes.children[i].get()->renderGUI(i);
+            m_Planes.children[i].get()->renderGUI(i, m_ObjectUBO);
         }
         for (unsigned int i = 0; i < m_Models.children.size(); i++) {
-            m_Models.children[i].get()->renderGUI(i);
+            m_Models.children[i].get()->renderGUI(i, m_ObjectUBO);
         }
         for (unsigned int i = 0; i < m_Cubes.children.size(); i++) {
-            m_Cubes.children[i].get()->renderGUI(i);
+            m_Cubes.children[i].get()->renderGUI(i, m_ObjectUBO);
         }
         for (unsigned int i = 0; i < m_Spheres.children.size(); i++) {
-            m_Spheres.children[i].get()->renderGUI(i);
+            m_Spheres.children[i].get()->renderGUI(i, m_ObjectUBO);
+        }
+        if (ImGui::Button(" + ", ImVec2(0, 0))) {
+            ImGui::OpenPopup("New Object");
+        }
+
+        // Always center this window when appearing
+        ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+        ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+
+        static const char* items[] = { "Plane", "Cube", "Sphere", "Model" };
+        static int currentItem = 0;
+
+        if (ImGui::BeginPopupModal("New Object", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
+            ImGui::Separator();
+            ImGui::Text("Choose the type of object:");
+            ImGui::Separator();
+            ImGui::Combo("Object Type", &currentItem, items, IM_ARRAYSIZE(items));
+            ImGui::Separator();
+
+            if (currentItem == 3) {
+                if (ImGui::Button("Load Model...")) {
+                    // clang-format off
+                    ImGuiFileDialog::Instance()->OpenDialog(
+                        "ChooseFileDlgKey",
+                        "Choose File ",
+                        ".gltf,.obj",
+                        ".",
+                        1, nullptr, ImGuiFileDialogFlags_Modal);
+                    // clang-format on
+
+                    // Always center this window when appearing
+                    ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+                    ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+                }
+
+                // display
+                if (ImGuiFileDialog::Instance()->Display("ChooseFileDlgKey")) {
+                    // action if OK
+                    if (ImGuiFileDialog::Instance()->IsOk()) {
+                        std::string file = ImGuiFileDialog::Instance()->GetFilePathName();
+
+                        std::size_t pos = file.find("assets");
+
+                        if (pos != std::string::npos) {
+                            m_ModelFilePath = file.substr(pos);
+                        }
+                        ResourceManager::LoadModel(m_ModelFilePath.c_str(), "3d_model");
+                    }
+
+                    // close
+                    ImGuiFileDialog::Instance()->Close();
+                }
+
+                ImGui::Text("%s", m_ModelFilePath.c_str());
+            }
+
+            if (ImGui::Button("Add")) {
+                switch (currentItem) {
+                    case 0:
+                        AddPlane();
+                        break;
+                    case 1:
+                        AddCube();
+                        break;
+                    case 2:
+                        AddSphere();
+                        break;
+                    case 3:
+                        if (m_ModelFilePath == "None") {
+                            break;
+                        }
+                        AddModel();
+                        break;
+                }
+                ImGui::CloseCurrentPopup();
+            }
+
+            if (ImGui::Button("Cancel")) {
+                ImGui::CloseCurrentPopup();
+            }
+
+            ImGui::EndPopup();
         }
     }
 
@@ -541,16 +617,9 @@ void RendererLayer::OnImGuiRender()
         if (ImGui::TreeNodeEx("Use Skybox", base_flags)) {
             ImGui::SameLine();
             if (ImGuiLayer::ToggleButton(" ", &m_UseSkybox)) {
+                m_ObjectUBO.FillBuffer(&m_UseSkybox, 0, sizeof(float));
                 if (m_UseSkybox) {
-                    ResourceManager::GetShader("pbr_lighting").Use().SetInteger("object.useIBL", 1);
-                    ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger("object.useIBL", 1);
-                    ResourceManager::GetShader("pbr_lighting_textured_gltf").Use().SetInteger("object.useIBL", 1);
                     m_PBR->RenderSkyboxGUI();
-                }
-                else {
-                    ResourceManager::GetShader("pbr_lighting").Use().SetInteger("object.useIBL", 0);
-                    ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger("object.useIBL", 0);
-                    ResourceManager::GetShader("pbr_lighting_textured_gltf").Use().SetInteger("object.useIBL", 0);
                 }
             }
             ImGui::TreePop();
@@ -636,7 +705,9 @@ void RendererLayer::OnDetach()
     m_MultisampleFBO.Destroy();
 
     m_MatricesUBO.Destroy();
-    m_DirLightSpaceMatricesUBO.Destroy();
+    m_LightsUBO.Destroy();
+    m_CameraUBO.Destroy();
+    m_ObjectUBO.Destroy();
 
     for (size_t i = 0; i < m_DirectionalLights.size(); i++) {
         delete m_DirectionalLights[i];
@@ -670,84 +741,157 @@ void RendererLayer::RenderQuad(GLenum mode)
     m_RendererLibrary->GetQuadVBO().UnlinkAttrib(1);
 }
 
+void RendererLayer::AddPlane()
+{
+    m_Planes.addChild<Plane>(m_RendererLibrary->GetPlaneVBO(), m_RendererLibrary->GetPlaneVertices(), 48);
+    Entity* lastEntity = m_Planes.children.back().get();
+    lastEntity->transform.setLocalPosition(glm::vec3(0.0f, 2.0f, 0.0f));
+    lastEntity->transform.setLocalRotation(glm::vec3(0.0f, 0.0f, 0.0f));
+    lastEntity->transform.setLocalScale(glm::vec3(1.0f));
+    lastEntity->material.setAlbedo(glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+    lastEntity->material.setMetallic(1.0f);
+    lastEntity->material.setRoughness(1.0f);
+    lastEntity->material.setAO(1.0f);
+    lastEntity->material.setEmissive(0.0f);
+    lastEntity->material.fillMaterialBuffer(m_ObjectUBO, m_ObjectsID);
+    m_ObjectsID++;
+    lastEntity->material.setIsTextured(false);
+    lastEntity->material.setIsTranslucent(false);
+    lastEntity->material.setAlbedoTexture(ResourceManager::GetTexture("default_albedo"));
+    lastEntity->material.setNormalTexture(ResourceManager::GetTexture("default_normal"));
+    lastEntity->material.setMetallicTexture(ResourceManager::GetTexture("default_metallic"));
+    lastEntity->material.setRoughnessTexture(ResourceManager::GetTexture("default_roughness"));
+    lastEntity->material.setAOTexture(ResourceManager::GetTexture("default_ao"));
+    lastEntity->material.setEmissiveTexture(ResourceManager::GetTexture("default_emissive"));
+    ResourceManager::LoadShader("assets/shaders/pbrVS.glsl", "assets/shaders/pbrFS.glsl", nullptr, "pbr_lighting", { "MAX_DIR_LIGHTS 10", "MAX_POINT_LIGHTS 10", "MAX_OBJECTS 100" });
+    lastEntity->material.setShader(ResourceManager::GetShader("pbr_lighting"));
+}
+
+void RendererLayer::AddSphere()
+{
+    m_Spheres.addChild<Sphere>(m_RendererLibrary->GetSphereVBO(), &m_RendererLibrary->GetSphereVertices()[0], m_RendererLibrary->GetSphereVertices().size(), m_RendererLibrary->GetSphereEBO(), m_RendererLibrary->GetSphereIndicesCount());
+    Entity* lastEntity = m_Spheres.children.back().get();
+    lastEntity->transform.setLocalPosition(glm::vec3(0.0f, 2.0f, 0.0f));
+    lastEntity->transform.setLocalRotation(glm::vec3(0.0f, 0.0f, 0.0f));
+    lastEntity->transform.setLocalScale(glm::vec3(1.0f));
+    lastEntity->material.setAlbedo(glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+    lastEntity->material.setMetallic(1.0f);
+    lastEntity->material.setRoughness(1.0f);
+    lastEntity->material.setAO(1.0f);
+    lastEntity->material.setEmissive(0.0f);
+    lastEntity->material.fillMaterialBuffer(m_ObjectUBO, m_ObjectsID);
+    m_ObjectsID++;
+    lastEntity->material.setIsTextured(false);
+    lastEntity->material.setIsTranslucent(false);
+    lastEntity->material.setAlbedoTexture(ResourceManager::GetTexture("default_albedo"));
+    lastEntity->material.setNormalTexture(ResourceManager::GetTexture("default_normal"));
+    lastEntity->material.setMetallicTexture(ResourceManager::GetTexture("default_metallic"));
+    lastEntity->material.setRoughnessTexture(ResourceManager::GetTexture("default_roughness"));
+    lastEntity->material.setAOTexture(ResourceManager::GetTexture("default_ao"));
+    lastEntity->material.setEmissiveTexture(ResourceManager::GetTexture("default_emissive"));
+    ResourceManager::LoadShader("assets/shaders/pbrVS.glsl", "assets/shaders/pbrFS.glsl", nullptr, "pbr_lighting", { "MAX_DIR_LIGHTS 10", "MAX_POINT_LIGHTS 10", "MAX_OBJECTS 100" });
+    lastEntity->material.setShader(ResourceManager::GetShader("pbr_lighting"));
+}
+
+void RendererLayer::AddCube()
+{
+    m_Cubes.addChild<Cube>(m_RendererLibrary->GetCubeVBO(), m_RendererLibrary->GetCubeVertices(), 288);
+    Entity* lastEntity = m_Cubes.children.back().get();
+    lastEntity->transform.setLocalPosition(glm::vec3(0.0f, 2.0f, 0.0f));
+    lastEntity->transform.setLocalRotation(glm::vec3(0.0f, 0.0f, 0.0f));
+    lastEntity->transform.setLocalScale(glm::vec3(1.0f));
+    lastEntity->material.setAlbedo(glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+    lastEntity->material.setMetallic(1.0f);
+    lastEntity->material.setRoughness(1.0f);
+    lastEntity->material.setAO(1.0f);
+    lastEntity->material.setEmissive(0.0f);
+    lastEntity->material.fillMaterialBuffer(m_ObjectUBO, m_ObjectsID);
+    m_ObjectsID++;
+    lastEntity->material.setIsTextured(false);
+    lastEntity->material.setIsTranslucent(false);
+    lastEntity->material.setAlbedoTexture(ResourceManager::GetTexture("default_albedo"));
+    lastEntity->material.setNormalTexture(ResourceManager::GetTexture("default_normal"));
+    lastEntity->material.setMetallicTexture(ResourceManager::GetTexture("default_metallic"));
+    lastEntity->material.setRoughnessTexture(ResourceManager::GetTexture("default_roughness"));
+    lastEntity->material.setAOTexture(ResourceManager::GetTexture("default_ao"));
+    lastEntity->material.setEmissiveTexture(ResourceManager::GetTexture("default_emissive"));
+    ResourceManager::LoadShader("assets/shaders/pbrVS.glsl", "assets/shaders/pbrFS.glsl", nullptr, "pbr_lighting", { "MAX_DIR_LIGHTS 10", "MAX_POINT_LIGHTS 10", "MAX_OBJECTS 100" });
+    lastEntity->material.setShader(ResourceManager::GetShader("pbr_lighting"));
+}
+
+void RendererLayer::AddModel()
+{
+    m_Models.addChild<ModelEntity>(ResourceManager::GetModel("3d_model"));
+    Entity* lastEntity = m_Models.children.back().get();
+    lastEntity->transform.setLocalPosition(glm::vec3(0.0f, 0.0f, 0.0f));
+    lastEntity->transform.setLocalRotation(glm::vec3(0.0f, 0.0f, 0.0f));
+    lastEntity->transform.setLocalScale(glm::vec3(1.0f));
+    lastEntity->material.setAlbedo(glm::vec4(1.0f));
+    lastEntity->material.setMetallic(1.0f);
+    lastEntity->material.setRoughness(1.0f);
+    lastEntity->material.setAO(0.20f);
+    lastEntity->material.setEmissive(0.0f);
+    lastEntity->material.fillMaterialBuffer(m_ObjectUBO, m_ObjectsID);
+    m_ObjectsID++;
+    lastEntity->material.setIsTextured(true);
+    lastEntity->material.setIsTranslucent(false);
+    lastEntity->material.setAlbedoTexture(ResourceManager::GetTexture("default_albedo"));
+    lastEntity->material.setNormalTexture(ResourceManager::GetTexture("default_normal"));
+    lastEntity->material.setMetallicTexture(ResourceManager::GetTexture("default_metallic"));
+    lastEntity->material.setRoughnessTexture(ResourceManager::GetTexture("default_roughness"));
+    lastEntity->material.setAOTexture(ResourceManager::GetTexture("default_ao"));
+    lastEntity->material.setEmissiveTexture(ResourceManager::GetTexture("default_emissive"));
+    lastEntity->isGLTF = true;
+    ResourceManager::LoadShader("assets/shaders/pbrVS.glsl", "assets/shaders/pbrFS.glsl", nullptr, "pbr_lighting", { "TEXTURED", "GLTF", "MAX_DIR_LIGHTS 10", "MAX_POINT_LIGHTS 10", "MAX_OBJECTS 100" });
+    lastEntity->material.setShader(ResourceManager::GetShader("pbr_lighting"));
+}
+
 void RendererLayer::AddLight(DirectionalLight* light)
 {
     m_DirectionalLights.push_back(light);
-    ResourceManager::GetShader("pbr_lighting").Use().SetInteger("nrDirLights", m_DirectionalLights.size());
+    light->InitLightUBO(m_LightsUBO);
+    for (size_t i = 0; i < m_DirectionalLights.size(); i++) {
+        int dirLightOffset = sizeof(glm::mat4x4) * 16 * DirectionalLight::MAX_LIGHTS + sizeof(glm::vec4) + i * 2 * sizeof(glm::vec4);
+        glm::vec3 lightColor = m_DirectionalLights[i]->GetColor() * m_DirectionalLights[i]->GetIntensity();
 
-    ResourceManager::GetShader("pbr_lighting").Use().SetVector3f(("dirLights[" + std::to_string(m_DirectionalLights.size()-1) + "].direction").c_str(), light->GetDirection());
-    ResourceManager::GetShader("pbr_lighting").Use().SetVector3f(("dirLights[" + std::to_string(m_DirectionalLights.size()-1) + "].color").c_str(), light->GetColor() * light->GetIntensity());
-    ResourceManager::GetShader("pbr_lighting").Use().SetInteger(("dirLights[" + std::to_string(m_DirectionalLights.size()-1) + "].shadows").c_str(), light->GetCastShadows());
-
-    ResourceManager::GetShader("pbr_lighting").Use().SetFloat("far_plane", m_Camera.GetFarPlane());
-    ResourceManager::GetShader("pbr_lighting").Use().SetInteger("cascadeCount", light->GetShadowCascadeLevels().size());
-    for (size_t i = 0; i < light->GetShadowCascadeLevels().size(); i++) {
-        ResourceManager::GetShader("pbr_lighting").Use().SetFloat(("cascadePlaneDistances[" + std::to_string(i) + "]").c_str(), light->GetShadowCascadeLevels()[i]);
+        m_LightsUBO.FillBuffer(&m_DirectionalLights[i]->GetDirection(), dirLightOffset, sizeof(glm::vec4));
+        m_LightsUBO.FillBuffer(&lightColor, dirLightOffset + sizeof(glm::vec4), sizeof(glm::vec3));
+        int castShadows = m_DirectionalLights[i]->GetCastShadows();
+        m_LightsUBO.FillBuffer(&castShadows, dirLightOffset + sizeof(glm::vec4) + sizeof(glm::vec3), sizeof(float));
     }
-
-    ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger("nrDirLights", m_DirectionalLights.size());
-
-    ResourceManager::GetShader("pbr_lighting_textured").Use().SetVector3f(("dirLights[" + std::to_string(m_DirectionalLights.size()-1) + "].direction").c_str(), light->GetDirection());
-    ResourceManager::GetShader("pbr_lighting_textured").Use().SetVector3f(("dirLights[" + std::to_string(m_DirectionalLights.size()-1) + "].color").c_str(), light->GetColor() * light->GetIntensity());
-    ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger(("dirLights[" + std::to_string(m_DirectionalLights.size()-1) + "].shadows").c_str(), light->GetCastShadows());
-
-    ResourceManager::GetShader("pbr_lighting_textured").Use().SetFloat("far_plane", m_Camera.GetFarPlane());
-    ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger("cascadeCount", light->GetShadowCascadeLevels().size());
-    for (size_t i = 0; i < light->GetShadowCascadeLevels().size(); i++) {
-        ResourceManager::GetShader("pbr_lighting_textured").Use().SetFloat(("cascadePlaneDistances[" + std::to_string(i) + "]").c_str(), light->GetShadowCascadeLevels()[i]);
-    }
-
-    ResourceManager::GetShader("pbr_lighting_textured_gltf").Use().SetInteger("nrDirLights", m_DirectionalLights.size());
-
-    ResourceManager::GetShader("pbr_lighting_textured_gltf").Use().SetVector3f(("dirLights[" + std::to_string(m_DirectionalLights.size()-1) + "].direction").c_str(), light->GetDirection());
-    ResourceManager::GetShader("pbr_lighting_textured_gltf").Use().SetVector3f(("dirLights[" + std::to_string(m_DirectionalLights.size()-1) + "].color").c_str(), light->GetColor() * light->GetIntensity());
-    ResourceManager::GetShader("pbr_lighting_textured_gltf").Use().SetInteger(("dirLights[" + std::to_string(m_DirectionalLights.size()-1) + "].shadows").c_str(), light->GetCastShadows());
-
-    ResourceManager::GetShader("pbr_lighting_textured_gltf").Use().SetFloat("far_plane", m_Camera.GetFarPlane());
-    ResourceManager::GetShader("pbr_lighting_textured_gltf").Use().SetInteger("cascadeCount", light->GetShadowCascadeLevels().size());
-    for (size_t i = 0; i < light->GetShadowCascadeLevels().size(); i++) {
-        ResourceManager::GetShader("pbr_lighting_textured_gltf").Use().SetFloat(("cascadePlaneDistances[" + std::to_string(i) + "]").c_str(), light->GetShadowCascadeLevels()[i]);
-    }
+    int lightsOffset = sizeof(glm::mat4x4) * 16 * DirectionalLight::MAX_LIGHTS + sizeof(glm::vec4) + 2 * sizeof(glm::vec4) * DirectionalLight::MAX_LIGHTS + 2 * sizeof(glm::vec4) * PointLight::MAX_LIGHTS;
+    size_t dirLightsSize = m_DirectionalLights.size();
+    m_LightsUBO.FillBuffer(&dirLightsSize, lightsOffset, sizeof(float));
 }
 
 void RendererLayer::RemoveLight(DirectionalLight* light)
 {
     m_DirectionalLights.erase(std::remove(m_DirectionalLights.begin(), m_DirectionalLights.end(), light), m_DirectionalLights.end());
-
-    ResourceManager::GetShader("pbr_lighting").Use().SetInteger("nrDirLights", m_DirectionalLights.size());
-    ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger("nrDirLights", m_DirectionalLights.size());
-    ResourceManager::GetShader("pbr_lighting_textured_gltf").Use().SetInteger("nrDirLights", m_DirectionalLights.size());
+    int lightsOffset = sizeof(glm::mat4x4) * 16 * DirectionalLight::MAX_LIGHTS + sizeof(glm::vec4) + 2 * sizeof(glm::vec4) * DirectionalLight::MAX_LIGHTS + 2 * sizeof(glm::vec4) * PointLight::MAX_LIGHTS;
+    size_t dirLightsSize = m_DirectionalLights.size();
+    m_LightsUBO.FillBuffer(&dirLightsSize, lightsOffset, sizeof(float));
 }
 
 void RendererLayer::AddLight(PointLight* light)
 {
     m_PointLights.push_back(light);
-    ResourceManager::GetShader("pbr_lighting").Use().SetInteger("nrPointLights", m_PointLights.size());
+    for (size_t i = 0; i < m_PointLights.size(); i++) {
+        int pointLightOffset = sizeof(glm::mat4x4) * 16 * DirectionalLight::MAX_LIGHTS + sizeof(glm::vec4) + 2 * sizeof(glm::vec4) * DirectionalLight::MAX_LIGHTS + i * 2 * sizeof(glm::vec4);
+        glm::vec3 lightColor = m_PointLights[i]->GetColor() * m_PointLights[i]->GetIntensity();
 
-    ResourceManager::GetShader("pbr_lighting").Use().SetVector3f(("pointLights[" + std::to_string(m_PointLights.size()-1) + "].position").c_str(), light->GetPosition());
-    ResourceManager::GetShader("pbr_lighting").Use().SetVector3f(("pointLights[" + std::to_string(m_PointLights.size()-1) + "].color").c_str(), light->GetColor() * light->GetIntensity());
-    ResourceManager::GetShader("pbr_lighting").Use().SetInteger(("pointLights[" + std::to_string(m_PointLights.size()-1) + "].shadows").c_str(), light->GetCastShadows());
-
-    ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger("nrPointLights", m_PointLights.size());
-
-    ResourceManager::GetShader("pbr_lighting_textured").Use().SetVector3f(("pointLights[" + std::to_string(m_PointLights.size()-1) + "].position").c_str(), light->GetPosition());
-    ResourceManager::GetShader("pbr_lighting_textured").Use().SetVector3f(("pointLights[" + std::to_string(m_PointLights.size()-1) + "].color").c_str(), light->GetColor() * light->GetIntensity());
-    ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger(("pointLights[" + std::to_string(m_PointLights.size()-1) + "].shadows").c_str(), light->GetCastShadows());
-
-    ResourceManager::GetShader("pbr_lighting_textured_gltf").Use().SetInteger("nrPointLights", m_PointLights.size());
-
-    ResourceManager::GetShader("pbr_lighting_textured_gltf").Use().SetVector3f(("pointLights[" + std::to_string(m_PointLights.size()-1) + "].position").c_str(), light->GetPosition());
-    ResourceManager::GetShader("pbr_lighting_textured_gltf").Use().SetVector3f(("pointLights[" + std::to_string(m_PointLights.size()-1) + "].color").c_str(), light->GetColor() * light->GetIntensity());
-    ResourceManager::GetShader("pbr_lighting_textured_gltf").Use().SetInteger(("pointLights[" + std::to_string(m_PointLights.size()-1) + "].shadows").c_str(), light->GetCastShadows());
+        m_LightsUBO.FillBuffer(&m_PointLights[i]->GetPosition(), pointLightOffset, sizeof(glm::vec4));
+        m_LightsUBO.FillBuffer(&lightColor, pointLightOffset + sizeof(glm::vec4), sizeof(glm::vec3));
+        int castShadows = m_PointLights[i]->GetCastShadows();
+        m_LightsUBO.FillBuffer(&castShadows, pointLightOffset + sizeof(glm::vec4) + sizeof(glm::vec3), sizeof(float));
+    }
+    int lightsOffset = sizeof(glm::mat4x4) * 16 * DirectionalLight::MAX_LIGHTS + sizeof(glm::vec4) + 2 * sizeof(glm::vec4) * DirectionalLight::MAX_LIGHTS + 2 * sizeof(glm::vec4) * PointLight::MAX_LIGHTS;
+    size_t pointLightsSize = m_PointLights.size();
+    m_LightsUBO.FillBuffer(&pointLightsSize, lightsOffset + sizeof(float), sizeof(float));
 
     ResourceManager::GetShader("debug_depth_cube_map").Use().SetInteger("nrPointLights", m_PointLights.size());
     ResourceManager::GetShader("debug_depth_cube_map").Use().SetVector3f(("pointLights[" + std::to_string(m_PointLights.size()-1) + "].position").c_str(), light->GetPosition());
     ResourceManager::GetShader("debug_depth_cube_map").Use().SetFloat("far_plane", m_Camera.GetFarPlane());
     ResourceManager::GetShader("depth_cube_map").Use().SetFloat("far_plane", m_Camera.GetFarPlane());
-
-    ResourceManager::GetShader("pbr_lighting").Use().SetFloat("far_plane", m_Camera.GetFarPlane());
-    ResourceManager::GetShader("pbr_lighting_textured").Use().SetFloat("far_plane", m_Camera.GetFarPlane());
-    ResourceManager::GetShader("pbr_lighting_textured_gltf").Use().SetFloat("far_plane", m_Camera.GetFarPlane());
 
     light->PointLightProjectionMatrix(m_Camera.GetNearPlane(), m_Camera.GetFarPlane());
 }
@@ -755,8 +899,7 @@ void RendererLayer::AddLight(PointLight* light)
 void RendererLayer::RemoveLight(PointLight* light)
 {
     m_PointLights.erase(std::remove(m_PointLights.begin(), m_PointLights.end(), light), m_PointLights.end());
-
-    ResourceManager::GetShader("pbr_lighting").Use().SetInteger("nrPointLights", m_PointLights.size());
-    ResourceManager::GetShader("pbr_lighting_textured").Use().SetInteger("nrPointLights", m_PointLights.size());
-    ResourceManager::GetShader("pbr_lighting_textured_gltf").Use().SetInteger("nrPointLights", m_PointLights.size());
+    int lightsOffset = sizeof(glm::mat4x4) * 16 * DirectionalLight::MAX_LIGHTS + sizeof(glm::vec4) + 2 * sizeof(glm::vec4) * DirectionalLight::MAX_LIGHTS + 2 * sizeof(glm::vec4) * PointLight::MAX_LIGHTS;
+    size_t pointLightsSize = m_PointLights.size();
+    m_LightsUBO.FillBuffer(&pointLightsSize, lightsOffset + sizeof(float), sizeof(float));
 }

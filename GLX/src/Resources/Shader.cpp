@@ -12,19 +12,69 @@ Shader &Shader::Use()
     return *this;
 }
 
-void Shader::Compile(const char *vertexSource, const char *fragmentSource, const char *geometrySource)
+void Shader::Compile(const char *vertexSource, const char *fragmentSource, const char *geometrySource, const std::vector<std::string> &defines)
 {
     unsigned int sVertex, sFragment, gShader;
-    // vertex Shader
     sVertex = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(sVertex, 1, &vertexSource, NULL);
+    sFragment = glCreateShader(GL_FRAGMENT_SHADER);
+    this->ID = glCreateProgram();
+
+    if (defines.size() > 0) {
+        std::vector<std::string> vsMergedCode;
+        std::vector<std::string> fsMergedCode;
+        std::string vsCode = vertexSource;
+        std::string fsCode = fragmentSource;
+        // first determine if the user supplied a #version  directive at the top of the shader 
+        // code, in which case we  extract it and add it 'before' the list of define code.
+        // the GLSL version specifier is only valid as the first line of the GLSL code; 
+        // otherwise the GLSL version defaults to 1.1.
+        std::string firstLine = vsCode.substr(0, vsCode.find("\n"));
+        if (firstLine.find("#version") != std::string::npos)
+        {
+            // strip shader code of first line and add to list of shader code strings.
+            vsCode = vsCode.substr(vsCode.find("\n") + 1, vsCode.length() - 1);
+            vsMergedCode.push_back(firstLine + "\n");
+        }
+        firstLine = fsCode.substr(0, fsCode.find("\n"));
+        if (firstLine.find("#version") != std::string::npos)
+        {
+            // strip shader code of first line and add to list of shader code strings.
+            fsCode = fsCode.substr(fsCode.find("\n") + 1, fsCode.length() - 1);
+            fsMergedCode.push_back(firstLine + "\n");
+        }
+        // then add define statements to the shader string list.
+        for (unsigned int i = 0; i < defines.size(); ++i)
+        {
+            std::string define = "#define " + defines[i] + "\n";
+            vsMergedCode.push_back(define);
+            fsMergedCode.push_back(define);
+        }
+        // then addremaining shader code to merged result and pass result to glShaderSource.
+        vsMergedCode.push_back(vsCode);
+        fsMergedCode.push_back(fsCode);
+        // note that we manually build an array of C style  strings as glShaderSource doesn't 
+        // expect it in any other format.
+        // all strings are null-terminated so pass NULL as glShaderSource's final argument.
+        const char **vsStringsC = new const char*[vsMergedCode.size()];
+        const char **fsStringsC = new const char*[fsMergedCode.size()];
+        for (unsigned int i = 0; i < vsMergedCode.size(); ++i)
+            vsStringsC[i] = vsMergedCode[i].c_str();
+        for (unsigned int i = 0; i < fsMergedCode.size(); ++i)
+            fsStringsC[i] = fsMergedCode[i].c_str();
+        glShaderSource(sVertex, vsMergedCode.size(), vsStringsC, NULL);
+        glShaderSource(sFragment, fsMergedCode.size(), fsStringsC, NULL);
+        delete[] vsStringsC;
+        delete[] fsStringsC;
+    }
+    else {
+        glShaderSource(sVertex, 1, &vertexSource, NULL);
+        glShaderSource(sFragment, 1, &fragmentSource, NULL);
+    }
     glCompileShader(sVertex);
     checkCompileErrors(sVertex, "VERTEX");
-    // fragment Shader
-    sFragment = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(sFragment, 1, &fragmentSource, NULL);
     glCompileShader(sFragment);
     checkCompileErrors(sFragment, "FRAGMENT");
+
     // if geometry shader source code is given, also compile geometry shader
     if (geometrySource != nullptr)
     {
@@ -33,8 +83,7 @@ void Shader::Compile(const char *vertexSource, const char *fragmentSource, const
         glCompileShader(gShader);
         checkCompileErrors(gShader, "GEOMETRY");
     }
-    // shader program
-    this->ID = glCreateProgram();
+
     glAttachShader(this->ID, sVertex);
     glAttachShader(this->ID, sFragment);
     if (geometrySource != nullptr)

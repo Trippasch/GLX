@@ -62,10 +62,18 @@ public:
     void RenderCube(GLenum mode);
     void RenderQuad(GLenum mode);
 
+    void AddPlane();
+    void AddCube();
+    void AddSphere();
+    void AddModel();
+
     void AddLight(DirectionalLight* light);
     void AddLight(PointLight* light);
     void RemoveLight(DirectionalLight* light);
     void RemoveLight(PointLight* light);
+
+    std::vector<DirectionalLight*>& GetDirectionalLights() { return m_DirectionalLights; }
+    std::vector<PointLight*>& GetPointLights() { return m_PointLights; }
 
 private:
     GLFWwindow* m_Window;
@@ -85,7 +93,6 @@ private:
     PBR* m_PBR;
 
     // Lights
-    static const GLuint MAX_DIRECTIONAL_LIGHTS = 10;
     std::vector<DirectionalLight*> m_DirectionalLights;
     std::vector<PointLight*> m_PointLights;
 
@@ -99,13 +106,17 @@ private:
 
     // UniformBuffers
     UniformBuffer m_MatricesUBO;
-    UniformBuffer m_DirLightSpaceMatricesUBO;
+    UniformBuffer m_LightsUBO;
+    UniformBuffer m_CameraUBO;
+    UniformBuffer m_ObjectUBO;
 
     // Mesh Entities
     Plane m_Planes;
     Cube m_Cubes;
     Sphere m_Spheres;
     ModelEntity m_Models;
+    int m_ObjectsID = 0;
+    std::string m_ModelFilePath = "None";
 
     // Skybox Properties
     bool m_UseSkybox = true;

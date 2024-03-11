@@ -56,12 +56,12 @@ public:
         }
     }
 
-    void drawSelfAndChild(GLenum& mode, const Frustum& frustum, unsigned int& display, unsigned int& total) override
+    void drawSelfAndChildTranslucent(GLenum& mode, const Frustum& frustum, UniformBuffer& objectUBO, unsigned int& display, unsigned int& total) override
     {
         if (!children.empty()) {
             total++;
             for (auto&& child : children) {
-                child->drawSelfAndChild(mode, frustum, display, total);
+                child->drawSelfAndChildTranslucent(mode, frustum, objectUBO, display, total);
             }
         }
         else if (pVBO != nullptr && boundingVolume->isOnFrustum(frustum, transform)) {
@@ -73,11 +73,7 @@ public:
                 material.getAOTexture().Bind(GL_TEXTURE_2D, 7);
             }
             material.getEmissiveTexture().Bind(GL_TEXTURE_2D, 8);
-            material.getShader().Use().SetVector4f("material.albedo", material.getAlbedo());
-            material.getShader().Use().SetFloat("material.metallic", material.getMetallic());
-            material.getShader().Use().SetFloat("material.roughness", material.getRoughness());
-            material.getShader().Use().SetFloat("material.ao", material.getAO());
-            material.getShader().Use().SetFloat("material.emissive", material.getEmissive());
+            objectUBO.FillBuffer(&material.getObjectID(), sizeof(float), sizeof(float));
             material.getShader().Use().SetMatrix4(1, transform.getModelMatrix());
             pVBO->LinkAttrib(0, 3, GL_FLOAT, 8 * sizeof(float), (void*)0);
             pVBO->LinkAttrib(1, 3, GL_FLOAT, 8 * sizeof(float), (void*)(3 * sizeof(float)));
@@ -95,20 +91,67 @@ public:
         }
     }
 
-    void renderGUI(int i) override
+    void drawSelfAndChild(GLenum& mode, const Frustum& frustum, UniformBuffer& objectUBO, unsigned int& display, unsigned int& total) override
+    {
+        if (!children.empty()) {
+            total++;
+            for (auto&& child : children) {
+                child->drawSelfAndChild(mode, frustum, objectUBO, display, total);
+            }
+        }
+        else if (pVBO != nullptr && boundingVolume->isOnFrustum(frustum, transform)) {
+            if (material.getIsTranslucent()) {
+                return;
+            }
+            if (material.getIsTextured()) {
+                material.getAlbedoTexture().Bind(GL_TEXTURE_2D, 3);
+                material.getNormalTexture().Bind(GL_TEXTURE_2D, 4);
+                material.getMetallicTexture().Bind(GL_TEXTURE_2D, 5);
+                material.getRoughnessTexture().Bind(GL_TEXTURE_2D, 6);
+                material.getAOTexture().Bind(GL_TEXTURE_2D, 7);
+            }
+            material.getEmissiveTexture().Bind(GL_TEXTURE_2D, 8);
+            objectUBO.FillBuffer(&material.getObjectID(), sizeof(float), sizeof(float));
+            material.getShader().Use().SetMatrix4(1, transform.getModelMatrix());
+            pVBO->LinkAttrib(0, 3, GL_FLOAT, 8 * sizeof(float), (void*)0);
+            pVBO->LinkAttrib(1, 3, GL_FLOAT, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+            pVBO->LinkAttrib(2, 2, GL_FLOAT, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+            glDrawArrays(mode, 0, 36);
+            pVBO->UnlinkAttrib(0);
+            pVBO->UnlinkAttrib(1);
+            pVBO->UnlinkAttrib(2);
+
+            if (drawAABB) {
+                boundingVolume.get()->drawAABB(transform.getModelMatrix());
+            }
+
+            display++;
+        }
+    }
+
+    void renderGUI(int i, UniformBuffer& objectUBO) override
     {
         if (ImGui::TreeNodeEx(("Cube " + std::to_string(i)).c_str())) {
             transform.renderTransformGUI();
-            material.renderMaterialGUI();
-            if (ImGui::Checkbox("Textured", &material.getIsTextured())) {
-                if (material.getIsTextured()) {
-                    material.setShader(ResourceManager::GetShader("pbr_lighting_textured"));
-                }
-                else {
-                    material.setShader(ResourceManager::GetShader("pbr_lighting"));
-                }
+            material.renderMaterialGUI(objectUBO);
+            ImGui::Checkbox("Textured", &material.getIsTextured());
+            ImGui::Checkbox("Translucent", &material.getIsTranslucent());
+
+            std::vector<std::string> defines = { "MAX_DIR_LIGHTS 10", "MAX_POINT_LIGHTS 10", "MAX_OBJECTS 100" };
+            if (material.getIsTextured()) {
+                defines.push_back("TEXTURED");
             }
+            if (material.getIsTranslucent()) {
+                defines.push_back("TRANSLUCENT");
+            }
+            ResourceManager::LoadShader("assets/shaders/pbrVS.glsl", "assets/shaders/pbrFS.glsl", nullptr, "pbr_lighting", defines);
+            material.setShader(ResourceManager::GetShader("pbr_lighting"));
+
             ImGui::Checkbox("Draw AABB", &drawAABB);
+            if (ImGui::Button("Remove Cube", ImVec2(0, 0))) {
+                parent->children.erase(parent->children.begin() + i);
+            }
+
             ImGui::TreePop();
         }
     }

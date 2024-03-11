@@ -26,10 +26,13 @@ private:
     FrameBuffer m_DepthMapFBO;
 
 public:
+    static const GLuint MAX_LIGHTS = 10;
+
     DirectionalLight(RendererLayer* renderer);
     ~DirectionalLight();
 
-    void RenderGUI(int i);
+    void InitLightUBO(UniformBuffer& lightsUBO);
+    void RenderGUI(int i, UniformBuffer& lightsUBO);
     void RenderDepthMapQuad();
     void RenderDebugGUI();
 

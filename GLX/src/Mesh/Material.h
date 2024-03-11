@@ -2,6 +2,7 @@
 
 #include "Resources/Shader.h"
 #include "Resources/Texture2D.h"
+#include "Resources/UniformBuffer.h"
 
 #include <glm/glm.hpp>
 
@@ -14,6 +15,8 @@ protected:
     float m_AO = 1.0f;
     float m_Emissive = 0.0f;
     bool m_IsTextured = false;
+    bool m_IsTranslucent = false;
+    int m_ObjectID = 0;
     Shader m_Shader;
     Texture2D m_AlbedoTexture;
     Texture2D m_NormalTexture;
@@ -23,26 +26,45 @@ protected:
     Texture2D m_EmissiveTexture;
 
 public:
-    void renderMaterialGUI()
+    static const GLuint MAX_OBJECTS = 100;
+
+    void renderMaterialGUI(UniformBuffer& objectUBO)
     {
         if (ImGui::TreeNodeEx("Material")) {
+            int materialOffset = sizeof(glm::vec4) + getObjectID() * 2 * sizeof(glm::vec4);
             if (ImGui::ColorEdit4("Albedo", (float*)&getAlbedo())) {
                 setAlbedo(getAlbedo());
+                objectUBO.FillBuffer(&getAlbedo(), materialOffset, sizeof(glm::vec4));
             }
             if (ImGui::SliderFloat("Metallic", (float*)&getMetallic(), 0.0f, 1.0f, "%.2f")) {
                 setMetallic(getMetallic());
+                objectUBO.FillBuffer(&getMetallic(), materialOffset + sizeof(glm::vec4), sizeof(float));
             }
             if (ImGui::SliderFloat("Roughness", (float*)&getRoughness(), 0.0f, 1.0f, "%.2f")) {
                 setRoughness(getRoughness());
+                objectUBO.FillBuffer(&getRoughness(), materialOffset + sizeof(glm::vec4) + sizeof(float), sizeof(float));
             }
             if (ImGui::SliderFloat("AO", (float*)&getAO(), 0.0f, 1.0f, "%.2f")) {
                 setAO(getAO());
+                objectUBO.FillBuffer(&getAO(), materialOffset + sizeof(glm::vec4) + 2*sizeof(float), sizeof(float));
             }
             if (ImGui::DragFloat("Emissive", (float*)&getEmissive(), 0.01f, 0.0f, FLT_MAX, "%.2f")) {
                 setEmissive(getEmissive());
+                objectUBO.FillBuffer(&getEmissive(), materialOffset + sizeof(glm::vec4) + 3*sizeof(float), sizeof(float));
             }
             ImGui::TreePop();
         }
+    }
+
+    void fillMaterialBuffer(UniformBuffer& objectUBO, int objectID)
+    {
+        setObjectID(objectID);
+        int materialOffset = sizeof(glm::vec4) + objectID * 2 * sizeof(glm::vec4);
+        objectUBO.FillBuffer(&getAlbedo(), materialOffset, sizeof(glm::vec4));
+        objectUBO.FillBuffer(&getMetallic(), materialOffset + sizeof(glm::vec4), sizeof(float));
+        objectUBO.FillBuffer(&getRoughness(), materialOffset + sizeof(glm::vec4) + sizeof(float), sizeof(float));
+        objectUBO.FillBuffer(&getAO(), materialOffset + sizeof(glm::vec4) + 2*sizeof(float), sizeof(float));
+        objectUBO.FillBuffer(&getEmissive(), materialOffset + sizeof(glm::vec4) + 3*sizeof(float), sizeof(float));
     }
 
     const glm::vec4& getAlbedo() const
@@ -68,6 +90,14 @@ public:
     bool& getIsTextured()
     {
         return m_IsTextured;
+    }
+    bool& getIsTranslucent()
+    {
+        return m_IsTranslucent;
+    }
+    int& getObjectID()
+    {
+        return m_ObjectID;
     }
     Shader& getShader()
     {
@@ -121,6 +151,14 @@ public:
     void setIsTextured(const bool& newIsTextured)
     {
         m_IsTextured = newIsTextured;
+    }
+    void setIsTranslucent(const bool& newIsTranslucent)
+    {
+        m_IsTranslucent = newIsTranslucent;
+    }
+    void setObjectID(const int& newObjectID)
+    {
+        m_ObjectID = newObjectID;
     }
     void setShader(const Shader& newShader)
     {

@@ -3,18 +3,14 @@
 #extension GL_ARB_shading_language_420pack : enable
 
 #define M_PI 3.14159265358979323846
-#define TRANSLUCENCY
 
-#ifdef TRANSLUCENCY
+#ifdef TRANSLUCENT
 layout (location = 2) out vec4 AccumColor;
 layout (location = 3) out float RevealColor;
 #else
 layout (location = 0) out vec4 FragColor;
 layout (location = 1) out vec4 BrightColor;
 #endif
-
-#define MAX_DIR_LIGHTS 10
-#define MAX_POINT_LIGHTS 10
 
 in VS_OUT
 {
@@ -28,18 +24,50 @@ layout (binding = 0) uniform samplerCube irradianceMap;
 layout (binding = 1) uniform samplerCube prefilterMap;
 layout (binding = 2) uniform sampler2D brdfLUT;
 
+layout (binding = 3) uniform sampler2D albedoMap;
+layout (binding = 4) uniform sampler2D normalMap;
+layout (binding = 5) uniform sampler2D metallicMap;
+layout (binding = 6) uniform sampler2D roughnessMap;
+layout (binding = 7) uniform sampler2D aoMap;
+
 layout (binding = 8) uniform sampler2D emissiveMap;
 
 // shadows
 layout (binding = 9) uniform sampler2DArray depthMaps[MAX_DIR_LIGHTS];
 layout (binding = 19) uniform samplerCube depthCubeMaps[MAX_POINT_LIGHTS];
 
-layout (std140, binding = 1) uniform LightSpaceMatrices
-{
-    mat4 lightSpaceMatrices[16 * MAX_DIR_LIGHTS];
+// directional light
+struct DirLight {
+    vec3 direction; // 12 bytes + 4 bytes padding
+    vec3 color; // 12 bytes
+    bool shadows; // 4 bytes
 };
-uniform float cascadePlaneDistances[16];
-uniform int cascadeCount;
+
+// point ligth
+struct PointLight {
+    vec3 position; // 12 bytes + 4 bytes padding
+    vec3 color; // 12 bytes
+    bool shadows; // 4 bytes
+};
+
+layout (std140, binding = 1) uniform Lights
+{
+    mat4 lightSpaceMatrices[16 * MAX_DIR_LIGHTS]; // 16 * 16 * 4 * MAX_DIR_LIGHTS
+    // float cascadePlaneDistances[16]; // 16 * 16 = 256 bytes
+    vec4 cascadePlaneDistances; // 16 bytes
+    DirLight dirLights[MAX_DIR_LIGHTS]; // 2 * 16 * MAX_DIR_LIGHTS
+    PointLight pointLights[MAX_POINT_LIGHTS]; // 2 * 16 * MAX_POINT_LIGHTS
+    int nrDirLights; // 4 bytes
+    int nrPointLights; // 4 bytes
+    int cascadeCount; // 4 bytes + 4 bytes padding
+};
+
+layout (std140, binding = 2) uniform Camera
+{
+    mat4 camView;
+    vec3 camPos;
+    float far_plane;
+};
 
 // material parameters
 struct Material {
@@ -48,40 +76,37 @@ struct Material {
     float roughness;
     float ao;
     float emissive;
+}; // 16 + 16 = 32 bytes
+
+struct ObjectProperties {
+    bool useIBL; // 4 bytes
+    int objectID; // 4 bytes
 };
-uniform Material material;
 
-uniform int nrDirLights;
-uniform int nrPointLights;
-
-// directional light
-struct DirLight {
-    bool shadows;
-    vec3 direction;
-    vec3 color;
+layout (std140, binding = 3) uniform Object
+{
+    ObjectProperties properties; // 8 bytes, padded to 16 bytes
+    Material materials[MAX_OBJECTS]; // 32 bytes * MAX_OBJECTS
 };
-uniform DirLight dirLights[MAX_DIR_LIGHTS];
-uniform DirLight dirLight;
-
-// point ligth
-struct PointLight {
-    bool shadows;
-    vec3 position;
-    vec3 color;
-};
-uniform PointLight pointLights[MAX_POINT_LIGHTS];
-uniform PointLight pointLight;
-
-uniform vec3 camPos;
-uniform mat4 camView;
-uniform float far_plane;
-
-struct Object {
-    bool useIBL;
-};
-uniform Object object;
 
 const float gamma = 2.2;
+
+vec3 getNormalFromMap()
+{
+    vec3 tangentNormal = texture(normalMap, fs_in.TexCoords).xyz * 2.0 - 1.0;
+
+    vec3 Q1  = dFdx(fs_in.WorldPos);
+    vec3 Q2  = dFdy(fs_in.WorldPos);
+    vec2 st1 = dFdx(fs_in.TexCoords);
+    vec2 st2 = dFdy(fs_in.TexCoords);
+
+    vec3 N   = normalize(fs_in.Normal);
+    vec3 T  = normalize(Q1*st2.t - Q2*st1.t);
+    vec3 B  = -normalize(cross(N, T));
+    mat3 TBN = mat3(T, B, N);
+
+    return normalize(TBN * tangentNormal);
+}
 
 float DistributionGGX(vec3 N, vec3 H, float roughness)
 {
@@ -281,7 +306,7 @@ vec3 CalcDirLight(vec3 N, vec3 V, vec3 R, vec3 F0, vec3 albedo, float metallic, 
     }
 
     vec3 ambient = vec3(0.0);
-    if (object.useIBL) {
+    if (properties.useIBL) {
         // ambien lighting (we now use IBL as the ambient term)
         vec3 F = FresnelSchlickRoughness(max(dot(N, V), 0.0), F0, roughness);
 
@@ -354,7 +379,7 @@ vec3 CalcPointLight(vec3 N, vec3 V, vec3 R, vec3 F0, vec3 albedo, float metallic
     }
 
     vec3 ambient = vec3(0.0);
-    if (object.useIBL) {
+    if (properties.useIBL) {
         // ambien lighting (we now use IBL as the ambient term)
         vec3 F = FresnelSchlickRoughness(max(dot(N, V), 0.0), F0, roughness);
 
@@ -388,18 +413,44 @@ void main()
     // calculate reflectance at normal incidence; if dia-electric (like plastic) use F0 of 0.04 and if it's a metal, use the albedo color as F0 (metallic workflow)
     vec3 F0 = vec3(0.04);
 
-    vec3 albedo = material.albedo.rgb;
-    float alpha = material.albedo.a;
-    albedo *= alpha; // pre-multiplied alpha (alpha blending)
-    float metallic = material.metallic;
-    float roughness = material.roughness;
-    float ao = material.ao;
-    vec3 N = normalize(fs_in.Normal);
-    if (!gl_FrontFacing) {
-        N = -N;
-    }
+    #ifdef TEXTURED
+        vec4 albedoTexture = texture(albedoMap, fs_in.TexCoords);
+        float alpha = albedoTexture.a;
+        vec3 albedo = pow(albedoTexture.rgb, vec3(gamma)); // gamma corrected for sRGB
+        // albedo *= alpha; // pre-multiplied alpha (alpha blending)
+
+        #ifdef GLTF
+            float metallic = texture(metallicMap, fs_in.TexCoords).b;
+            float roughness = texture(roughnessMap, fs_in.TexCoords).g;
+        #else
+            float metallic = texture(metallicMap, fs_in.TexCoords).r;
+            float roughness = texture(roughnessMap, fs_in.TexCoords).r;
+        #endif
+
+        float ao = texture(aoMap, fs_in.TexCoords).r;
+        vec3 N = getNormalFromMap();
+        if (!gl_FrontFacing) {
+            N = -N;
+        }
+
+        albedo = albedo * materials[properties.objectID].albedo.rgb;
+        metallic = metallic * materials[properties.objectID].metallic;
+        roughness = roughness * materials[properties.objectID].roughness;
+        ao = ao * materials[properties.objectID].ao;
+    #else
+        vec3 albedo = materials[properties.objectID].albedo.rgb;
+        float alpha = materials[properties.objectID].albedo.a;
+        float metallic = materials[properties.objectID].metallic;
+        float roughness = materials[properties.objectID].roughness;
+        float ao = materials[properties.objectID].ao;
+        vec3 N = normalize(fs_in.Normal);
+        if (!gl_FrontFacing) {
+            N = -N;
+        }
+    #endif
+
     vec3 emissive = texture(emissiveMap, fs_in.TexCoords).rgb;
-    emissive = emissive * material.emissive;
+    emissive = emissive * materials[properties.objectID].emissive;
 
     vec3 V = normalize(camPos - fs_in.WorldPos);
     vec3 R = reflect(-V, N);
@@ -407,12 +458,10 @@ void main()
     F0 = mix(F0, albedo, metallic);
 
     result += CalcDirLight(N, V, R, F0, albedo, metallic, roughness, ao);
-
     result += CalcPointLight(N, V, R, F0, albedo, metallic, roughness, ao);
+    result += emissive;
 
-    #ifdef TRANSLUCENCY
-        result += emissive;
-
+    #ifdef TRANSLUCENT
         // weight function
         float weight = clamp(pow(min(1.0, alpha * 10.0) + 0.01, 3.0) * 1e8 * pow(1.0 - gl_FragCoord.z * 0.9, 3.0), 1e-2, 3e3);
 
@@ -422,12 +471,24 @@ void main()
         // store pixel revealage threshold
         RevealColor = alpha;
     #else
-        FragColor = vec4(result + emissive, alpha);
+        #ifdef TEXTURED
+            if (alpha <= 0.5)
+                discard;
+        #endif
+
+        FragColor = vec4(result, 1.0);
 
         // Debug
         // FragColor = vec4(N, 1.0);
         // FragColor = vec4(albedo, 1.0);
         // FragColor = vec4(texture(emissiveMap, fs_in.TexCoords).rgb, 1.0);
+        // Debug textures
+        // FragColor = vec4(N, 1.0);
+        // FragColor = vec4(albedo, 1.0);
+        // FragColor = vec4(texture(emissiveMap, fs_in.TexCoords).rgb, 1.0);
+        // FragColor = vec4(texture(metallicMap, fs_in.TexCoords).bbb, 1.0);
+        // FragColor = vec4(texture(roughnessMap, fs_in.TexCoords).ggg, 1.0);
+        // FragColor = vec4(texture(aoMap, fs_in.TexCoords).rrr, 1.0);
 
         // check whether result is higher than some threshold, if so, output as bloom threshold color
         float brightness = dot(FragColor.rgb, vec3(0.2126, 0.7152, 0.0722));

@@ -51,9 +51,11 @@ public:
 
     virtual void drawSelfAndChildSimple(GLenum& mode, Shader& shader) = 0;
 
-    virtual void drawSelfAndChild(GLenum& mode, const Frustum& frustum, unsigned int& display, unsigned int& total) = 0;
+    virtual void drawSelfAndChild(GLenum& mode, const Frustum& frustum, UniformBuffer& objectUBO, unsigned int& display, unsigned int& total) = 0;
 
-    virtual void renderGUI(int i) = 0;
+    virtual void drawSelfAndChildTranslucent(GLenum& mode, const Frustum& frustum, UniformBuffer& objectUBO, unsigned int& display, unsigned int& total) = 0;
+
+    virtual void renderGUI(int i, UniformBuffer& objectUBO) = 0;
 
     void renderSceneGraphSimple(GLenum mode, Shader shader)
     {
@@ -61,9 +63,15 @@ public:
         updateSelfAndChild();
     }
 
-    void renderSceneGraph(GLenum mode, const Frustum& camFrustum, unsigned int& display, unsigned int& total)
+    void renderSceneGraph(GLenum mode, const Frustum& camFrustum, UniformBuffer& objectUBO, unsigned int& display, unsigned int& total)
     {
-        drawSelfAndChild(mode, camFrustum, display, total);
+        drawSelfAndChild(mode, camFrustum, objectUBO, display, total);
+        updateSelfAndChild();
+    }
+
+    void renderSceneGraphTranslucent(GLenum mode, const Frustum& camFrustum, UniformBuffer& objectUBO, unsigned int& display, unsigned int& total)
+    {
+        drawSelfAndChildTranslucent(mode, camFrustum, objectUBO, display, total);
         updateSelfAndChild();
     }
 };

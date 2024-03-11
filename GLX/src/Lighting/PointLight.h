@@ -26,13 +26,14 @@ private:
     FrameBuffer m_DepthCubeMapFBO;
 
 public:
+    static const GLuint MAX_LIGHTS = 10;
 
     PointLight(RendererLayer* renderer);
     ~PointLight();
 
     void PointLightProjectionMatrix(float nearPlane, float farPlane);
     void RenderMesh();
-    void RenderGUI(int i);
+    void RenderGUI(int i, UniformBuffer& lightsUBO);
 
     void SetPosition(const glm::vec3& position) { m_Position = position; }
     void SetColor(const glm::vec3& color) { m_Color = color; }
