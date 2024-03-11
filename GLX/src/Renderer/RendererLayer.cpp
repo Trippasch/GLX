@@ -472,7 +472,7 @@ void RendererLayer::OnImGuiRender()
             m_PointLights[i]->RenderGUI(i, m_LightsUBO);
         }
 
-        if (ImGui::Button(" + ", ImVec2(0, 0))) {
+        if (ImGui::Button("Add Light", ImVec2(0, 0))) {
             ImGui::OpenPopup("New Light");
         }
 
@@ -528,7 +528,7 @@ void RendererLayer::OnImGuiRender()
         for (unsigned int i = 0; i < m_Spheres.children.size(); i++) {
             m_Spheres.children[i].get()->renderGUI(i, m_ObjectUBO);
         }
-        if (ImGui::Button(" + ", ImVec2(0, 0))) {
+        if (ImGui::Button("Add Object", ImVec2(0, 0))) {
             ImGui::OpenPopup("New Object");
         }
 
@@ -547,7 +547,7 @@ void RendererLayer::OnImGuiRender()
             ImGui::Separator();
 
             if (currentItem == 3) {
-                if (ImGui::Button("Load Model...")) {
+                if (ImGui::Button("Open...")) {
                     // clang-format off
                     ImGuiFileDialog::Instance()->OpenDialog(
                         "ChooseFileDlgKey",
@@ -573,6 +573,7 @@ void RendererLayer::OnImGuiRender()
                         if (pos != std::string::npos) {
                             m_ModelFilePath = file.substr(pos);
                         }
+                        std::replace(m_ModelFilePath.begin(), m_ModelFilePath.end(), '\\', '/');
                         ResourceManager::LoadModel(m_ModelFilePath.c_str(), "3d_model");
                     }
 

@@ -134,8 +134,15 @@ public:
         if (ImGui::TreeNodeEx(("Cube " + std::to_string(i)).c_str())) {
             transform.renderTransformGUI();
             material.renderMaterialGUI(objectUBO);
-            ImGui::Checkbox("Textured", &material.getIsTextured());
-            ImGui::Checkbox("Translucent", &material.getIsTranslucent());
+
+            bool definesChanged = false;
+
+            if (ImGui::Checkbox("Textured", &material.getIsTextured())) {
+                definesChanged = true;
+            }
+            if (ImGui::Checkbox("Translucent", &material.getIsTranslucent())) {
+                definesChanged = true;
+            }
 
             std::vector<std::string> defines = { "MAX_DIR_LIGHTS 10", "MAX_POINT_LIGHTS 10", "MAX_OBJECTS 100" };
             if (material.getIsTextured()) {
@@ -144,8 +151,11 @@ public:
             if (material.getIsTranslucent()) {
                 defines.push_back("TRANSLUCENT");
             }
-            ResourceManager::LoadShader("assets/shaders/pbrVS.glsl", "assets/shaders/pbrFS.glsl", nullptr, "pbr_lighting", defines);
-            material.setShader(ResourceManager::GetShader("pbr_lighting"));
+
+            if (definesChanged) {
+                ResourceManager::LoadShader("assets/shaders/pbrVS.glsl", "assets/shaders/pbrFS.glsl", nullptr, "pbr_lighting", defines);
+                material.setShader(ResourceManager::GetShader("pbr_lighting"));
+            }
 
             ImGui::Checkbox("Draw AABB", &drawAABB);
             if (ImGui::Button("Remove Cube", ImVec2(0, 0))) {

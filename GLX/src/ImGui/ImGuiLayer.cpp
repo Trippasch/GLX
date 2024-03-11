@@ -155,9 +155,9 @@ void ImGuiLayer::SetDraculaTheme()
     colors[ImGuiCol_HeaderActive] = ImVec4{0.16f, 0.16f, 0.21f, 1.0f};
 
     // Buttons
-    colors[ImGuiCol_Button] = ImVec4{0.13f, 0.13f, 0.17, 1.0f};
-    colors[ImGuiCol_ButtonHovered] = ImVec4{0.19f, 0.2f, 0.25f, 1.0f};
-    colors[ImGuiCol_ButtonActive] = ImVec4{0.16f, 0.16f, 0.21f, 1.0f};
+    colors[ImGuiCol_Button] = ImVec4{0.44f, 0.37f, 0.61f, 0.50f};
+    colors[ImGuiCol_ButtonHovered] = ImVec4{0.74f, 0.58f, 0.98f, 0.50f};
+    colors[ImGuiCol_ButtonActive] = ImVec4{0.74f, 0.58f, 0.98f, 1.0f};
     colors[ImGuiCol_CheckMark] = ImVec4{0.74f, 0.58f, 0.98f, 1.0f};
 
     // Popups
