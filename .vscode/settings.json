@@ -87,6 +87,7 @@
         "format": "cpp",
         "shared_mutex": "cpp",
         "stdfloat": "cpp",
-        "typeindex": "cpp"
+        "typeindex": "cpp",
+        "expected": "cpp"
     }
 }

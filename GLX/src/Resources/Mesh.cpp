@@ -2,7 +2,7 @@
 
 #include <iostream>
 
-Mesh::Mesh(const std::vector<Vertex> &vertices, const std::vector<unsigned int> &indices, const std::vector<Texture2D> &textures)
+Mesh::Mesh(const std::vector<Vertex> &vertices, const std::vector<unsigned int> &indices, const std::unordered_map<std::string, std::vector<Texture2D>> &textures)
 {
     this->vertices = vertices;
     this->indices = indices;
@@ -33,9 +33,9 @@ void Mesh::Bind() const
     // vertex bitangent
     VBO.LinkAttrib(4, 3, GL_FLOAT, sizeof(Vertex), (void*)offsetof(Vertex, Bitangent));
     // ids
-    // VBO.LinkAttrib(5, 4, GL_INT, sizeof(Vertex), (void*)offsetof(Vertex, m_BoneIDs));
+    VBO.LinkAttribI(5, 4, GL_INT, sizeof(Vertex), (void*)offsetof(Vertex, BoneIDs));
     // weights
-    // VBO.LinkAttrib(6, 4, GL_FLOAT, sizeof(Vertex), (void*)offsetof(Vertex, m_Weights));
+    VBO.LinkAttrib(6, 4, GL_FLOAT, sizeof(Vertex), (void*)offsetof(Vertex, Weights));
 }
 
 void Mesh::UnBind() const
@@ -45,16 +45,49 @@ void Mesh::UnBind() const
     VBO.UnlinkAttrib(2);
     VBO.UnlinkAttrib(3);
     VBO.UnlinkAttrib(4);
-    // VBO.UnlinkAttrib(5);
-    // VBO.UnlinkAttrib(6);
+    VBO.UnlinkAttrib(5);
+    VBO.UnlinkAttrib(6);
     EBO.UnBind();
 }
 
 // render the mesh
 void Mesh::Draw(GLenum mode, const Shader &shader) const
 {
-    for (unsigned int i = 0; i < textures.size(); i++)
-        textures[i].Bind(GL_TEXTURE_2D, i+3);
+    // Bind each texture to its corresponding texture unit
+    if (textures.count("texture_albedo") > 0) {
+        for (auto&& tex : textures.at("texture_albedo"))
+            tex.Bind(GL_TEXTURE_2D, 3);
+    }
+
+    if (textures.count("texture_normal") > 0) {
+        for (auto&& tex : textures.at("texture_normal"))
+            tex.Bind(GL_TEXTURE_2D, 4);
+    }
+
+    if (textures.count("texture_metallic") > 0) {
+        for (auto&& tex : textures.at("texture_metallic"))
+            tex.Bind(GL_TEXTURE_2D, 5);
+    }
+
+    if (textures.count("texture_roughness") > 0) {
+        for (auto&& tex : textures.at("texture_roughness"))
+            tex.Bind(GL_TEXTURE_2D, 6);
+    }
+
+    if (textures.count("texture_specular") > 0) {
+        for (auto&& tex : textures.at("texture_specular"))
+            tex.Bind(GL_TEXTURE_2D, 7);
+    }
+
+    if (textures.count("texture_ao") > 0) {
+        for (auto&& tex : textures.at("texture_ao"))
+            tex.Bind(GL_TEXTURE_2D, 8);
+    }
+
+    if (textures.count("texture_emissive") > 0) {
+        for (auto&& tex : textures.at("texture_emissive"))
+            tex.Bind(GL_TEXTURE_2D, 9);
+    }
 
     // draw mesh
     Bind();

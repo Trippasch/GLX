@@ -22,13 +22,14 @@ protected:
     Texture2D m_NormalTexture;
     Texture2D m_MetallicTexture;
     Texture2D m_RoughnessTexture;
+    Texture2D m_SpecularTexture;
     Texture2D m_AOTexture;
     Texture2D m_EmissiveTexture;
 
 public:
     static const GLuint MAX_OBJECTS = 100;
 
-    void renderMaterialGUI(UniformBuffer& objectUBO)
+    void renderMaterialGUI(const UniformBuffer& objectUBO)
     {
         if (ImGui::TreeNodeEx("Material")) {
             int materialOffset = sizeof(glm::vec4) + getObjectID() * 2 * sizeof(glm::vec4);
@@ -119,6 +120,10 @@ public:
     {
         return m_RoughnessTexture;
     }
+    Texture2D& getSpecularTexture()
+    {
+        return m_SpecularTexture;
+    }
     Texture2D& getAOTexture()
     {
         return m_AOTexture;
@@ -179,6 +184,10 @@ public:
     void setRoughnessTexture(const Texture2D& newRoughnessTexture)
     {
         m_RoughnessTexture = newRoughnessTexture;
+    }
+    void setSpecularTexture(const Texture2D& newSpecularTexture)
+    {
+        m_SpecularTexture = newSpecularTexture;
     }
     void setAOTexture(const Texture2D& newAOTexture)
     {

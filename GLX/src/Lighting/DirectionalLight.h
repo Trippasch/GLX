@@ -26,7 +26,7 @@ private:
     FrameBuffer m_DepthMapFBO;
 
 public:
-    static const GLuint MAX_LIGHTS = 10;
+    static constexpr int MAX_LIGHTS = 10;
 
     DirectionalLight(RendererLayer* renderer);
     ~DirectionalLight();

@@ -12,6 +12,7 @@ RendererLibrary::RendererLibrary()
     ResourceManager::LoadTexture("assets/textures/default/normal.png", "default_normal");
     ResourceManager::LoadTexture("assets/textures/default/metallic.png", "default_metallic");
     ResourceManager::LoadTexture("assets/textures/default/roughness.png", "default_roughness");
+    ResourceManager::LoadTexture("assets/textures/default/specular.png", "default_specular");
     ResourceManager::LoadTexture("assets/textures/default/ao.png", "default_ao");
     ResourceManager::LoadTexture("assets/textures/default/emissive.png", "default_emissive");
 
@@ -36,6 +37,9 @@ RendererLibrary::RendererLibrary()
 
     // Load Model
     ResourceManager::LoadModel("assets/objects/sponza/Sponza.gltf", "sponza");
+    ResourceManager::LoadModel("assets/objects/vampire/vampire.fbx", "vampire");
+    ResourceManager::LoadAnimation("assets/objects/vampire/standing_run_forward.fbx", &ResourceManager::GetModel("vampire"), "vampire_standing_run_forward", 0);
+    ResourceManager::LoadAnimation("assets/objects/vampire/standing_idle.fbx", &ResourceManager::GetModel("vampire"), "vampire_standing_idle", 0);
 
     // Composite
     ResourceManager::LoadShader("assets/shaders/quadVS.glsl", "assets/shaders/compositeFS.glsl", nullptr, "composite");

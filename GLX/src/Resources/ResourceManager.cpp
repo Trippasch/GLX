@@ -11,6 +11,7 @@
 std::unordered_map<std::string, Texture2D> ResourceManager::Textures;
 std::unordered_map<std::string, Shader> ResourceManager::Shaders;
 std::unordered_map<std::string, Model> ResourceManager::Models;
+std::unordered_map<std::string, Animation> ResourceManager::Animations;
 
 Model ResourceManager::LoadModel(const char *file, const std::string &name)
 {
@@ -21,6 +22,17 @@ Model ResourceManager::LoadModel(const char *file, const std::string &name)
 Model& ResourceManager::GetModel(const std::string &name)
 {
     return Models[name];
+}
+
+Animation ResourceManager::LoadAnimation(const char *file, Model* model, const std::string &name, int animationIndex)
+{
+    Animations[name] = loadAnimationFromFile(file, model, animationIndex);
+    return Animations[name];
+}
+
+Animation& ResourceManager::GetAnimation(const std::string &name)
+{
+    return Animations[name];
 }
 
 Shader ResourceManager::LoadShader(const char *vShaderFile, const char *fShaderFile, const char *gShaderFile, const std::string &name, const std::vector<std::string> &defines)
@@ -58,7 +70,7 @@ Texture2D& ResourceManager::GetHDRTexture(const std::string &name)
 
 void ResourceManager::Clear()
 {
-    // (properly) delete all shaders	
+    // (properly) delete all shaders
     for (const auto &shader : Shaders)
         glDeleteProgram(shader.second.ID);
     // (properly) delete all textures
@@ -186,4 +198,10 @@ Model ResourceManager::loadModelFromFile(const char *file)
 {
     Model model(file);
     return model;
+}
+
+Animation ResourceManager::loadAnimationFromFile(const char *file, Model* model, int animationIndex)
+{
+    Animation animation(file, model, animationIndex);
+    return animation;
 }

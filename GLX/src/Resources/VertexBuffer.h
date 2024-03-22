@@ -11,6 +11,7 @@ public:
     VertexBuffer(const GLvoid* data, GLuint size, GLenum mode);
 
     void LinkAttrib(GLuint index, GLint size, GLenum type, GLsizei stride, const GLvoid* data) const;
+    void LinkAttribI(GLuint index, GLint size, GLenum type, GLsizei stride, const GLvoid* data) const;
     void UnlinkAttrib(GLuint layout) const;
     void Destroy() const;
     void Bind() const;

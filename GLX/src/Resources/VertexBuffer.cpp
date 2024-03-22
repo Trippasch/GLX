@@ -25,6 +25,14 @@ void VertexBuffer::LinkAttrib(GLuint index, GLint size, GLenum type, GLsizei str
     UnBind();
 }
 
+void VertexBuffer::LinkAttribI(GLuint index, GLint size, GLenum type, GLsizei stride, const GLvoid* offset) const
+{
+    Bind();
+    glEnableVertexAttribArray(index);
+    glVertexAttribIPointer(index, size, type, stride, offset);
+    UnBind();
+}
+
 void VertexBuffer::UnlinkAttrib(GLuint layout) const
 {
     glDisableVertexAttribArray(layout);

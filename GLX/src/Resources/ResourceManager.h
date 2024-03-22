@@ -8,6 +8,7 @@
 #include "Resources/Texture2D.h"
 #include "Resources/Shader.h"
 #include "Resources/Model.h"
+#include "Resources/Animation.h"
 
 // A static singleton ResourceManager class that hosts several
 // functions to load Textures and Shaders. Each loaded texture
@@ -21,11 +22,16 @@ public:
     static std::unordered_map<std::string, Shader> Shaders;
     static std::unordered_map<std::string, Texture2D> Textures;
     static std::unordered_map<std::string, Model> Models;
+    static std::unordered_map<std::string, Animation> Animations;
 
     // loads (and generates) a model from file
     static Model LoadModel(const char *file, const std::string &name);
     // retrieves a stored model
     static Model& GetModel(const std::string &name);
+    // loads (and generates) an animation from file
+    static Animation LoadAnimation(const char *file, Model* model, const std::string &name, int animationIndex);
+    // retrieves a stored animation
+    static Animation& GetAnimation(const std::string &name);
     // loads (and generates) a shader program from file loading vertex, fragment (and geometry) shader's source code. If gShaderFile is not nullptr, it also loads a geometry shader
     static Shader LoadShader(const char *vShaderFile, const char *fShaderFile, const char *gShaderFile, const std::string &name, const std::vector<std::string> &defines = {});
     // retrieves a stored shader
@@ -45,6 +51,8 @@ private:
     ResourceManager() { }
     // loads and generates a model from file
     static Model loadModelFromFile(const char *file);
+    // loads and generates an animation from file
+    static Animation loadAnimationFromFile(const char *file, Model* model, int animationIndex);
     // loads and generates a shader from file
     static Shader loadShaderFromFile(const char *vShaderFile, const char *fShaderFile, const char *gShaderFile = nullptr, const std::vector<std::string> &defines = {});
     // loads a single texture from file

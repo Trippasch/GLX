@@ -26,7 +26,7 @@ private:
     FrameBuffer m_DepthCubeMapFBO;
 
 public:
-    static const GLuint MAX_LIGHTS = 10;
+    static constexpr int MAX_LIGHTS = 10;
 
     PointLight(RendererLayer* renderer);
     ~PointLight();

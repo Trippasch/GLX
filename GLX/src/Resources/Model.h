@@ -13,6 +13,7 @@
 
 #include "Resources/Mesh.h"
 #include "Core/Log.h"
+#include "Utils/assimp_glm_helpers.h"
 
 #include <string>
 #include <fstream>
@@ -20,6 +21,14 @@
 #include <iostream>
 #include <map>
 #include <vector>
+
+struct BoneInfo
+{
+    // id is index in finalBoneMatrices
+    int id;
+    // offset matrix transforms the vertex from model space to bone space
+    glm::mat4 offset;
+};
 
 class Model
 {
@@ -30,6 +39,9 @@ public:
     std::string directory;
     bool gammaCorrection;
 
+    std::unordered_map<std::string, BoneInfo> m_BoneInfoMap;
+    int m_BoneCounter = 0;
+
     VertexBuffer instancedArrowsVBO;
     size_t instancedArrowsSize;
 
@@ -39,7 +51,10 @@ public:
 
     // draws the model, and thus all its meshes
     void Draw(GLenum mode, const Shader &shader);
-    
+
+    auto& GetBoneInfoMap() { return m_BoneInfoMap; }
+    int& GetBoneCounter() { return m_BoneCounter; }
+
 private:
     // loads a model with supported ASSIMP extensions from file and stores the resulting meshes in the meshes vector.
     void loadModel(const std::string &path);
@@ -51,7 +66,12 @@ private:
 
     // checks all material textures of a given type and loads the textures if they're not loaded yet.
     // the required info is returned as a Texture struct.
-    std::vector<Texture2D> loadMaterialTextures(aiMaterial *mat, aiTextureType type, const std::string &typeName);
+    std::vector<Texture2D> loadMaterialTextures(aiMaterial *mat, aiTextureType type, const std::string &typeName, const aiScene *scene);
 
     Texture2D textureFromFile(const char *path, const std::string &directory, bool gamma = false);
+    Texture2D textureFromEmbedded(const aiTexture* paiTexture, const std::string& directory, bool gamma = false);
+
+    void setVertexBoneDataToDefault(Vertex& vertex);
+    void setVertexBoneData(Vertex& vertex, int boneID, float weight);
+    void extractBoneWeightForVertices(std::vector<Vertex>& vertices, aiMesh* mesh, const aiScene* scene);
 };

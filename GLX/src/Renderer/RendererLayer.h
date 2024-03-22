@@ -37,12 +37,16 @@ class PBR;
 class DirectionalLight;
 class PointLight;
 class PostProcessor;
+class ModelEntity;
+class Plane;
+class Cube;
+class Sphere;
+
+constexpr ImGuiTreeNodeFlags base_flags = ImGuiTreeNodeFlags_DefaultOpen;
 
 class RendererLayer : public Layer
 {
 public:
-    static const ImGuiTreeNodeFlags base_flags = ImGuiTreeNodeFlags_DefaultOpen;
-
     RendererLayer();
     ~RendererLayer() = default;
 
@@ -72,8 +76,10 @@ public:
     void RemoveLight(DirectionalLight* light);
     void RemoveLight(PointLight* light);
 
-    std::vector<DirectionalLight*>& GetDirectionalLights() { return m_DirectionalLights; }
-    std::vector<PointLight*>& GetPointLights() { return m_PointLights; }
+    const UniformBuffer& GetMatricesUBO() const { return m_MatricesUBO; }
+    const UniformBuffer& GetObjectUBO() const { return m_ObjectUBO; }
+
+    const float& GetDeltaTime() const { return m_DeltaTime; }
 
 private:
     GLFWwindow* m_Window;
@@ -81,8 +87,8 @@ private:
     GLuint m_Height = 600;
     bool m_VSync = false;
 
-    float deltaTime = 0.0f;
-    float lastFrame = 0.0f;
+    float m_DeltaTime = 0.0f;
+    float m_LastFrame = 0.0f;
     Camera m_Camera;
     Frustum m_CamFrustum;
 
@@ -111,12 +117,14 @@ private:
     UniformBuffer m_ObjectUBO;
 
     // Mesh Entities
-    Plane m_Planes;
-    Cube m_Cubes;
-    Sphere m_Spheres;
-    ModelEntity m_Models;
+    Plane* m_Planes;
+    Cube* m_Cubes;
+    Sphere* m_Spheres;
+    ModelEntity* m_Models;
     int m_ObjectsID = 0;
     std::string m_ModelFilePath = "None";
+    bool m_IsGLTF = true;
+    bool m_IsAnimated = false;
 
     // Skybox Properties
     bool m_UseSkybox = true;

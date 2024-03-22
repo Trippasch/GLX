@@ -27,13 +27,15 @@ AABB Entity::getGlobalAABB()
 
 void Entity::updateSelfAndChild()
 {
-    if (transform.isDirty()) {
-        forceUpdateSelfAndChild();
-        return;
+    if (!children.empty()) {
+        for (auto&& child : children) {
+            child->updateSelfAndChild();
+        }
     }
-
-    for (auto&& child : children) {
-        child->updateSelfAndChild();
+    else {
+        if (transform.isDirty()) {
+            transform.computeModelMatrix();
+        }
     }
 }
 

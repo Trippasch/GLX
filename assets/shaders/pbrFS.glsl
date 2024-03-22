@@ -28,13 +28,14 @@ layout (binding = 3) uniform sampler2D albedoMap;
 layout (binding = 4) uniform sampler2D normalMap;
 layout (binding = 5) uniform sampler2D metallicMap;
 layout (binding = 6) uniform sampler2D roughnessMap;
-layout (binding = 7) uniform sampler2D aoMap;
+layout (binding = 7) uniform sampler2D specularMap;
+layout (binding = 8) uniform sampler2D aoMap;
 
-layout (binding = 8) uniform sampler2D emissiveMap;
+layout (binding = 9) uniform sampler2D emissiveMap;
 
 // shadows
-layout (binding = 9) uniform sampler2DArray depthMaps[MAX_DIR_LIGHTS];
-layout (binding = 19) uniform samplerCube depthCubeMaps[MAX_POINT_LIGHTS];
+layout (binding = 10) uniform sampler2DArray depthMaps[MAX_DIR_LIGHTS];
+layout (binding = 20) uniform samplerCube depthCubeMaps[MAX_POINT_LIGHTS];
 
 // directional light
 struct DirLight {
@@ -170,7 +171,7 @@ float DirShadowsCalculation(int dirLightIndex, vec3 lightDir, sampler2DArray dep
         layer = cascadeCount;
     }
     // normal offset
-    vec3 offsetPos = fs_in.WorldPos + normalize(fs_in.Normal) * 0.005;
+    vec3 offsetPos = fs_in.WorldPos + normalize(fs_in.Normal) * 0.03;
     vec4 fragPosLightSpace = lightSpaceMatrices[dirLightIndex * 16 + layer] * vec4(offsetPos, 1.0);
     // perform perspective division
     vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
@@ -426,6 +427,10 @@ void main()
             float metallic = texture(metallicMap, fs_in.TexCoords).r;
             float roughness = texture(roughnessMap, fs_in.TexCoords).r;
         #endif
+
+        vec3 specular = texture(specularMap, fs_in.TexCoords).rgb;
+        metallic += specular.r;
+        roughness -= specular.r;
 
         float ao = texture(aoMap, fs_in.TexCoords).r;
         vec3 N = getNormalFromMap();

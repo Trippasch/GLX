@@ -12,8 +12,10 @@
 
 #include <string>
 #include <vector>
+#include <unordered_map>
 
-#define MAX_BONE_INFLUENCE 4
+constexpr int MAX_BONES = 100;
+constexpr int MAX_BONE_INFLUENCE = 4;
 
 struct Vertex
 {
@@ -28,17 +30,10 @@ struct Vertex
     // bitangent
     glm::vec3 Bitangent;
     // bone indexes which will influence this vertex
-    // int m_BoneIDs[MAX_BONE_INFLUENCE];
+    int BoneIDs[MAX_BONE_INFLUENCE];
     // weights from each bone
-    // float m_Weights[MAX_BONE_INFLUENCE];
+    float Weights[MAX_BONE_INFLUENCE];
 };
-
-// struct Texture
-// {
-//     GLuint id;
-//     std::string type;
-//     std::string path;
-// };
 
 class Mesh
 {
@@ -46,10 +41,10 @@ public:
     // mesh Data
     std::vector<Vertex> vertices;
     std::vector<GLuint> indices;
-    std::vector<Texture2D> textures;
+    std::unordered_map<std::string, std::vector<Texture2D>> textures;
 
     // constructor
-    Mesh(const std::vector<Vertex> &vertices, const std::vector<GLuint> &indices, const std::vector<Texture2D> &textures);
+    Mesh(const std::vector<Vertex> &vertices, const std::vector<GLuint> &indices, const std::unordered_map<std::string, std::vector<Texture2D>> &textures);
 
     // render the mesh
     void Draw(GLenum mode, const Shader &shader) const;

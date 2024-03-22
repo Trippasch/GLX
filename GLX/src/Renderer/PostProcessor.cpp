@@ -59,7 +59,7 @@ void PostProcessor::RenderPostProcessingGUI()
     ImGui::Begin("Post Processing");
 
     ImGui::Separator();
-    if (ImGui::CollapsingHeader("Kernel Effects", m_Renderer->base_flags)) {
+    if (ImGui::CollapsingHeader("Kernel Effects", base_flags)) {
         if (ImGui::Checkbox("Blur", &m_UseBlur)) {
             m_UseEdge = false;
             m_UseRidge = false;
@@ -99,7 +99,7 @@ void PostProcessor::RenderPostProcessingGUI()
     }
 
     ImGui::Separator();
-    if (ImGui::CollapsingHeader("General Effects", m_Renderer->base_flags)) {
+    if (ImGui::CollapsingHeader("General Effects", base_flags)) {
         if (ImGui::Checkbox("Greyscale", &m_UseGreyscale)) {
             m_UseInversion = false;
             ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.greyscale", m_UseGreyscale);
@@ -110,7 +110,7 @@ void PostProcessor::RenderPostProcessingGUI()
             ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.greyscale", m_UseGreyscale);
             ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.inversion", m_UseInversion);
         }
-        if (ImGui::TreeNodeEx("Bloom", m_Renderer->base_flags)) {
+        if (ImGui::TreeNodeEx("Bloom", base_flags)) {
             ImGui::SameLine();
             if (ImGuiLayer::ToggleButton(" ", &m_UseBloom)) {
                 ResourceManager::GetShader("post_proc").Use().SetInteger("postProcessing.bloom", m_UseBloom);
@@ -128,7 +128,7 @@ void PostProcessor::RenderPostProcessingGUI()
     }
 
     ImGui::Separator();
-    if (ImGui::CollapsingHeader("HDR Settings", m_Renderer->base_flags)) {
+    if (ImGui::CollapsingHeader("HDR Settings", base_flags)) {
         if (ImGui::DragFloat("Exposure", &m_Exposure, 0.01f, 0.0f, FLT_MAX, "%.2f")) {
             ResourceManager::GetShader("post_proc").Use().SetFloat("postProcessing.exposure", m_Exposure);
         }

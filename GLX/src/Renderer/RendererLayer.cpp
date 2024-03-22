@@ -52,7 +52,7 @@ void RendererLayer::OnAttach()
     FrameBuffer::UnBind();
 
     // Uniform Buffers
-    m_MatricesUBO = UniformBuffer(0, 0, sizeof(glm::mat4), GL_DYNAMIC_DRAW);
+    m_MatricesUBO = UniformBuffer(0, 0, sizeof(glm::mat4) + sizeof(glm::mat4) * MAX_BONES + sizeof(glm::vec4), GL_DYNAMIC_DRAW);
     m_LightsUBO = UniformBuffer(1, 0, sizeof(glm::mat4x4) * 16 * DirectionalLight::MAX_LIGHTS + sizeof(glm::vec4)
                                             + 2 * sizeof(glm::vec4) * DirectionalLight::MAX_LIGHTS
                                             + 2 * sizeof(glm::vec4) * PointLight::MAX_LIGHTS + sizeof(glm::vec4), GL_DYNAMIC_DRAW);
@@ -60,6 +60,7 @@ void RendererLayer::OnAttach()
     m_ObjectUBO = UniformBuffer(3, 0, sizeof(glm::vec4) + Material::MAX_OBJECTS*(2*sizeof(glm::vec4)), GL_DYNAMIC_DRAW);
 
     // Fill Uniform Buffers
+    m_MatricesUBO.FillBuffer(0, sizeof(glm::mat4) + sizeof(glm::mat4) * MAX_BONES, sizeof(bool));
     m_ObjectUBO.FillBuffer(&m_UseSkybox, 0, sizeof(float));
 
     // Renderer Library
@@ -92,9 +93,14 @@ void RendererLayer::OnAttach()
 
     // Objects
     Entity* lastEntity;
+    m_Models = new ModelEntity();
+    m_Planes = new Plane();
+    m_Cubes = new Cube();
+    m_Spheres = new Sphere();
+
     // Create Models
-    m_Models.addChild<ModelEntity>(ResourceManager::GetModel("sponza"));
-    lastEntity = m_Models.children.back().get();
+    m_Models->addChild<ModelEntity>(ResourceManager::GetModel("sponza"), this);
+    lastEntity = m_Models->children.back().get();
     lastEntity->transform.setLocalPosition(glm::vec3(0.0f, 0.0f, -1.0f));
     lastEntity->transform.setLocalRotation(glm::vec3(0.0f, 0.0f, 0.0f));
     lastEntity->transform.setLocalScale(glm::vec3(0.05f));
@@ -111,6 +117,32 @@ void RendererLayer::OnAttach()
     lastEntity->material.setNormalTexture(ResourceManager::GetTexture("default_normal"));
     lastEntity->material.setMetallicTexture(ResourceManager::GetTexture("default_metallic"));
     lastEntity->material.setRoughnessTexture(ResourceManager::GetTexture("default_roughness"));
+    lastEntity->material.setSpecularTexture(ResourceManager::GetTexture("default_specular"));
+    lastEntity->material.setAOTexture(ResourceManager::GetTexture("default_ao"));
+    lastEntity->material.setEmissiveTexture(ResourceManager::GetTexture("default_emissive"));
+    lastEntity->isGLTF = true;
+    ResourceManager::LoadShader("assets/shaders/pbrVS.glsl", "assets/shaders/pbrFS.glsl", nullptr, "pbr_lighting", { "TEXTURED", "GLTF", "MAX_DIR_LIGHTS 10", "MAX_POINT_LIGHTS 10", "MAX_OBJECTS 100" });
+    lastEntity->material.setShader(ResourceManager::GetShader("pbr_lighting"));
+
+    m_Models->addChild<ModelEntity>(ResourceManager::GetModel("vampire"), this, true);
+    lastEntity = m_Models->children.back().get();
+    lastEntity->transform.setLocalPosition(glm::vec3(0.0f, 0.0f, -2.5f));
+    lastEntity->transform.setLocalRotation(glm::vec3(0.0f, 90.0f, 0.0f));
+    lastEntity->transform.setLocalScale(glm::vec3(0.03f));
+    lastEntity->material.setAlbedo(glm::vec4(1.0f));
+    lastEntity->material.setMetallic(1.0f);
+    lastEntity->material.setRoughness(1.0f);
+    lastEntity->material.setAO(0.20f);
+    lastEntity->material.setEmissive(1.0f);
+    lastEntity->material.fillMaterialBuffer(m_ObjectUBO, m_ObjectsID);
+    m_ObjectsID++;
+    lastEntity->material.setIsTextured(true);
+    lastEntity->material.setIsTranslucent(false);
+    lastEntity->material.setAlbedoTexture(ResourceManager::GetTexture("default_albedo"));
+    lastEntity->material.setNormalTexture(ResourceManager::GetTexture("default_normal"));
+    lastEntity->material.setMetallicTexture(ResourceManager::GetTexture("default_metallic"));
+    lastEntity->material.setRoughnessTexture(ResourceManager::GetTexture("default_roughness"));
+    lastEntity->material.setSpecularTexture(ResourceManager::GetTexture("default_specular"));
     lastEntity->material.setAOTexture(ResourceManager::GetTexture("default_ao"));
     lastEntity->material.setEmissiveTexture(ResourceManager::GetTexture("default_emissive"));
     lastEntity->isGLTF = true;
@@ -119,8 +151,8 @@ void RendererLayer::OnAttach()
 
     // Create Planes
     for (unsigned int i = 0; i < 3; i++) {
-        m_Planes.addChild<Plane>(m_RendererLibrary->GetPlaneVBO(), m_RendererLibrary->GetPlaneVertices(), 48);
-        lastEntity = m_Planes.children.back().get();
+        m_Planes->addChild<Plane>(m_RendererLibrary->GetPlaneVBO(), m_RendererLibrary->GetPlaneVertices(), 48, this);
+        lastEntity = m_Planes->children.back().get();
         lastEntity->transform.setLocalPosition(glm::vec3(0.0f, 2.0f, (i * 3.0f)));
         lastEntity->transform.setLocalRotation(glm::vec3(90.0f, 0.0f, 0.0f));
         lastEntity->transform.setLocalScale(glm::vec3(2.0f));
@@ -142,6 +174,7 @@ void RendererLayer::OnAttach()
         lastEntity->material.setNormalTexture(ResourceManager::GetTexture("default_normal"));
         lastEntity->material.setMetallicTexture(ResourceManager::GetTexture("default_metallic"));
         lastEntity->material.setRoughnessTexture(ResourceManager::GetTexture("default_roughness"));
+        lastEntity->material.setSpecularTexture(ResourceManager::GetTexture("default_specular"));
         lastEntity->material.setAOTexture(ResourceManager::GetTexture("default_ao"));
         lastEntity->material.setEmissiveTexture(ResourceManager::GetTexture("default_emissive"));
         ResourceManager::LoadShader("assets/shaders/pbrVS.glsl", "assets/shaders/pbrFS.glsl", nullptr, "pbr_lighting", { "TRANSLUCENT", "MAX_DIR_LIGHTS 10", "MAX_POINT_LIGHTS 10", "MAX_OBJECTS 100" });
@@ -179,10 +212,10 @@ void RendererLayer::OnUpdate()
             m_DirectionalLights[i]->GetDepthMapFBO().Bind();
             glClear(GL_DEPTH_BUFFER_BIT);
             glCullFace(GL_FRONT);
-            m_Models.renderSceneGraphSimple(GL_TRIANGLES, ResourceManager::GetShader("depth_map"));
-            m_Cubes.renderSceneGraphSimple(GL_TRIANGLES, ResourceManager::GetShader("depth_map"));
-            m_Spheres.renderSceneGraphSimple(GL_TRIANGLE_STRIP, ResourceManager::GetShader("depth_map"));
-            // m_Planes.renderSceneGraphSimple(GL_TRIANGLES, ResourceManager::GetShader("depth_map"));
+            m_Models->renderSceneGraphSimple(GL_TRIANGLES, ResourceManager::GetShader("depth_map"));
+            m_Cubes->renderSceneGraphSimple(GL_TRIANGLES, ResourceManager::GetShader("depth_map"));
+            m_Spheres->renderSceneGraphSimple(GL_TRIANGLE_STRIP, ResourceManager::GetShader("depth_map"));
+            m_Planes->renderSceneGraphSimple(GL_TRIANGLES, ResourceManager::GetShader("depth_map"));
             glCullFace(GL_BACK);
             FrameBuffer::UnBind();
 
@@ -218,10 +251,10 @@ void RendererLayer::OnUpdate()
             m_PointLights[i]->GetDepthCubeMapFBO().Bind();
             glClear(GL_DEPTH_BUFFER_BIT);
 
-            m_Models.renderSceneGraphSimple(GL_TRIANGLES, ResourceManager::GetShader("depth_cube_map"));
-            m_Cubes.renderSceneGraphSimple(GL_TRIANGLES, ResourceManager::GetShader("depth_cube_map"));
-            m_Spheres.renderSceneGraphSimple(GL_TRIANGLE_STRIP, ResourceManager::GetShader("depth_cube_map"));
-            // m_Planes.renderSceneGraphSimple(GL_TRIANGLES, ResourceManager::GetShader("depth_cube_map"));
+            m_Models->renderSceneGraphSimple(GL_TRIANGLES, ResourceManager::GetShader("depth_cube_map"));
+            m_Cubes->renderSceneGraphSimple(GL_TRIANGLES, ResourceManager::GetShader("depth_cube_map"));
+            m_Spheres->renderSceneGraphSimple(GL_TRIANGLE_STRIP, ResourceManager::GetShader("depth_cube_map"));
+            m_Planes->renderSceneGraphSimple(GL_TRIANGLES, ResourceManager::GetShader("depth_cube_map"));
 
             FrameBuffer::UnBind();
 
@@ -259,25 +292,25 @@ void RendererLayer::OnUpdate()
         m_PBR->GetBRDFLUTTexture().Bind(GL_TEXTURE_2D, 2);
     }
     for (size_t i = 0; i < m_DirectionalLights.size(); i++) {
-        glActiveTexture(GL_TEXTURE9 + i);
+        glActiveTexture(GL_TEXTURE10 + i);
         m_DirectionalLights[i]->GetDepthMapFBO().BindTexture(GL_TEXTURE_2D_ARRAY, 0);
     }
     for (size_t i = 0; i < m_PointLights.size(); i++) {
-        glActiveTexture(GL_TEXTURE19 + i);
+        glActiveTexture(GL_TEXTURE20 + i);
         m_PointLights[i]->GetDepthCubeMapFBO().BindTexture(GL_TEXTURE_CUBE_MAP, 0);
     }
 
     if (m_DebugDepthCubeMap) {
-        m_Models.renderSceneGraphSimple(GL_TRIANGLES, ResourceManager::GetShader("debug_depth_cube_map"));
-        m_Cubes.renderSceneGraphSimple(GL_TRIANGLES, ResourceManager::GetShader("debug_depth_cube_map"));
-        m_Spheres.renderSceneGraphSimple(GL_TRIANGLE_STRIP, ResourceManager::GetShader("debug_depth_cube_map"));
-        m_Planes.renderSceneGraphSimple(GL_TRIANGLES, ResourceManager::GetShader("debug_depth_cube_map"));
+        m_Models->renderSceneGraphSimple(GL_TRIANGLES, ResourceManager::GetShader("debug_depth_cube_map"));
+        m_Cubes->renderSceneGraphSimple(GL_TRIANGLES, ResourceManager::GetShader("debug_depth_cube_map"));
+        m_Spheres->renderSceneGraphSimple(GL_TRIANGLE_STRIP, ResourceManager::GetShader("debug_depth_cube_map"));
+        m_Planes->renderSceneGraphSimple(GL_TRIANGLES, ResourceManager::GetShader("debug_depth_cube_map"));
     }
     else {
-        m_Models.renderSceneGraph(GL_TRIANGLES, m_CamFrustum, m_ObjectUBO, display, total);
-        m_Cubes.renderSceneGraph(GL_TRIANGLES, m_CamFrustum, m_ObjectUBO, display, total);
-        m_Spheres.renderSceneGraph(GL_TRIANGLE_STRIP, m_CamFrustum, m_ObjectUBO, display, total);
-        m_Planes.renderSceneGraph(GL_TRIANGLES, m_CamFrustum, m_ObjectUBO, display, total);
+        m_Models->renderSceneGraph(GL_TRIANGLES, m_CamFrustum, display, total);
+        m_Cubes->renderSceneGraph(GL_TRIANGLES, m_CamFrustum, display, total);
+        m_Spheres->renderSceneGraph(GL_TRIANGLE_STRIP, m_CamFrustum, display, total);
+        m_Planes->renderSceneGraph(GL_TRIANGLES, m_CamFrustum, display, total);
 
         // GL_TRACE("Total process in CPU : {0} / Total send to GPU : {1}", total, display);
 
@@ -299,10 +332,10 @@ void RendererLayer::OnUpdate()
             m_PBR->GetPrefiltermap().Bind(GL_TEXTURE_CUBE_MAP, 1);
             m_PBR->GetBRDFLUTTexture().Bind(GL_TEXTURE_2D, 2);
         }
-        m_Models.renderSceneGraphTranslucent(GL_TRIANGLES, m_CamFrustum, m_ObjectUBO, display, total);
-        m_Cubes.renderSceneGraphTranslucent(GL_TRIANGLES, m_CamFrustum, m_ObjectUBO, display, total);
-        m_Spheres.renderSceneGraphTranslucent(GL_TRIANGLE_STRIP, m_CamFrustum, m_ObjectUBO, display, total);
-        m_Planes.renderSceneGraphTranslucent(GL_TRIANGLES, m_CamFrustum, m_ObjectUBO, display, total);
+        m_Models->renderSceneGraphTranslucent(GL_TRIANGLES, m_CamFrustum, display, total);
+        m_Cubes->renderSceneGraphTranslucent(GL_TRIANGLES, m_CamFrustum, display, total);
+        m_Spheres->renderSceneGraphTranslucent(GL_TRIANGLE_STRIP, m_CamFrustum, display, total);
+        m_Planes->renderSceneGraphTranslucent(GL_TRIANGLES, m_CamFrustum, display, total);
     }
 
     FrameBuffer::UnBind();
@@ -373,8 +406,8 @@ void RendererLayer::OnImGuiRender()
     Application& app = Application::Get();
 
     float currentFrame = static_cast<float>(glfwGetTime());
-    deltaTime = currentFrame - lastFrame;
-    lastFrame = currentFrame;
+    m_DeltaTime = currentFrame - m_LastFrame;
+    m_LastFrame = currentFrame;
 
     if (m_UseDebugWindow) {
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
@@ -406,7 +439,7 @@ void RendererLayer::OnImGuiRender()
     }
 
     if (ImGui::IsWindowFocused()) {
-        m_Camera.Inputs((GLFWwindow *)ImGui::GetMainViewport()->PlatformHandle, deltaTime);
+        m_Camera.Inputs((GLFWwindow *)ImGui::GetMainViewport()->PlatformHandle, m_DeltaTime);
     }
     else {
         glfwSetInputMode((GLFWwindow *)ImGui::GetMainViewport()->PlatformHandle, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
@@ -516,17 +549,17 @@ void RendererLayer::OnImGuiRender()
 
     ImGui::Separator();
     if (ImGui::CollapsingHeader("3D Objects", base_flags)) {
-        for (unsigned int i = 0; i < m_Planes.children.size(); i++) {
-            m_Planes.children[i].get()->renderGUI(i, m_ObjectUBO);
+        for (unsigned int i = 0; i < m_Planes->children.size(); i++) {
+            m_Planes->children[i].get()->renderGUI(i);
         }
-        for (unsigned int i = 0; i < m_Models.children.size(); i++) {
-            m_Models.children[i].get()->renderGUI(i, m_ObjectUBO);
+        for (unsigned int i = 0; i < m_Models->children.size(); i++) {
+            m_Models->children[i].get()->renderGUI(i);
         }
-        for (unsigned int i = 0; i < m_Cubes.children.size(); i++) {
-            m_Cubes.children[i].get()->renderGUI(i, m_ObjectUBO);
+        for (unsigned int i = 0; i < m_Cubes->children.size(); i++) {
+            m_Cubes->children[i].get()->renderGUI(i);
         }
-        for (unsigned int i = 0; i < m_Spheres.children.size(); i++) {
-            m_Spheres.children[i].get()->renderGUI(i, m_ObjectUBO);
+        for (unsigned int i = 0; i < m_Spheres->children.size(); i++) {
+            m_Spheres->children[i].get()->renderGUI(i);
         }
         if (ImGui::Button("Add Object", ImVec2(0, 0))) {
             ImGui::OpenPopup("New Object");
@@ -547,12 +580,15 @@ void RendererLayer::OnImGuiRender()
             ImGui::Separator();
 
             if (currentItem == 3) {
+                ImGui::Checkbox("GLTF", &m_IsGLTF);
+                ImGui::Checkbox("Animated", &m_IsAnimated);
+
                 if (ImGui::Button("Open...")) {
                     // clang-format off
                     ImGuiFileDialog::Instance()->OpenDialog(
                         "ChooseFileDlgKey",
                         "Choose File ",
-                        ".gltf,.obj",
+                        ".gltf,.glb,.obj,.dae,.fbx,.FBX",
                         ".",
                         1, nullptr, ImGuiFileDialogFlags_Modal);
                     // clang-format on
@@ -720,6 +756,10 @@ void RendererLayer::OnDetach()
     delete m_PBR;
     delete m_RendererLibrary;
     delete m_PostProcessor;
+    delete m_Models;
+    delete m_Planes;
+    delete m_Spheres;
+    delete m_Cubes;
 }
 
 void RendererLayer::RenderCube(GLenum mode)
@@ -744,8 +784,8 @@ void RendererLayer::RenderQuad(GLenum mode)
 
 void RendererLayer::AddPlane()
 {
-    m_Planes.addChild<Plane>(m_RendererLibrary->GetPlaneVBO(), m_RendererLibrary->GetPlaneVertices(), 48);
-    Entity* lastEntity = m_Planes.children.back().get();
+    m_Planes->addChild<Plane>(m_RendererLibrary->GetPlaneVBO(), m_RendererLibrary->GetPlaneVertices(), 48, this);
+    Entity* lastEntity = m_Planes->children.back().get();
     lastEntity->transform.setLocalPosition(glm::vec3(0.0f, 2.0f, 0.0f));
     lastEntity->transform.setLocalRotation(glm::vec3(0.0f, 0.0f, 0.0f));
     lastEntity->transform.setLocalScale(glm::vec3(1.0f));
@@ -762,6 +802,7 @@ void RendererLayer::AddPlane()
     lastEntity->material.setNormalTexture(ResourceManager::GetTexture("default_normal"));
     lastEntity->material.setMetallicTexture(ResourceManager::GetTexture("default_metallic"));
     lastEntity->material.setRoughnessTexture(ResourceManager::GetTexture("default_roughness"));
+    lastEntity->material.setSpecularTexture(ResourceManager::GetTexture("default_specular"));
     lastEntity->material.setAOTexture(ResourceManager::GetTexture("default_ao"));
     lastEntity->material.setEmissiveTexture(ResourceManager::GetTexture("default_emissive"));
     ResourceManager::LoadShader("assets/shaders/pbrVS.glsl", "assets/shaders/pbrFS.glsl", nullptr, "pbr_lighting", { "MAX_DIR_LIGHTS 10", "MAX_POINT_LIGHTS 10", "MAX_OBJECTS 100" });
@@ -770,8 +811,8 @@ void RendererLayer::AddPlane()
 
 void RendererLayer::AddSphere()
 {
-    m_Spheres.addChild<Sphere>(m_RendererLibrary->GetSphereVBO(), &m_RendererLibrary->GetSphereVertices()[0], m_RendererLibrary->GetSphereVertices().size(), m_RendererLibrary->GetSphereEBO(), m_RendererLibrary->GetSphereIndicesCount());
-    Entity* lastEntity = m_Spheres.children.back().get();
+    m_Spheres->addChild<Sphere>(m_RendererLibrary->GetSphereVBO(), &m_RendererLibrary->GetSphereVertices()[0], m_RendererLibrary->GetSphereVertices().size(), m_RendererLibrary->GetSphereEBO(), m_RendererLibrary->GetSphereIndicesCount(), this);
+    Entity* lastEntity = m_Spheres->children.back().get();
     lastEntity->transform.setLocalPosition(glm::vec3(0.0f, 2.0f, 0.0f));
     lastEntity->transform.setLocalRotation(glm::vec3(0.0f, 0.0f, 0.0f));
     lastEntity->transform.setLocalScale(glm::vec3(1.0f));
@@ -788,6 +829,7 @@ void RendererLayer::AddSphere()
     lastEntity->material.setNormalTexture(ResourceManager::GetTexture("default_normal"));
     lastEntity->material.setMetallicTexture(ResourceManager::GetTexture("default_metallic"));
     lastEntity->material.setRoughnessTexture(ResourceManager::GetTexture("default_roughness"));
+    lastEntity->material.setSpecularTexture(ResourceManager::GetTexture("default_specular"));
     lastEntity->material.setAOTexture(ResourceManager::GetTexture("default_ao"));
     lastEntity->material.setEmissiveTexture(ResourceManager::GetTexture("default_emissive"));
     ResourceManager::LoadShader("assets/shaders/pbrVS.glsl", "assets/shaders/pbrFS.glsl", nullptr, "pbr_lighting", { "MAX_DIR_LIGHTS 10", "MAX_POINT_LIGHTS 10", "MAX_OBJECTS 100" });
@@ -796,8 +838,8 @@ void RendererLayer::AddSphere()
 
 void RendererLayer::AddCube()
 {
-    m_Cubes.addChild<Cube>(m_RendererLibrary->GetCubeVBO(), m_RendererLibrary->GetCubeVertices(), 288);
-    Entity* lastEntity = m_Cubes.children.back().get();
+    m_Cubes->addChild<Cube>(m_RendererLibrary->GetCubeVBO(), m_RendererLibrary->GetCubeVertices(), 288, this);
+    Entity* lastEntity = m_Cubes->children.back().get();
     lastEntity->transform.setLocalPosition(glm::vec3(0.0f, 2.0f, 0.0f));
     lastEntity->transform.setLocalRotation(glm::vec3(0.0f, 0.0f, 0.0f));
     lastEntity->transform.setLocalScale(glm::vec3(1.0f));
@@ -814,6 +856,7 @@ void RendererLayer::AddCube()
     lastEntity->material.setNormalTexture(ResourceManager::GetTexture("default_normal"));
     lastEntity->material.setMetallicTexture(ResourceManager::GetTexture("default_metallic"));
     lastEntity->material.setRoughnessTexture(ResourceManager::GetTexture("default_roughness"));
+    lastEntity->material.setSpecularTexture(ResourceManager::GetTexture("default_specular"));
     lastEntity->material.setAOTexture(ResourceManager::GetTexture("default_ao"));
     lastEntity->material.setEmissiveTexture(ResourceManager::GetTexture("default_emissive"));
     ResourceManager::LoadShader("assets/shaders/pbrVS.glsl", "assets/shaders/pbrFS.glsl", nullptr, "pbr_lighting", { "MAX_DIR_LIGHTS 10", "MAX_POINT_LIGHTS 10", "MAX_OBJECTS 100" });
@@ -822,8 +865,13 @@ void RendererLayer::AddCube()
 
 void RendererLayer::AddModel()
 {
-    m_Models.addChild<ModelEntity>(ResourceManager::GetModel("3d_model"));
-    Entity* lastEntity = m_Models.children.back().get();
+    if (m_IsAnimated) {
+        m_Models->addChild<ModelEntity>(ResourceManager::GetModel("3d_model"), this, true);
+    }
+    else {
+        m_Models->addChild<ModelEntity>(ResourceManager::GetModel("3d_model"), this);
+    }
+    Entity* lastEntity = m_Models->children.back().get();
     lastEntity->transform.setLocalPosition(glm::vec3(0.0f, 0.0f, 0.0f));
     lastEntity->transform.setLocalRotation(glm::vec3(0.0f, 0.0f, 0.0f));
     lastEntity->transform.setLocalScale(glm::vec3(1.0f));
@@ -840,10 +888,17 @@ void RendererLayer::AddModel()
     lastEntity->material.setNormalTexture(ResourceManager::GetTexture("default_normal"));
     lastEntity->material.setMetallicTexture(ResourceManager::GetTexture("default_metallic"));
     lastEntity->material.setRoughnessTexture(ResourceManager::GetTexture("default_roughness"));
+    lastEntity->material.setSpecularTexture(ResourceManager::GetTexture("default_specular"));
     lastEntity->material.setAOTexture(ResourceManager::GetTexture("default_ao"));
     lastEntity->material.setEmissiveTexture(ResourceManager::GetTexture("default_emissive"));
-    lastEntity->isGLTF = true;
-    ResourceManager::LoadShader("assets/shaders/pbrVS.glsl", "assets/shaders/pbrFS.glsl", nullptr, "pbr_lighting", { "TEXTURED", "GLTF", "MAX_DIR_LIGHTS 10", "MAX_POINT_LIGHTS 10", "MAX_OBJECTS 100" });
+    if (m_IsGLTF) {
+        lastEntity->isGLTF = true;
+        ResourceManager::LoadShader("assets/shaders/pbrVS.glsl", "assets/shaders/pbrFS.glsl", nullptr, "pbr_lighting", { "TEXTURED", "GLTF", "MAX_DIR_LIGHTS 10", "MAX_POINT_LIGHTS 10", "MAX_OBJECTS 100" });
+    }
+    else {
+        lastEntity->isGLTF = false;
+        ResourceManager::LoadShader("assets/shaders/pbrVS.glsl", "assets/shaders/pbrFS.glsl", nullptr, "pbr_lighting", { "TEXTURED", "MAX_DIR_LIGHTS 10", "MAX_POINT_LIGHTS 10", "MAX_OBJECTS 100" });
+    }
     lastEntity->material.setShader(ResourceManager::GetShader("pbr_lighting"));
 }
 
