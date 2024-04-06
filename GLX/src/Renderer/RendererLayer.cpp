@@ -610,7 +610,8 @@ void RendererLayer::OnImGuiRender()
                             m_ModelFilePath = file.substr(pos);
                         }
                         std::replace(m_ModelFilePath.begin(), m_ModelFilePath.end(), '\\', '/');
-                        ResourceManager::LoadModel(m_ModelFilePath.c_str(), "3d_model");
+                        m_ModelKeyName = "3d_model_" + std::to_string(m_ModelKeyIndex++);
+                        ResourceManager::LoadModel(m_ModelFilePath.c_str(), m_ModelKeyName.c_str());
                     }
 
                     // close
@@ -866,10 +867,10 @@ void RendererLayer::AddCube()
 void RendererLayer::AddModel()
 {
     if (m_IsAnimated) {
-        m_Models->addChild<ModelEntity>(ResourceManager::GetModel("3d_model"), this, true);
+        m_Models->addChild<ModelEntity>(ResourceManager::GetModel(m_ModelKeyName), this, true);
     }
     else {
-        m_Models->addChild<ModelEntity>(ResourceManager::GetModel("3d_model"), this);
+        m_Models->addChild<ModelEntity>(ResourceManager::GetModel(m_ModelKeyName), this);
     }
     Entity* lastEntity = m_Models->children.back().get();
     lastEntity->transform.setLocalPosition(glm::vec3(0.0f, 0.0f, 0.0f));

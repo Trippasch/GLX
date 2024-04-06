@@ -123,6 +123,8 @@ private:
     ModelEntity* m_Models;
     int m_ObjectsID = 0;
     std::string m_ModelFilePath = "None";
+    int m_ModelKeyIndex = 0;
+    std::string m_ModelKeyName;
     bool m_IsGLTF = true;
     bool m_IsAnimated = false;
 
