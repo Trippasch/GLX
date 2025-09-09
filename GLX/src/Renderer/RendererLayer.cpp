@@ -413,7 +413,7 @@ void RendererLayer::OnImGuiRender()
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
         ImGui::Begin("Debug Image");
 
-        ImGui::ImageButton((void*)(intptr_t)m_DebugFBO.GetTextureAttachments().at(0), ImVec2(m_Width, m_Height), ImVec2(0, 1), ImVec2(1, 0), 0);
+        ImGui::ImageButton("Debug Image", (void*)(intptr_t)m_DebugFBO.GetTextureAttachments().at(0), ImVec2(m_Width, m_Height), ImVec2(0, 1), ImVec2(1, 0));
         ImGui::PopStyleVar();
 
         ImGui::End();
@@ -428,7 +428,7 @@ void RendererLayer::OnImGuiRender()
         return;
     }
 
-    ImGui::ImageButton((void*)(intptr_t)m_ImGUIFBO.GetTextureAttachments().at(0), ImVec2(m_Width, m_Height), ImVec2(0, 1), ImVec2(1, 0), 0);
+    ImGui::ImageButton("Generated Image", (void*)(intptr_t)m_ImGUIFBO.GetTextureAttachments().at(0), ImVec2(m_Width, m_Height), ImVec2(0, 1), ImVec2(1, 0));
     ImGui::PopStyleVar();
 
     if (ImGui::IsWindowHovered()) {
